@@ -46,3 +46,4 @@ Thumbs.db
 
 # Saída temporária do MCP playwright ao capturar prints (docs/telas/ é o destino final)
 .playwright-mcp/
+.vercel
