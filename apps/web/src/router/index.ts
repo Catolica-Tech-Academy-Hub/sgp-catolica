@@ -31,7 +31,7 @@ const rotas: RouteRecordRaw[] = [
   {
     path: '/banco-de-questoes',
     name: 'banco-de-questoes',
-    component: () => import('@/telas/EmConstrucao.vue'),
+    component: () => import('@/telas/BancoDeQuestoes.vue'),
     meta: { titulo: 'Banco de questoes' },
   },
   {

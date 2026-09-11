@@ -58,7 +58,6 @@ export function questaoEstaNoBanco(id: string): boolean {
   return listarQuestoesDoBanco().some((questao) => questao.id === id);
 }
 
-/** Insere ou atualiza pelo id, evitando duplicatas ao salvar alterações. */
 export function salvarQuestaoNoBanco(questao: Questao): 'criada' | 'atualizada' {
   const indice = questoesLocais.findIndex((item) => item.id === questao.id);
   const copia = clonar(questao);
@@ -68,4 +67,37 @@ export function salvarQuestaoNoBanco(questao: Questao): 'criada' | 'atualizada' 
   }
   questoesLocais.unshift(copia);
   return 'criada';
+}
+
+export function excluirQuestaoDoBanco(id: string): void {
+  const indice = questoesLocais.findIndex((item) => item.id === id);
+
+  if (indice >= 0) {
+    questoesLocais[indice] = {
+      ...questoesLocais[indice],
+      deletedAt: new Date().toISOString(),
+    };
+    return;
+  }
+
+  const doMock = questoesMock.find((item) => item.id === id);
+
+  if (!doMock) return;
+
+  questoesLocais.unshift({
+    ...clonar(doMock),
+    deletedAt: new Date().toISOString(),
+  });
+}
+
+export function restaurarQuestaoDoBanco(id: string): void {
+  const indice = questoesLocais.findIndex((item) => item.id === id);
+
+  if (indice < 0) return;
+
+  const atual = { ...questoesLocais[indice] };
+
+  delete atual.deletedAt;
+
+  questoesLocais[indice] = atual;
 }
