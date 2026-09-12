@@ -4,10 +4,18 @@
  * de seção do espaço de trabalho, sem introduzir uma segunda barra de cor.
  */
 import { useRoute } from 'vue-router';
-import { ChartNoAxesCombined, ClipboardList, Files, ScanLine, UsersRound } from '@lucide/vue';
+import {
+  ChartNoAxesCombined,
+  ClipboardCheck,
+  ClipboardList,
+  Files,
+  ScanLine,
+  UsersRound,
+} from '@lucide/vue';
 
 const secoes = [
   { rotulo: 'Provas', para: '/provas', icone: Files },
+  { rotulo: 'Aplicações', para: '/aplicacoes', icone: ClipboardCheck },
   { rotulo: 'Banco de questões', para: '/banco-de-questoes', icone: ClipboardList },
   { rotulo: 'Turmas', para: '/turmas', icone: UsersRound },
   { rotulo: 'Correções', para: '/correcoes', icone: ScanLine },

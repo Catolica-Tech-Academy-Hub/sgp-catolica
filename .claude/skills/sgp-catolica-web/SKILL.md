@@ -20,9 +20,10 @@ Leia antes de escrever código de tela — não deduza padrão a partir de uma t
 | [docs/design/experiencia-web-atual.md](../../../docs/design/experiencia-web-atual.md) | Rotas existentes, situação de cada uma (implementada/marcador/protótipo) e limites do que já funciona.  |
 | [docs/design/README.md](../../../docs/design/README.md)                               | Índice de design.                                                                                       |
 
-`apps/web/src/telas/Provas.vue` é a referência executável do padrão de seção (painel
-esquerdo + lista de cartões); `apps/web/src/components/casca/` é a referência da casca
-autenticada. O tema vive em `apps/web/src/styles/global.css`. Um padrão novo e
+`apps/web/src/telas/Provas.vue` e `apps/web/src/telas/Aplicacoes.vue` são referências
+executáveis do padrão de seção (painel esquerdo + lista de cartões); `Aplicacoes.vue`
+também é a referência para detalhe somente leitura em Dialog. `apps/web/src/components/casca/`
+é a referência da casca autenticada. O tema vive em `apps/web/src/styles/global.css`. Um padrão novo e
 reutilizável exige atualizar `docs/design/design-system-web.md` na mesma entrega.
 
 ## Antes de desenhar uma tela

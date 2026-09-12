@@ -22,6 +22,12 @@ const rotas: RouteRecordRaw[] = [
     meta: { titulo: 'Provas' },
   },
   {
+    path: '/aplicacoes',
+    name: 'aplicacoes',
+    component: () => import('@/telas/Aplicacoes.vue'),
+    meta: { titulo: 'Aplicações' },
+  },
+  {
     path: '/provas/:id',
     name: 'provas-editor',
     component: () => import('@/telas/EditorDeProva.vue'),

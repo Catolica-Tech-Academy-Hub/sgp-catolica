@@ -290,6 +290,13 @@ A prévia segue o comportamento de apresentação do Figma:
 - mesma distribuição automática de blocos entre as folhas;
 - sem rings, ações de bloco, inputs ou indicação da resposta correta.
 
+### Detalhe somente leitura
+
+Entidades sem edição na N1 podem abrir um `Dialog` de detalhe a partir do cartão da
+lista. O conteúdo deve expor os dados existentes em modo somente leitura, manter uma
+ação futura desabilitada com Tooltip explicativo e fechar sem alterar o estado. O
+detalhe de aplicação em `src/telas/Aplicacoes.vue` é a referência desse padrão.
+
 ## Estados, feedback e conteúdo
 
 | Situação           | Padrão                                                        |
