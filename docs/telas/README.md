@@ -39,7 +39,8 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 
 ## Capturas atuais
 
-| Tela               | Rota          | Print                                    |
-| ------------------ | ------------- | ---------------------------------------- |
-| Listagem de turmas | `/turmas`     | [turmas.png](turmas.png)                 |
-| Detalhe da turma   | `/turmas/:id` | [turmas-detalhe.png](turmas-detalhe.png) |
+| Tela                | Rota          | Print                                    |
+| ------------------- | ------------- | ---------------------------------------- |
+| Lista de aplicações | `/aplicacoes` | [aplicacoes.png](aplicacoes.png)         |
+| Listagem de turmas  | `/turmas`     | [turmas.png](turmas.png)                 |
+| Detalhe da turma    | `/turmas/:id` | [turmas-detalhe.png](turmas-detalhe.png) |

@@ -32,6 +32,14 @@ export const statusDaAplicacao: Record<StatusAplicacao, { rotulo: string; tom: T
   closed: { rotulo: 'Encerrada', tom: 'encerrado' },
 };
 
+export function varianteDoStatusDaAplicacao(
+  status: StatusAplicacao,
+): 'default' | 'secondary' | 'outline' {
+  if (status === 'generated') return 'default';
+  if (status === 'draft') return 'secondary';
+  return 'outline';
+}
+
 export function varianteDoStatusDaProva(status: StatusProva): 'default' | 'secondary' | 'outline' {
   if (status === 'ready') return 'default';
   if (status === 'draft') return 'secondary';

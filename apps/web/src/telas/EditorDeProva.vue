@@ -21,9 +21,26 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router';
 import { FilePlus2, Library } from '@lucide/vue';
 import { toast } from 'vue-sonner';
+import { turmasMock } from '@sgp/mocks';
 import type { Questao } from '@sgp/shared-types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import BarraDoEditor from '@/components/prova/BarraDoEditor.vue';
 import EstruturaDaProva from '@/components/prova/EstruturaDaProva.vue';
@@ -47,6 +64,7 @@ import {
   obterBlocosDaProva,
   atualizarQuestoesDaProva,
 } from '@/lib/estado-de-provas';
+import { criarAplicacao } from '@/lib/estado-de-aplicacoes';
 import {
   encontrarQuestaoDoBanco,
   questaoEstaNoBanco,
@@ -118,6 +136,23 @@ const blocoSelecionado = computed(() =>
 
 const folha = ref<HTMLElement | null>(null);
 const previewAberto = ref(false);
+const aplicacaoAberta = ref(false);
+const turmaEscolhida = ref('');
+const turmasAtivas = turmasMock.filter((turma) => turma.status === 'active');
+
+function abrirDialogoDeAplicacao(): void {
+  turmaEscolhida.value = '';
+  aplicacaoAberta.value = true;
+}
+
+function criarAplicacaoDaProva(): void {
+  if (!prova.value || !turmaEscolhida.value) return;
+  criarAplicacao({ examId: prova.value.id, classId: turmaEscolhida.value });
+  aplicacaoAberta.value = false;
+  toast.success('Aplicação criada', {
+    description: 'A aplicação está em rascunho e ainda não gera PDF.',
+  });
+}
 
 /**
  * O papel continua sendo calculado em tamanho A4 real, mas sua representação pode
@@ -389,7 +424,42 @@ function aplicarModelo(modeloId: string): void {
         :total-de-pontos="totalPontos"
         @update:titulo="prova.title = $event"
         @visualizar="previewAberto = true"
+        @aplicar="abrirDialogoDeAplicacao"
       />
+
+      <Dialog v-model:open="aplicacaoAberta">
+        <DialogContent class="sm:max-w-md">
+          <form @submit.prevent="criarAplicacaoDaProva">
+            <DialogHeader>
+              <DialogTitle>Aplicar a uma turma</DialogTitle>
+              <DialogDescription>
+                Escolha uma turma ativa. A aplicação será criada como rascunho.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div class="space-y-2 py-4">
+              <Label for="turma-da-aplicacao">Turma de destino</Label>
+              <Select v-model="turmaEscolhida">
+                <SelectTrigger id="turma-da-aplicacao" aria-label="Turma de destino">
+                  <SelectValue placeholder="Selecione uma turma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="turma in turmasAtivas" :key="turma.id" :value="turma.id">
+                    {{ turma.name }} · {{ turma.term }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" @click="aplicacaoAberta = false">
+                Cancelar
+              </Button>
+              <Button type="submit" :disabled="!turmaEscolhida">Criar aplicação</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div class="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:flex-row">
         <EstruturaDaProva

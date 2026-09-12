@@ -15,20 +15,21 @@ Classificação usada:
 
 ## Mapa de navegação
 
-| Rota                 | Situação               | Experiência atual                                                      |
-| -------------------- | ---------------------- | ---------------------------------------------------------------------- |
-| `/`                  | Implementado           | Redireciona para `/login`.                                             |
-| `/login`             | Implementado na N1     | Valida localmente e abre `/provas`; não autentica.                     |
-| `/provas`            | Implementado na N1     | Workspace para buscar, filtrar, ordenar, abrir e criar provas.         |
-| `/provas/:id`        | Protótipo em avaliação | Editor A4 em tela cheia, autoria por blocos e pré-visualização.        |
-| `/banco-de-questoes` | Marcador               | Estado em construção; o banco utilizável hoje existe dentro do editor. |
-| `/turmas`            | Implementado na N1     | Workspace para buscar, filtrar e criar turmas.                         |
-| `/turmas/:id`        | Implementado na N1     | Detalhe da turma: editar, arquivar, código de convite e matrículas.    |
-| `/correcoes`         | Marcador               | Estado em construção.                                                  |
-| `/relatorios`        | Marcador               | Estado em construção.                                                  |
-| Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                            |
+| Rota                 | Situação               | Experiência atual                                                                   |
+| -------------------- | ---------------------- | ----------------------------------------------------------------------------------- |
+| `/`                  | Implementado           | Redireciona para `/login`.                                                          |
+| `/login`             | Implementado na N1     | Valida localmente e abre `/provas`; não autentica.                                  |
+| `/provas`            | Implementado na N1     | Workspace para buscar, filtrar, ordenar, abrir e criar provas.                      |
+| `/provas/:id`        | Protótipo em avaliação | Editor A4 em tela cheia, autoria por blocos, aplicação em turma e pré-visualização. |
+| `/aplicacoes`        | Implementado na N1     | Lista aplicações por prova e turma; detalhe somente leitura das versões existentes. |
+| `/banco-de-questoes` | Marcador               | Estado em construção; o banco utilizável hoje existe dentro do editor.              |
+| `/turmas`            | Implementado na N1     | Workspace para buscar, filtrar e criar turmas.                                      |
+| `/turmas/:id`        | Implementado na N1     | Detalhe da turma: editar, arquivar, código de convite e matrículas.                 |
+| `/correcoes`         | Marcador               | Estado em construção.                                                               |
+| `/relatorios`        | Marcador               | Estado em construção.                                                               |
+| Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
-As cinco seções aparecem nas abas para tornar a arquitetura do produto visível sem
+As seis seções aparecem nas abas para tornar a arquitetura do produto visível sem
 simular funções prontas. Login e editor usam `meta.telaCheia`; as demais rotas usam a
 casca autenticada.
 
@@ -167,7 +168,19 @@ Da esquerda para a direita:
 - situação da prova;
 - contador de até 20 questões, total de pontos e indicação de salvamento local;
 - **Pré-visualizar**;
-- **Aplicar a uma turma**, desabilitado com explicação porque RF05 não está conectado.
+- **Aplicar a uma turma**, que abre um diálogo com as turmas ativas e cria uma aplicação
+  local em `draft`. A mesma prova pode ser aplicada novamente à mesma turma.
+
+## Aplicações
+
+`/aplicacoes` usa o padrão de seção com painel esquerdo, busca, recortes por situação e
+lista de cartões. Cada cartão mostra prova, turma, situação, versões e data, e abre um
+`Dialog` somente leitura com as versões já presentes nos mocks: número, embaralhamento,
+publicação do gabarito e código público.
+
+Aplicações novas ficam em `draft` e são preservadas no navegador. O detalhe mantém
+**Gerar PDF** desabilitado com a explicação de que a geração pertence ao RF06; nenhuma
+ação desta tela cria versão, QR Code ou atribuição.
 
 ### Três zonas
 
@@ -343,7 +356,8 @@ de salvamento no editor informa esse limite.
 - importar lista de alunos por planilha em Turmas depende de um pedido do cliente
   ainda não incorporado como critério de aceite — ver
   [pendências](../pendencias.md), item 12;
-- Aplicar a uma turma, geração de versões, QR válido e PDF dependem de RF05/RF06;
+- geração de versões, QR válido e PDF dependem de RF06; a aplicação local de uma prova
+  em uma turma já está disponível como fluxo N1 de RF05;
 - blocos excepcionalmente maiores que uma área útil de A4 ainda precisam de tratamento
   específico na futura geração de PDF;
 - o modelo de blocos precisa de decisão da

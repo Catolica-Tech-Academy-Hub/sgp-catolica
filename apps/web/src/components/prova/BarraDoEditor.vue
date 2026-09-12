@@ -32,6 +32,7 @@ const props = defineProps<{
 defineEmits<{
   'update:titulo': [valor: string];
   visualizar: [];
+  aplicar: [];
 }>();
 
 const noLimite = computed(() => props.totalDeQuestoes >= MAXIMO_DE_QUESTOES);
@@ -85,14 +86,7 @@ const noLimite = computed(() => props.totalDeQuestoes >= MAXIMO_DE_QUESTOES);
         <span class="sr-only sm:hidden">Pré-visualizar prova</span>
       </Button>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <span tabindex="-1">
-            <Button size="sm" disabled>Aplicar a uma turma</Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>Ainda não implementado nesta fase (RF05).</TooltipContent>
-      </Tooltip>
+      <Button size="sm" @click="$emit('aplicar')">Aplicar a uma turma</Button>
     </div>
   </header>
 </template>
