@@ -22,10 +22,10 @@ Classificação usada:
 | `/provas`            | Implementado na N1     | Workspace para buscar, filtrar, ordenar, abrir e criar provas.                      |
 | `/provas/:id`        | Protótipo em avaliação | Editor A4 em tela cheia, autoria por blocos, aplicação em turma e pré-visualização. |
 | `/aplicacoes`        | Implementado na N1     | Lista aplicações por prova e turma; detalhe somente leitura das versões existentes. |
-| `/banco-de-questoes` | Marcador               | Estado em construção; o banco utilizável hoje existe dentro do editor.              |
+| `/banco-de-questoes` | Implementado na N1     | Tela dedicada: criar, editar, buscar, filtrar por tipo e excluir com desfazer.      |
 | `/turmas`            | Implementado na N1     | Workspace para buscar, filtrar e criar turmas.                                      |
 | `/turmas/:id`        | Implementado na N1     | Detalhe da turma: editar, arquivar, código de convite e matrículas.                 |
-| `/correcoes`         | Marcador               | Estado em construção.                                                               |
+| `/correcoes`         | Implementado na N1     | Fila de atribuição manual de nota (RF09), com busca, filtros e detalhe da regra.    |
 | `/relatorios`        | Marcador               | Estado em construção.                                                               |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
@@ -62,14 +62,14 @@ O próprio formulário informa esse limite.
 
 A casca tem uma barra branca externa e uma moldura cinza arredondada:
 
-| Região      | Conteúdo                                                   | Situação                                                   |
-| ----------- | ---------------------------------------------------------- | ---------------------------------------------------------- |
-| Marca       | Ícone e “SGP Católica”, com link para Provas.              | Funcional.                                                 |
-| Integrações | Botão na barra externa.                                    | Marcador sem ação.                                         |
-| Ajuda       | Botão apenas com ícone.                                    | Marcador sem ação.                                         |
-| Perfil      | Nome/e-mail do mock e ação “Sair”.                         | Menu funciona; sair apenas informa que falta autenticação. |
-| Abas        | Provas, Banco de questões, Turmas, Correções e Relatórios. | Navegação funcional; três destinos ainda são marcadores.   |
-| Moldura     | Abas e página sobre o mesmo campo cinza.                   | Funcional e responsiva.                                    |
+| Região      | Conteúdo                                                               | Situação                                                   |
+| ----------- | ---------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Marca       | Ícone e “SGP Católica”, com link para Provas.                          | Funcional.                                                 |
+| Integrações | Botão na barra externa.                                                | Marcador sem ação.                                         |
+| Ajuda       | Botão apenas com ícone.                                                | Marcador sem ação.                                         |
+| Perfil      | Nome/e-mail do mock e ação “Sair”.                                     | Menu funciona; sair apenas informa que falta autenticação. |
+| Abas        | Provas, Aplicações, Banco de questões, Turmas, Correções e Relatórios. | Navegação funcional; só Relatórios ainda é marcador.       |
+| Moldura     | Abas e página sobre o mesmo campo cinza.                               | Funcional e responsiva.                                    |
 
 As abas rolam horizontalmente em tela estreita sem mostrar uma barra de rolagem. A
 aplicação mantém o atalho “Ir para o conteúdo”.
@@ -347,10 +347,62 @@ de salvamento no editor informa esse limite.
 - foco contido e saída por `Escape` na pré-visualização;
 - movimento do login desativado por `prefers-reduced-motion`.
 
+## Correções
+
+### O que a tela resolve
+
+`/correcoes` é a fila de **atribuição manual de nota** (RF09). A leitura de QR Code e de
+cartão-resposta pertence exclusivamente ao aplicativo do professor (RF08) e não tem
+equivalente na web.
+
+O caso que chega aqui é o da prova gerada **sem identificação do aluno**: o aplicativo
+leu a versão pelo QR Code, conferiu o cartão e calculou a nota, mas não sabe de quem ela
+é. O professor associa cada correção a um aluno matriculado, a partir do nome e da
+matrícula que o aplicativo leu na folha.
+
+### Composição
+
+| Região          | Conteúdo                                                                         |
+| --------------- | -------------------------------------------------------------------------------- |
+| Painel esquerdo | Busca por nome/matrícula informados e recorte por situação, com contagem.        |
+| Cabeçalho       | Título, explicação e `Select` de aplicação.                                      |
+| Conteúdo        | `Table` em `Card`: aluno informado, prova e turma, versão, nota, data, situação. |
+
+Os registros são comparados coluna a coluna, por isso tabela e não lista de cartões. O
+filtro de aplicação fica no cabeçalho, e não como recorte do painel: a mesma prova pode
+ir duas vezes para a mesma turma (segunda chamada, RF05), então o rótulo precisa carregar
+prova, turma **e** data, o que os 256 px do painel truncariam justamente no que distingue
+as duas.
+
+### Atribuição
+
+“Atribuir” abre um `Dialog` com a nota calculada e a lista dos alunos **matriculados na
+turma daquela aplicação** — nunca a base inteira de estudantes.
+
+- a busca vem pré-preenchida com o nome lido na folha, como RF09 pede;
+- a comparação tolera nome abreviado: a folha traz “Clara A.” onde a matrícula diz
+  “Clara Antunes”, e uma busca por substring falharia exatamente no caso que ela existe
+  para resolver;
+- aluno que já tem nota naquela versão aparece desabilitado, com o motivo ao lado: RF09
+  proíbe duas correções da mesma versão para o mesmo aluno;
+- confirmar **preenche o vínculo na correção existente**, sem criar registro novo, para
+  não duplicar a nota em relatório e exportação;
+- o toast de sucesso oferece “Desfazer”, que é a única forma de corrigir uma escolha
+  errada: sem ele, a correção sairia da fila sem caminho de volta.
+
+Quando a correção já tem aluno, a linha mostra o nome real e a marca “Atribuída”, sem
+ação.
+
+### Estado
+
+`src/lib/estado-de-correcoes.ts` segue o formato dos demais `estado-*`: reativo, semeado
+por `correcoesMock`, gravado em `localStorage` e ponto único de integração quando o
+backend existir.
+
 ## Limites e próximos passos
 
 - autenticação, logout, Integrações e Ajuda não estão conectados;
-- Banco de questões, Correções e Relatórios ainda não têm telas completas;
+- Relatórios ainda não tem tela completa;
 - matricular aluno por e-mail ou por código de convite (fluxo de entrada do estudante)
   fica fora de Turmas: não há autenticação nem sessão de estudante na N1 web;
 - importar lista de alunos por planilha em Turmas depende de um pedido do cliente

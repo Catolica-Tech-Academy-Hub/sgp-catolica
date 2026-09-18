@@ -297,6 +297,23 @@ lista. O conteúdo deve expor os dados existentes em modo somente leitura, mante
 ação futura desabilitada com Tooltip explicativo e fechar sem alterar o estado. O
 detalhe de aplicação em `src/telas/Aplicacoes.vue` é a referência desse padrão.
 
+### Escolha com impedimento explicado
+
+Quando um `Dialog` pede a escolha de um item de uma lista e alguns candidatos não podem
+ser escolhidos por uma regra de domínio, o candidato impedido **permanece visível**,
+desabilitado e com o motivo ao lado — não é removido da lista.
+
+Esconder o impedido faz o usuário procurar o que não está lá e concluir que o sistema
+perdeu o registro; mostrá-lo com o motivo responde a pergunta no lugar onde ela nasce.
+
+- lista rolável com `scrollbar-sutil`, dentro de `fieldset` com `legend` acessível;
+- cada linha é um `label` com `input` de seleção única, então o alvo de clique é a linha
+  inteira e o teclado percorre a lista naturalmente;
+- impedido usa opacidade reduzida, `disabled` e `Badge` `outline` com o motivo curto;
+- a ação de confirmação fica desabilitada enquanto a escolha não for válida.
+
+A fila de atribuição em `src/telas/Correcoes.vue` é a referência desse padrão.
+
 ## Estados, feedback e conteúdo
 
 | Situação           | Padrão                                                        |
@@ -333,16 +350,17 @@ essenciais não devem desaparecer; quando necessário, usar rolagem localizada.
 
 ## Mapa de implementação
 
-| Padrão                                                   | Referência executável                                                                                   |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Tokens e fonte                                           | `src/styles/global.css`                                                                                 |
-| Casca                                                    | `src/App.vue`, `src/components/casca/`                                                                  |
-| Login                                                    | `src/telas/Login.vue`                                                                                   |
-| Workspace/lista                                          | `src/telas/Provas.vue`, `src/telas/Turmas.vue`                                                          |
-| Detalhe com tabela em Card, Dialog de formulário simples | `src/telas/DetalheDaTurma.vue`                                                                          |
-| Editor                                                   | `src/telas/EditorDeProva.vue`, `src/components/prova/`                                                  |
-| Estado local do protótipo                                | `src/lib/estado-de-provas.ts`, `estado-de-questoes.ts`, `cabecalhos-da-prova.ts`, `estado-de-turmas.ts` |
-| Primitivos                                               | `src/components/ui/`                                                                                    |
+| Padrão                                                        | Referência executável                                                                                   |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Tokens e fonte                                                | `src/styles/global.css`                                                                                 |
+| Casca                                                         | `src/App.vue`, `src/components/casca/`                                                                  |
+| Login                                                         | `src/telas/Login.vue`                                                                                   |
+| Workspace/lista                                               | `src/telas/Provas.vue`, `src/telas/Turmas.vue`                                                          |
+| Detalhe com tabela em Card, Dialog de formulário simples      | `src/telas/DetalheDaTurma.vue`                                                                          |
+| Fila de trabalho em tabela, Dialog de escolha com impedimento | `src/telas/Correcoes.vue`                                                                               |
+| Editor                                                        | `src/telas/EditorDeProva.vue`, `src/components/prova/`                                                  |
+| Estado local do protótipo                                     | `src/lib/estado-de-provas.ts`, `estado-de-questoes.ts`, `cabecalhos-da-prova.ts`, `estado-de-turmas.ts` |
+| Primitivos                                                    | `src/components/ui/`                                                                                    |
 
 ## Checklist de entrega
 
