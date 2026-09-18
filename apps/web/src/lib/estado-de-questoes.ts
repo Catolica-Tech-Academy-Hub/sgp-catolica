@@ -40,13 +40,27 @@ watch(
   { deep: true },
 );
 
+/**
+ * Acervo ativo do banco: exclui o que foi excluido logicamente.
+ *
+ * O filtro de `deletedAt` mora aqui, e nao em cada tela, porque o banco e lido tanto
+ * pela tela dedicada quanto pelo painel do banco dentro do editor de prova. Filtrar em
+ * um chamador so deixaria o outro oferecendo questao ja excluida.
+ */
 export function listarQuestoesDoBanco(): Questao[] {
   return [
     ...questoesLocais,
     ...questoesMock.filter((mock) => !questoesLocais.some((item) => item.id === mock.id)),
-  ];
+  ].filter((questao) => !questao.deletedAt);
 }
 
+/**
+ * Resolve uma questao pelo id, **inclusive excluida**.
+ *
+ * Diferente de `listarQuestoesDoBanco`, aqui a questao excluida continua sendo
+ * encontrada de proposito: uma prova que ja referencia aquele id precisa continuar
+ * renderizando o enunciado, senao a exclusao no banco esvaziaria provas antigas.
+ */
 export function encontrarQuestaoDoBanco(id: string): Questao | undefined {
   return (
     questoesLocais.find((questao) => questao.id === id) ??

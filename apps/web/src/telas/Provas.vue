@@ -14,7 +14,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ChevronRight, CircleDashed, FileText, LayoutGrid, Plus, Search } from '@lucide/vue';
-import { turmasMock, versoesMock } from '@sgp/mocks';
+import { versoesMock } from '@sgp/mocks';
 import type { Prova, StatusAplicacao, StatusProva } from '@sgp/shared-types';
 import PainelDaSecao from '@/components/casca/PainelDaSecao.vue';
 import ItemDeRecorte from '@/components/casca/ItemDeRecorte.vue';
@@ -38,6 +38,7 @@ import {
 } from '@/lib/dominio';
 import { criarProva, listarProvas } from '@/lib/estado-de-provas';
 import { listarAplicacoesDaProva } from '@/lib/estado-de-aplicacoes';
+import { encontrarTurma } from '@/lib/estado-de-turmas';
 
 interface AplicacaoNaTela {
   id: string;
@@ -60,7 +61,7 @@ const ordem = ref<'recentes' | 'titulo'>('recentes');
 
 function montar(prova: Prova): ProvaNaTela {
   const aplicacoes = listarAplicacoesDaProva(prova.id).map((aplicacao) => {
-    const turma = turmasMock.find((item) => item.id === aplicacao.classId);
+    const turma = encontrarTurma(aplicacao.classId);
     return {
       id: aplicacao.id,
       turma: turma?.name ?? 'Turma indisponível',

@@ -2,8 +2,8 @@
 /** Lista e detalhe somente leitura das aplicações de provas em turmas. */
 import { computed, onMounted, ref } from 'vue';
 import { CircleDashed, ClipboardCheck, Search } from '@lucide/vue';
-import { turmasMock, versoesMock } from '@sgp/mocks';
-import type { Aplicacao, StatusAplicacao } from '@sgp/shared-types';
+import { versoesMock } from '@sgp/mocks';
+import type { Aplicacao, StatusAplicacao, Turma } from '@sgp/shared-types';
 import PainelDaSecao from '@/components/casca/PainelDaSecao.vue';
 import ItemDeRecorte from '@/components/casca/ItemDeRecorte.vue';
 import { Badge } from '@/components/ui/badge';
@@ -26,12 +26,13 @@ import {
   varianteDoStatusDaAplicacao,
 } from '@/lib/dominio';
 import { listarAplicacoes } from '@/lib/estado-de-aplicacoes';
+import { encontrarTurma } from '@/lib/estado-de-turmas';
 import { listarProvas } from '@/lib/estado-de-provas';
 
 interface AplicacaoNaTela {
   aplicacao: Aplicacao;
   prova: ReturnType<typeof listarProvas>[number] | undefined;
-  turma: (typeof turmasMock)[number] | undefined;
+  turma: Turma | undefined;
   versoes: ReturnType<typeof versoesMock.filter>;
 }
 
@@ -45,7 +46,7 @@ const aplicacoes = computed<AplicacaoNaTela[]>(() =>
   listarAplicacoes().map((aplicacao) => ({
     aplicacao,
     prova: listarProvas().find((prova) => prova.id === aplicacao.examId),
-    turma: turmasMock.find((turma) => turma.id === aplicacao.classId),
+    turma: encontrarTurma(aplicacao.classId),
     versoes: versoesMock.filter((versao) => versao.applicationId === aplicacao.id),
   })),
 );
