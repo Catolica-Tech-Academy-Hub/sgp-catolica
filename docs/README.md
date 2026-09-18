@@ -16,6 +16,8 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | [Pendencias](pendencias.md)                                        | Divergencias entre fontes e definicoes ainda ausentes         |
 | [Design system web](design/design-system-web.md)                   | Padroes de UI, componentes, temas e paleta                    |
 | [Experiencia web atual](design/experiencia-web-atual.md)           | Mapa de telas, navegacao e fluxos implementados               |
+| [Design system mobile](design/design-system-mobile.md)             | Padroes de UI do aplicativo do professor                      |
+| [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                     |
 | [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui     |
 
 ## Por onde comecar
@@ -24,6 +26,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 - Para **implementar uma tela ou regra**: requisitos funcionais, depois o dicionario de
   entidades, e os tipos em `packages/shared-types`.
 - Para **projetar ou revisar UI/UX**: design system web, depois experiencia web atual.
+  No aplicativo do professor, design system mobile e experiencia mobile atual.
 - Para saber **o que ainda nao esta decidido**: pendencias. Nada ali deve ser tratado
   como definido.
 

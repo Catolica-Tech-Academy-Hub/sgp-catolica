@@ -1,53 +1,70 @@
 /**
  * Espelho em CSS dos tokens definidos em ./index.ts.
- * Importado uma unica vez pela aplicacao web.
+ *
+ * Nao e importado por ninguem hoje: a web tem o proprio tema em
+ * `apps/web/src/styles/global.css`, em OKLCH. Este arquivo existe para um consumo CSS
+ * futuro e, enquanto os dois coexistirem, precisa ser mantido em sincronia manual com
+ * `index.ts` — regra registrada em `.claude/rules/10-pacotes-compartilhados.md`.
+ *
+ * Os valores sao a conversao para hex do tema claro da web, que e o canonico na N1.
  */
 :root {
-  --cor-marca: #7b1a24;
-  --cor-marca-forte: #5c1119;
-  --cor-marca-suave: #f4e6e8;
+  --cor-background: #ffffff;
+  --cor-foreground: #18141a;
 
-  --cor-fundo: #ffffff;
-  --cor-fundo-alternativo: #f6f7f9;
-  --cor-superficie: #ffffff;
-  --cor-borda: #e2e5ea;
+  --cor-field: #f6f4f6;
 
-  --cor-texto: #1b1f24;
-  --cor-texto-secundario: #5b6572;
-  --cor-texto-invertido: #ffffff;
+  --cor-card: #ffffff;
+  --cor-card-foreground: #18141a;
 
-  --cor-sucesso: #1f7a4d;
-  --cor-sucesso-suave: #e4f3eb;
-  --cor-alerta: #b26a00;
-  --cor-alerta-suave: #fbf0dd;
-  --cor-erro: #b3261e;
-  --cor-erro-suave: #fbe7e6;
-  --cor-informacao: #1b5fa8;
-  --cor-informacao-suave: #e5eff9;
+  --cor-popover: #ffffff;
+  --cor-popover-foreground: #18141a;
+
+  --cor-primary: #352d39;
+  --cor-primary-foreground: #fafafa;
+
+  --cor-secondary: #f4f3f5;
+  --cor-secondary-foreground: #242026;
+  --cor-accent: #f1eff2;
+  --cor-accent-foreground: #242026;
+
+  --cor-muted: #f4f3f5;
+  --cor-muted-foreground: #666168;
+
+  --cor-destructive: #b7191c;
+  --cor-destructive-foreground: #fafafa;
+
+  --cor-border: #dfdde0;
+  --cor-input: #dfdde0;
+  --cor-ring: #54475a;
+
+  --cor-sheet: #ffffff;
+  --cor-sheet-foreground: #0d0d0d;
+  --cor-sheet-border: #e0dddd;
 
   --espaco-xs: 4px;
   --espaco-sm: 8px;
-  --espaco-md: 16px;
-  --espaco-lg: 24px;
-  --espaco-xl: 32px;
-  --espaco-xxl: 48px;
+  --espaco-md: 12px;
+  --espaco-lg: 16px;
+  --espaco-xl: 24px;
+  --espaco-xxl: 32px;
 
-  --raio-sm: 4px;
-  --raio-md: 8px;
-  --raio-lg: 16px;
+  --raio-sm: 6px;
+  --raio-md: 10px;
+  --raio-lg: 12px;
   --raio-pill: 999px;
 
-  --fonte-familia: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --fonte-familia: 'Instrument Sans', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --fonte-xs: 12px;
-  --fonte-sm: 14px;
-  --fonte-md: 16px;
-  --fonte-lg: 20px;
-  --fonte-xl: 26px;
-  --fonte-xxl: 32px;
+  --fonte-sm: 13px;
+  --fonte-md: 14px;
+  --fonte-lg: 18px;
+  --fonte-xl: 22px;
+  --fonte-xxl: 28px;
 
   --peso-regular: 400;
   --peso-medio: 500;
-  --peso-forte: 700;
+  --peso-forte: 600;
 
-  --sombra-cartao: 0 1px 2px rgba(27, 31, 36, 0.06), 0 2px 8px rgba(27, 31, 36, 0.06);
+  --sombra-cartao: 0 1px 2px rgba(24, 20, 26, 0.06), 0 2px 8px rgba(24, 20, 26, 0.06);
 }
