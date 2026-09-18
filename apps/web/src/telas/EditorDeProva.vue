@@ -21,7 +21,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router';
 import { FilePlus2, Library } from '@lucide/vue';
 import { toast } from 'vue-sonner';
-import { turmasMock } from '@sgp/mocks';
 import type { Questao } from '@sgp/shared-types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -65,6 +64,7 @@ import {
   atualizarQuestoesDaProva,
 } from '@/lib/estado-de-provas';
 import { criarAplicacao } from '@/lib/estado-de-aplicacoes';
+import { listarTurmas } from '@/lib/estado-de-turmas';
 import {
   encontrarQuestaoDoBanco,
   questaoEstaNoBanco,
@@ -138,7 +138,8 @@ const folha = ref<HTMLElement | null>(null);
 const previewAberto = ref(false);
 const aplicacaoAberta = ref(false);
 const turmaEscolhida = ref('');
-const turmasAtivas = turmasMock.filter((turma) => turma.status === 'active');
+// Computado, e nao constante: turma criada ou arquivada em `/turmas` muda esta lista.
+const turmasAtivas = computed(() => listarTurmas().filter((turma) => turma.status === 'active'));
 
 function abrirDialogoDeAplicacao(): void {
   turmaEscolhida.value = '';

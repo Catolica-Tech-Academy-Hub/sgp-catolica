@@ -34,9 +34,8 @@ onMounted(() => {
   }, 350);
 });
 
-const questoesAtivas = computed<Questao[]>(() =>
-  listarQuestoesDoBanco().filter((questao) => !questao.deletedAt),
-);
+// `listarQuestoesDoBanco` ja exclui o que foi excluido logicamente.
+const questoesAtivas = computed<Questao[]>(() => listarQuestoesDoBanco());
 
 const totalPorTipo = computed<Record<TipoQuestao | 'todas', number>>(() => ({
   todas: questoesAtivas.value.length,
