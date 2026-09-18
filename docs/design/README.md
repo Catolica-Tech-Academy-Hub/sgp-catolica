@@ -1,18 +1,22 @@
-# Design web
+# Design
 
-Fonte oficial das decisões de interface e experiência da aplicação web do SGP Católica.
-Estes documentos descrevem a base consolidada na N1 e devem acompanhar qualquer mudança
-relevante de UI.
+Fonte oficial das decisões de interface e experiência do SGP Católica, nas duas
+superfícies: a aplicação web e o aplicativo do professor. Estes documentos descrevem a
+base consolidada na N1 e devem acompanhar qualquer mudança relevante de UI.
 
 ## Documentos
 
-| Documento                                         | Responsabilidade                                                                                                            |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [Design system web](design-system-web.md)         | Regras normativas: direção visual, tokens, tipografia, densidade, layouts, componentes, acessibilidade e padrões do editor. |
-| [Experiência web atual](experiencia-web-atual.md) | Estado executável: rotas, fluxos, comportamentos, persistência local e limites conhecidos.                                  |
+| Documento                                               | Responsabilidade                                                                                                             |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [Design system web](design-system-web.md)               | Regras normativas: direção visual, tokens, tipografia, densidade, layouts, componentes, acessibilidade e padrões do editor.  |
+| [Experiência web atual](experiencia-web-atual.md)       | Estado executável: rotas, fluxos, comportamentos, persistência local e limites conhecidos.                                   |
+| [Design system mobile](design-system-mobile.md)         | Regras do aplicativo do professor: como a linguagem da web é mapeada para o celular, e onde os dois se afastam de propósito. |
+| [Experiência mobile atual](experiencia-mobile-atual.md) | Estado executável do aplicativo: rotas, arquitetura, regras do RF08 já respeitadas e limites.                                |
 
 O design system responde **como novas interfaces devem ser construídas**. A experiência
-atual responde **o que já funciona hoje**. Requisitos de produto continuam em
+atual responde **o que já funciona hoje**. O mobile não tem linguagem própria: ele mapeia
+a da web, e os tokens compartilhados em `packages/design-tokens` são a costura entre as
+duas. Requisitos de produto continuam em
 [`docs/produto`](../produto/); estes arquivos não criam requisitos funcionais por conta
 própria.
 
