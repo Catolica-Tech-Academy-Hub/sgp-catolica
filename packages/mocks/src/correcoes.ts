@@ -325,9 +325,145 @@ export const correcoesMock: Correcao[] = [
     clientCorrectionId: 'c1f3a8de-0016',
     syncStatus: 'synced',
   },
+  // --- aplic-4 / versao-4: corrigida, gabarito ainda NAO publicado (RF07) ---
+  {
+    id: 'cor-16',
+    examVersionId: 'versao-4',
+    studentId: 'est-1',
+    objectiveResults: [
+      { questionId: 'q-1', correct: true, score: 1.5 },
+      { questionId: 'q-3', correct: true, score: 1.5 },
+      { questionId: 'q-4', correct: false, score: 0 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 1.5 },
+      { questionId: 'q-6', score: 2.5 },
+    ],
+    totalScore: 7,
+    confirmedAt: '2026-05-13T14:10:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: true,
+    clientCorrectionId: 'c1f3a8de-0017',
+    syncStatus: 'synced',
+  },
+  {
+    id: 'cor-17',
+    examVersionId: 'versao-4',
+    studentId: 'est-2',
+    objectiveResults: [
+      { questionId: 'q-1', correct: true, score: 1.5 },
+      { questionId: 'q-3', correct: false, score: 0 },
+      { questionId: 'q-4', correct: true, score: 2 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 2 },
+      { questionId: 'q-6', score: 3 },
+    ],
+    totalScore: 8.5,
+    confirmedAt: '2026-05-13T14:14:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: true,
+    clientCorrectionId: 'c1f3a8de-0018',
+    syncStatus: 'synced',
+  },
+  {
+    id: 'cor-18',
+    examVersionId: 'versao-4',
+    studentId: 'est-3',
+    objectiveResults: [
+      { questionId: 'q-1', correct: false, score: 0 },
+      { questionId: 'q-3', correct: true, score: 1.5 },
+      { questionId: 'q-4', correct: true, score: 2 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 1 },
+      { questionId: 'q-6', score: 2 },
+    ],
+    totalScore: 6.5,
+    confirmedAt: '2026-05-13T14:19:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: true,
+    clientCorrectionId: 'c1f3a8de-0019',
+    syncStatus: 'synced',
+  },
+  {
+    id: 'cor-19',
+    examVersionId: 'versao-4',
+    studentId: 'est-4',
+    objectiveResults: [
+      { questionId: 'q-1', correct: true, score: 1.5 },
+      { questionId: 'q-3', correct: true, score: 1.5 },
+      { questionId: 'q-4', correct: true, score: 2 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 1.5 },
+      { questionId: 'q-6', score: 2 },
+    ],
+    totalScore: 8.5,
+    confirmedAt: '2026-05-13T14:23:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: true,
+    clientCorrectionId: 'c1f3a8de-0020',
+    syncStatus: 'synced',
+  },
+  {
+    id: 'cor-20',
+    examVersionId: 'versao-4',
+    studentId: 'est-5',
+    objectiveResults: [
+      { questionId: 'q-1', correct: false, score: 0 },
+      { questionId: 'q-3', correct: false, score: 0 },
+      { questionId: 'q-4', correct: true, score: 2 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 1 },
+      { questionId: 'q-6', score: 1.5 },
+    ],
+    totalScore: 4.5,
+    confirmedAt: '2026-05-13T14:28:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: true,
+    clientCorrectionId: 'c1f3a8de-0021',
+    syncStatus: 'synced',
+  },
+  {
+    id: 'cor-21',
+    examVersionId: 'versao-4',
+    studentId: 'est-6',
+    objectiveResults: [
+      { questionId: 'q-1', correct: true, score: 1.5 },
+      { questionId: 'q-3', correct: true, score: 1.5 },
+      { questionId: 'q-4', correct: false, score: 0 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 2 },
+      { questionId: 'q-6', score: 2.5 },
+    ],
+    totalScore: 7.5,
+    confirmedAt: '2026-05-13T14:33:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: true,
+    clientCorrectionId: 'c1f3a8de-0022',
+    syncStatus: 'synced',
+  },
 ];
 
 export const notasDoEstudanteMock: NotaDoEstudante[] = [
+  {
+    /**
+     * Gabarito ainda nao publicado: a nota aparece no historico, mas o RF11 nao
+     * permite mostrar o detalhamento por questao antes da publicacao (RF07).
+     */
+    applicationId: 'aplic-4',
+    examTitle: 'Avaliacao 01 - Arquitetura e Requisitos',
+    className: 'Projeto e Arquitetura de Software',
+    subject: 'Engenharia de Software',
+    teacherName: 'Helena Marques',
+    date: '2026-05-13',
+    totalScore: 7,
+    maxScore: 10,
+    answerKeyPublished: false,
+  },
   {
     applicationId: 'aplic-1',
     examTitle: 'Avaliacao 01 - Arquitetura e Requisitos',

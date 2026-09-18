@@ -28,7 +28,7 @@ Classificação usada:
 | `/correcoes`         | Implementado na N1     | Fila de atribuição manual de nota (RF09), com busca, filtros e detalhe da regra.    |
 | `/relatorios`        | Implementado na N1     | Relatório por aplicação e consolidado, com filtros e exportação desabilitada.       |
 | `/suporte`           | Implementado na N1     | Perguntas frequentes com busca e contato; envio depende de backend.                 |
-| `/estudante`         | Implementado na N1     | Histórico de notas do aluno logado, em casca própria sem abas.                      |
+| `/estudante`         | Implementado na N1     | Histórico de notas com filtros, evolução e detalhamento por questão (RF11).         |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
 As seções de domínio aparecem nas abas para tornar a arquitetura do produto visível sem
@@ -467,6 +467,39 @@ A rota usa `meta.casca: 'estudante'`, que é o que `App.vue` lê para escolher a
 O "isolamento total" de RF11 é regra de backend. Aqui o aluno logado é sempre
 `estudanteLogadoMock` e as notas exibidas são as dele; não existe forma de trocar de
 aluno pela interface. É o mais honesto possível sem autenticação: nada finge autorizar.
+
+### Histórico de notas
+
+A tela é somente leitura por definição — o aluno consulta, não escreve — então não tem
+ação principal.
+
+| Região    | Conteúdo                                                                                           |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| Cabeçalho | Saudação e os filtros de disciplina e período (RF11), como `Select` compactos.                     |
+| Evolução  | Gráfico de barras com a nota de cada prova, da mais antiga para a mais recente, e a média ao lado. |
+| Lista     | Um cartão clicável por prova: título, turma, professor, data e nota.                               |
+
+Os filtros ficam no cabeçalho, e não num painel esquerdo de 256 px: são dois controles, e
+um painel inteiro para eles pesaria mais que o conteúdo que o aluno vem ver.
+
+### Detalhamento por questão
+
+O cartão abre um `Dialog` com a nota final e, questão a questão, a pontuação obtida sobre
+a pontuação da questão naquela prova. Objetiva mostra "Acertou" ou "Errou"; discursiva
+mostra só a nota, porque nota parcial não é acerto nem erro.
+
+A ordem é a **ordem impressa daquela versão**, não a ordem de cadastro da prova: é a
+sequência que o aluno viu na folha, e é assim que ele reconhece cada questão.
+
+**O detalhamento só existe se o gabarito daquela versão foi publicado** (RF07). Sem
+publicação, o lugar dele recebe um `Alert` explicando que o acerto por questão aparece
+quando o professor publicar, e que a nota final já é definitiva. A condição não é enfeite:
+mostrar acerto e erro antes da publicação entregaria o gabarito de uma prova que outra
+turma ainda vai fazer.
+
+Os mocks cobrem os dois casos — `aplic-1` com gabarito publicado e `aplic-4` corrigida com
+o gabarito ainda fechado — porque sem o segundo a regra não teria como ser demonstrada
+nem revisada.
 
 ## Ajuda
 
