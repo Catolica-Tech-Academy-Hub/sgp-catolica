@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 function solicitarLogout(): void {
   toast.info('Logout ainda não disponível', {
@@ -44,9 +45,16 @@ function solicitarLogout(): void {
         Integrações
       </Button>
 
-      <Button variant="ghost" size="icon-sm" aria-label="Ajuda">
-        <CircleHelp aria-hidden="true" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button as-child variant="ghost" size="icon-sm">
+            <RouterLink to="/suporte" aria-label="Ajuda">
+              <CircleHelp aria-hidden="true" />
+            </RouterLink>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Ajuda</TooltipContent>
+      </Tooltip>
 
       <DropdownMenu>
         <DropdownMenuTrigger as-child>

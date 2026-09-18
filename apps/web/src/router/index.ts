@@ -64,6 +64,12 @@ const rotas: RouteRecordRaw[] = [
     component: () => import('@/telas/Relatorios.vue'),
     meta: { titulo: 'Relatorios' },
   },
+  {
+    path: '/suporte',
+    name: 'suporte',
+    component: () => import('@/telas/Suporte.vue'),
+    meta: { titulo: 'Ajuda' },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/provas' },
 ];
 

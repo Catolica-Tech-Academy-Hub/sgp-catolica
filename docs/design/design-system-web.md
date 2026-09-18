@@ -158,6 +158,9 @@ Regras:
 - A barra externa recebe apenas utilidades; navegação de domínio fica nas abas.
 - Abas podem rolar horizontalmente sem exibir barra de rolagem.
 - Seções comuns não usam breadcrumb: aba ativa e título já fornecem contexto.
+- Uma utilidade de produto (Ajuda, por exemplo) pode ter rota própria dentro da casca
+  **sem** ganhar aba: as abas são as seções de domínio, e uma utilidade entre elas
+  competiria com o trabalho. O acesso fica na barra externa.
 - Login e editor usam `meta.telaCheia` e fornecem a própria composição.
 
 ## Layout de seção e listas
