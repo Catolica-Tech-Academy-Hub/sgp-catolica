@@ -84,6 +84,76 @@ export const correcoesMock: Correcao[] = [
     clientCorrectionId: 'c1f3a8de-0003',
     syncStatus: 'pending',
   },
+  {
+    /**
+     * Mesma aplicacao anonima de cor-3. Tres correcoes pendentes bastam para a fila
+     * de atribuicao manual (RF09) ser navegavel: uma com nome e matricula legiveis,
+     * uma so com o nome e uma com a matricula ilegivel na folha.
+     */
+    id: 'cor-4',
+    examVersionId: 'versao-3',
+    reportedStudentName: 'Bernardo C.',
+    reportedStudentRegistration: '2026102',
+    objectiveResults: [
+      { questionId: 'q-1', correct: true, score: 1.5 },
+      { questionId: 'q-3', correct: false, score: 0 },
+      { questionId: 'q-4', correct: true, score: 2 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 1.5 },
+      { questionId: 'q-6', score: 2 },
+    ],
+    totalScore: 7,
+    confirmedAt: '2026-04-23T14:38:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: false,
+    clientCorrectionId: 'c1f3a8de-0005',
+    syncStatus: 'synced',
+  },
+  {
+    /** Matricula ilegivel na folha: so o nome foi digitado no aplicativo. */
+    id: 'cor-5',
+    examVersionId: 'versao-3',
+    reportedStudentName: 'Elisa B.',
+    objectiveResults: [
+      { questionId: 'q-1', correct: false, score: 0 },
+      { questionId: 'q-3', correct: true, score: 1.5 },
+      { questionId: 'q-4', correct: true, score: 2 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 2 },
+      { questionId: 'q-6', score: 2.5 },
+    ],
+    totalScore: 8,
+    confirmedAt: '2026-04-23T14:46:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: false,
+    clientCorrectionId: 'c1f3a8de-0006',
+    syncStatus: 'synced',
+  },
+  {
+    /**
+     * Nem nome nem matricula legiveis: a folha chegou em branco na identificacao.
+     * A atribuicao aqui depende inteiramente da escolha do professor (RF09).
+     */
+    id: 'cor-6',
+    examVersionId: 'versao-3',
+    objectiveResults: [
+      { questionId: 'q-1', correct: true, score: 1.5 },
+      { questionId: 'q-3', correct: true, score: 1.5 },
+      { questionId: 'q-4', correct: false, score: 0 },
+    ],
+    discursiveScores: [
+      { questionId: 'q-5', score: 1 },
+      { questionId: 'q-6', score: 2 },
+    ],
+    totalScore: 6,
+    confirmedAt: '2026-04-23T14:52:00.000Z',
+    correctedBy: 'prof-1',
+    isAutomaticallyAssigned: false,
+    clientCorrectionId: 'c1f3a8de-0007',
+    syncStatus: 'synced',
+  },
 ];
 
 export const notasDoEstudanteMock: NotaDoEstudante[] = [
