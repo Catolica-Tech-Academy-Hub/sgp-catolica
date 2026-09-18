@@ -162,6 +162,10 @@ Regras:
   **sem** ganhar aba: as abas são as seções de domínio, e uma utilidade entre elas
   competiria com o trabalho. O acesso fica na barra externa.
 - Login e editor usam `meta.telaCheia` e fornecem a própria composição.
+- A perspectiva do estudante usa `meta.casca: 'estudante'`: mesma moldura e mesma barra
+  externa, sem a fileira de abas. Uma perspectiva com uma única área não ganha abas —
+  uma aba sozinha é moldura sem função. `BarraSuperior` atende as duas por props, nunca
+  por um segundo componente.
 
 ## Layout de seção e listas
 

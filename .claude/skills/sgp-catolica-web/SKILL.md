@@ -44,7 +44,9 @@ reutilizável exige atualizar `docs/design/design-system-web.md` na mesma entreg
   shadcn-vue com `apps/web/components.json`; nunca recrie um à mão. `components/ui/sidebar`
   é resíduo do layout anterior ao redesign — não está em uso e não deve ser reaproveitado.
 - **Casca**: `apps/web/src/components/casca/` (`BarraSuperior`, `AbasDeSecao`,
-  `PainelDaSecao`, `ItemDeRecorte`) — barra externa branca de 56 px (marca à esquerda,
+  `PainelDaSecao`, `ItemDeRecorte`). A casca serve as **duas** perspectivas: o professor
+  com abas de seção, e o estudante (`meta.casca: 'estudante'`) com a mesma barra externa
+  e sem abas. `BarraSuperior` se configura por props; não criar uma segunda barra — barra externa branca de 56 px (marca à esquerda,
   utilidades à direita) + moldura arredondada `bg-field` com abas horizontais de 48 px
   dentro dela. **Não existe sidebar global**; navegação de seção vive nas abas, nunca
   atrás de ícone sem rótulo. Seções comuns não usam breadcrumb — aba ativa e título já

@@ -9,9 +9,14 @@
  * O editor de prova é um **modo**, não uma seção: rotas com `meta.telaCheia`
  * dispensam a casca e assumem a janela inteira, com a própria barra
  * (breadcrumb "Provas › título", sem botão de voltar) e a saída explícita ali.
+ *
+ * O estudante recebe a mesma moldura com uma casca mais enxuta: RF11 lhe dá uma única
+ * área (o próprio histórico), e uma fileira de abas com um item só seria moldura sem
+ * função. A barra externa vai direto ao conteúdo.
  */
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { estudanteLogadoMock } from '@sgp/mocks';
 import BarraSuperior from '@/components/casca/BarraSuperior.vue';
 import AbasDeSecao from '@/components/casca/AbasDeSecao.vue';
 import { Button } from '@/components/ui/button';
@@ -20,6 +25,7 @@ import { Toaster } from '@/components/ui/sonner';
 
 const rota = useRoute();
 const telaCheia = computed(() => rota.meta.telaCheia === true);
+const doEstudante = computed(() => rota.meta.casca === 'estudante');
 </script>
 
 <template>
@@ -39,12 +45,18 @@ const telaCheia = computed(() => rota.meta.telaCheia === true);
     </main>
 
     <div v-else class="flex min-h-svh flex-col bg-background">
-      <BarraSuperior />
+      <BarraSuperior
+        v-if="doEstudante"
+        :usuario="estudanteLogadoMock"
+        inicio="/estudante"
+        :integracoes="false"
+      />
+      <BarraSuperior v-else />
 
       <div
         class="mx-3 mb-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-field sm:mx-4 sm:mb-4"
       >
-        <AbasDeSecao />
+        <AbasDeSecao v-if="!doEstudante" />
         <main id="conteudo-principal" class="flex min-w-0 flex-1 flex-col" tabindex="-1">
           <RouterView />
         </main>
