@@ -22,7 +22,9 @@ Leia antes de escrever código de tela — não deduza padrão a partir de uma t
 
 `apps/web/src/telas/Provas.vue` e `apps/web/src/telas/Aplicacoes.vue` são referências
 executáveis do padrão de seção (painel esquerdo + lista de cartões); `Aplicacoes.vue`
-também é a referência para detalhe somente leitura em Dialog. `apps/web/src/components/casca/`
+também é a referência para detalhe somente leitura em Dialog, e
+`apps/web/src/telas/Correcoes.vue` para fila de trabalho em `Table`/`Card` com Dialog de
+escolha que mostra o candidato impedido em vez de escondê-lo. `apps/web/src/components/casca/`
 é a referência da casca autenticada. O tema vive em `apps/web/src/styles/global.css`. Um padrão novo e
 reutilizável exige atualizar `docs/design/design-system-web.md` na mesma entrega.
 

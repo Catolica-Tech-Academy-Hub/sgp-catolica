@@ -73,6 +73,18 @@ export function formatarData(iso: string): string {
   return formatadorDeData.format(new Date(iso));
 }
 
+const formatadorDeDataHora = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/** Data com hora, para quando duas correcoes do mesmo dia precisam ser distinguidas. */
+export function formatarDataHora(iso: string): string {
+  return formatadorDeDataHora.format(new Date(iso));
+}
+
 const formatadorDePontos = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -80,6 +92,30 @@ const formatadorDePontos = new Intl.NumberFormat('pt-BR', {
 
 export function formatarPontos(total: number): string {
   return formatadorDePontos.format(total);
+}
+
+/**
+ * Busca de pessoa por nome, tolerante a nome abreviado.
+ *
+ * Existe porque o nome que chega de uma prova sem identificacao foi copiado da folha
+ * a mao: vem "Clara A." onde a matricula diz "Clara Antunes" (RF09). Uma comparacao
+ * por substring falharia justamente no caso que ela precisa resolver.
+ *
+ * A regra: cada pedaco do termo precisa comecar algum pedaco do nome. "clara a" acha
+ * "Clara Antunes"; "antunes" tambem; "alice" nao acha "Clara Antunes".
+ */
+export function nomeCorresponde(nomeCompleto: string, termo: string): boolean {
+  const pedacos = (texto: string): string[] =>
+    normalizar(texto)
+      .replace(/[^\p{Letter}\p{Number}\s]/gu, ' ')
+      .split(/\s+/)
+      .filter(Boolean);
+
+  const doTermo = pedacos(termo);
+  if (doTermo.length === 0) return true;
+
+  const doNome = pedacos(nomeCompleto);
+  return doTermo.every((pedaco) => doNome.some((parte) => parte.startsWith(pedaco)));
 }
 
 /** Compara ignorando caixa e acentuacao, para a busca nao depender da digitacao. */
