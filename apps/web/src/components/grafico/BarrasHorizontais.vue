@@ -43,8 +43,14 @@ function larguraEmPorcento(valor: number): string {
   return `${Math.min(100, (valor / teto.value) * 100)}%`;
 }
 
+// `minimum` junto de `maximum`: com uma casa, 6 sai "6,0" e nao "6", igual ao que
+// `formatarPontos` mostra na tabela e nos cartoes ao lado do grafico.
 const formatador = computed(
-  () => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: props.casasDecimais }),
+  () =>
+    new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: props.casasDecimais,
+      maximumFractionDigits: props.casasDecimais,
+    }),
 );
 </script>
 

@@ -86,6 +86,20 @@ export const aplicacoesMock: Aplicacao[] = [
     pdfUrl: 'mock://aplicacoes/aplic-3.pdf',
     createdAt: '2026-04-15T12:00:00.000Z',
   },
+  {
+    /**
+     * Terceira aplicacao de prova-1 na turma-1, ja corrigida mas com o gabarito
+     * AINDA NAO publicado. Existe para o historico do estudante poder demonstrar a
+     * regra do RF11: sem gabarito publicado, nao ha detalhamento por questao.
+     */
+    id: 'aplic-4',
+    examId: 'prova-1',
+    classId: 'turma-1',
+    teacherId: 'prof-1',
+    status: 'generated',
+    pdfUrl: 'mock://aplicacoes/aplic-4.pdf',
+    createdAt: '2026-05-12T12:00:00.000Z',
+  },
 ];
 
 export const versoesMock: VersaoProva[] = [
@@ -168,6 +182,23 @@ export const versoesMock: VersaoProva[] = [
     qrCodePayload: 'mock-qr-versao-3',
     createdAt: '2026-04-16T12:00:00.000Z',
   },
+  {
+    /** Gabarito nao publicado: `answerKeyPublished` falso e sem `answerKeyPublishedAt`. */
+    id: 'versao-4',
+    applicationId: 'aplic-4',
+    versionNumber: 1,
+    shuffleQuestions: false,
+    shuffleAlternatives: false,
+    withStudentIdentification: true,
+    layout: {
+      questionOrder: ['q-1', 'q-3', 'q-4', 'q-5', 'q-6'],
+      alternativeOrder: [],
+    },
+    answerKeyPublished: false,
+    publicCode: 'GAB-2J3K4L',
+    qrCodePayload: 'mock-qr-versao-4',
+    createdAt: '2026-05-12T12:30:00.000Z',
+  },
 ];
 
 export const atribuicoesMock: AtribuicaoVersao[] = [
@@ -184,4 +215,11 @@ export const atribuicoesMock: AtribuicaoVersao[] = [
   { id: 'atr-4', examVersionId: 'versao-2', studentId: 'est-4', qrCodePayload: 'mock-qr-est-4' },
   { id: 'atr-5', examVersionId: 'versao-1', studentId: 'est-5', qrCodePayload: 'mock-qr-est-5' },
   { id: 'atr-6', examVersionId: 'versao-2', studentId: 'est-6', qrCodePayload: 'mock-qr-est-6' },
+  // aplic-4 saiu em versao unica: uma atribuicao por estudante matriculado (RF06).
+  ...estudantesMock.map((estudante, indice) => ({
+    id: `atr-4-${indice + 1}`,
+    examVersionId: 'versao-4',
+    studentId: estudante.id,
+    qrCodePayload: `mock-qr-versao-4-${estudante.id}`,
+  })),
 ];
