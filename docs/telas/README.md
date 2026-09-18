@@ -44,10 +44,12 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 
 ## Capturas atuais
 
-| Tela                     | Rota          | Print                                            |
-| ------------------------ | ------------- | ------------------------------------------------ |
-| Lista de aplicações      | `/aplicacoes` | [aplicacoes.png](aplicacoes.png)                 |
-| Listagem de turmas       | `/turmas`     | [turmas.png](turmas.png)                         |
-| Detalhe da turma         | `/turmas/:id` | [turmas-detalhe.png](turmas-detalhe.png)         |
-| Fila de correções        | `/correcoes`  | [correcoes.png](correcoes.png)                   |
-| Correções: atribuir nota | `/correcoes`  | [correcoes-atribuir.png](correcoes-atribuir.png) |
+| Tela                     | Rota          | Print                                                    |
+| ------------------------ | ------------- | -------------------------------------------------------- |
+| Lista de aplicações      | `/aplicacoes` | [aplicacoes.png](aplicacoes.png)                         |
+| Listagem de turmas       | `/turmas`     | [turmas.png](turmas.png)                                 |
+| Detalhe da turma         | `/turmas/:id` | [turmas-detalhe.png](turmas-detalhe.png)                 |
+| Fila de correções        | `/correcoes`  | [correcoes.png](correcoes.png)                           |
+| Correções: atribuir nota | `/correcoes`  | [correcoes-atribuir.png](correcoes-atribuir.png)         |
+| Relatório por aplicação  | `/relatorios` | [relatorios.png](relatorios.png)                         |
+| Relatório consolidado    | `/relatorios` | [relatorios-consolidado.png](relatorios-consolidado.png) |

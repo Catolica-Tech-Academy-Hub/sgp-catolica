@@ -61,7 +61,7 @@ const rotas: RouteRecordRaw[] = [
   {
     path: '/relatorios',
     name: 'relatorios',
-    component: () => import('@/telas/EmConstrucao.vue'),
+    component: () => import('@/telas/Relatorios.vue'),
     meta: { titulo: 'Relatorios' },
   },
   { path: '/:pathMatch(.*)*', redirect: '/provas' },

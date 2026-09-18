@@ -297,6 +297,28 @@ lista. O conteúdo deve expor os dados existentes em modo somente leitura, mante
 ação futura desabilitada com Tooltip explicativo e fechar sem alterar o estado. O
 detalhe de aplicação em `src/telas/Aplicacoes.vue` é a referência desse padrão.
 
+### Gráfico
+
+O formato padrão é **barra horizontal**, em `src/components/grafico/BarrasHorizontais.vue`.
+Não há biblioteca de gráfico no projeto, e não deve haver enquanto uma barra for uma div
+com largura proporcional; adicionar uma é decisão de issue própria.
+
+| Elemento | Regra                                                                                    |
+| -------- | ---------------------------------------------------------------------------------------- |
+| Direção  | Horizontal. Os rótulos do domínio são texto ("8-10", título de prova) e giram mal.       |
+| Trilho   | `bg-secondary`, 8 px, `rounded-full`.                                                    |
+| Barra    | `bg-primary` sólido. **Nunca degradê**, nunca uma cor por item.                          |
+| Valor    | Em texto, à direita, `tabular-nums` — a barra ordena, o número informa.                  |
+| Escala   | `maximo` explícito quando o valor tem teto (nota); sem ele, a maior barra vira 100%.     |
+| Decimais | `casasDecimais` acompanha a tabela vizinha, para o mesmo número não sair de duas formas. |
+
+Uma série é uma única cor: a diferença entre as barras é o comprimento, não a tonalidade.
+Cor por categoria só se justificaria se as categorias fossem comparadas entre gráficos, o
+que não acontece nas telas atuais.
+
+O gráfico nunca é a única forma de ler o dado: ao lado de cada barra fica o valor, e
+abaixo dela, quando couber, a tabela com os mesmos números.
+
 ### Escolha com impedimento explicado
 
 Quando um `Dialog` pede a escolha de um item de uma lista e alguns candidatos não podem

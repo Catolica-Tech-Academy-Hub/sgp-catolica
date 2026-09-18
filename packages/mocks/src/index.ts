@@ -11,3 +11,4 @@ export * from './questoes';
 export * from './provas';
 export * from './correcoes';
 export * from './fila';
+export * from './relatorios';

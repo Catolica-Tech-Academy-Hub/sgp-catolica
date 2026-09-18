@@ -26,7 +26,7 @@ Classificação usada:
 | `/turmas`            | Implementado na N1     | Workspace para buscar, filtrar e criar turmas.                                      |
 | `/turmas/:id`        | Implementado na N1     | Detalhe da turma: editar, arquivar, código de convite e matrículas.                 |
 | `/correcoes`         | Implementado na N1     | Fila de atribuição manual de nota (RF09), com busca, filtros e detalhe da regra.    |
-| `/relatorios`        | Marcador               | Estado em construção.                                                               |
+| `/relatorios`        | Implementado na N1     | Relatório por aplicação e consolidado, com filtros e exportação desabilitada.       |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
 As seis seções aparecem nas abas para tornar a arquitetura do produto visível sem
@@ -68,7 +68,7 @@ A casca tem uma barra branca externa e uma moldura cinza arredondada:
 | Integrações | Botão na barra externa.                                                | Marcador sem ação.                                         |
 | Ajuda       | Botão apenas com ícone.                                                | Marcador sem ação.                                         |
 | Perfil      | Nome/e-mail do mock e ação “Sair”.                                     | Menu funciona; sair apenas informa que falta autenticação. |
-| Abas        | Provas, Aplicações, Banco de questões, Turmas, Correções e Relatórios. | Navegação funcional; só Relatórios ainda é marcador.       |
+| Abas        | Provas, Aplicações, Banco de questões, Turmas, Correções e Relatórios. | Navegação funcional; nenhum destino é marcador.            |
 | Moldura     | Abas e página sobre o mesmo campo cinza.                               | Funcional e responsiva.                                    |
 
 As abas rolam horizontalmente em tela estreita sem mostrar uma barra de rolagem. A
@@ -399,10 +399,41 @@ ação.
 por `correcoesMock`, gravado em `localStorage` e ponto único de integração quando o
 backend existir.
 
+## Relatórios
+
+### Os dois modos
+
+`/relatorios` atende o RF10 em dois recortes, escolhidos no painel esquerdo:
+
+- **Por aplicação**: cartões de média, mediana e desvio padrão, gráfico de distribuição
+  das notas por faixa e a lista de alunos avaliados com a nota de cada um;
+- **Consolidado**: gráfico de média por aplicação e tabela com uma linha por aplicação do
+  recorte (prova, turma, disciplina, média, mediana, avaliados).
+
+Os filtros de turma, disciplina e período valem para os dois. Trocar um filtro que
+esconda a aplicação escolhida reaponta a seleção para a primeira da lista, em vez de
+deixar a tela num alvo que não está mais visível.
+
+### De onde vêm os números
+
+As estatísticas são **derivadas das correções** em `@sgp/mocks`, não digitadas. A média
+do cartão e as notas listadas logo abaixo saem do mesmo cálculo, então não há como
+divergirem. Só entra no relatório a nota já atribuída a um aluno: correção pendente de
+atribuição manual (RF09) ainda não tem dono e não pode contar como nota da turma.
+
+A aplicação sem nenhuma nota atribuída não aparece — um cartão de zeros descreveria mal
+uma turma que simplesmente ainda não foi corrigida. O estado vazio explica isso e leva
+para Correções.
+
+### Exportação
+
+CSV, Excel e PDF são requisito do RF10, mas dependem de backend: os três botões ficam
+desabilitados com Tooltip explicando o limite, no mesmo padrão de Integrações e da
+geração de PDF. Nenhum arquivo é gerado.
+
 ## Limites e próximos passos
 
 - autenticação, logout, Integrações e Ajuda não estão conectados;
-- Relatórios ainda não tem tela completa;
 - matricular aluno por e-mail ou por código de convite (fluxo de entrada do estudante)
   fica fora de Turmas: não há autenticação nem sessão de estudante na N1 web;
 - importar lista de alunos por planilha em Turmas depende de um pedido do cliente
