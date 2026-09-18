@@ -2,19 +2,33 @@
 /**
  * Entrada navegável da fase N1. Valida apenas a forma dos campos e segue para o
  * protótipo; autenticação, token e sessão continuam fora desta entrega.
+ *
+ * O papel escolhido aqui é o que decide qual das duas perspectivas do produto abre: o
+ * espaço de trabalho do professor ou o histórico do estudante. Não é autorização — sem
+ * backend, é só a porta de entrada da demonstração, e a própria tela diz isso.
  */
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Globe2, GraduationCap } from '@lucide/vue';
+import type { PapelUsuario } from '@sgp/shared-types';
 import ilustracaoDeProvaOnline from '@/assets/illustrations/online-test.svg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const roteador = useRouter();
+const papel = ref<PapelUsuario>('professor');
 const email = ref('');
 const senha = ref('');
 const erro = ref('');
+
+/** RF01 separa os domínios de e-mail por papel; o placeholder acompanha a escolha. */
+const exemploDeEmail = computed(() =>
+  papel.value === 'professor' ? 'seu.nome@catolicasc.org.br' : 'seu.nome@catolicasc.edu.br',
+);
+
+const destino = computed(() => (papel.value === 'professor' ? '/provas' : '/estudante'));
 
 async function entrar(): Promise<void> {
   if (!email.value.includes('@')) {
@@ -28,7 +42,7 @@ async function entrar(): Promise<void> {
   }
 
   erro.value = '';
-  await roteador.push('/provas');
+  await roteador.push(destino.value);
 }
 </script>
 
@@ -104,6 +118,13 @@ async function entrar(): Promise<void> {
           </div>
 
           <div class="space-y-5">
+            <Tabs v-model="papel">
+              <TabsList class="w-full">
+                <TabsTrigger value="professor">Sou professor</TabsTrigger>
+                <TabsTrigger value="estudante">Sou estudante</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <div class="space-y-2">
               <Label for="email">E-mail</Label>
               <Input
@@ -112,7 +133,7 @@ async function entrar(): Promise<void> {
                 type="email"
                 name="email"
                 autocomplete="email"
-                placeholder="seu.nome@catolicasc.org.br"
+                :placeholder="exemploDeEmail"
                 :aria-invalid="erro && !email.includes('@') ? true : undefined"
               />
             </div>
@@ -139,7 +160,8 @@ async function entrar(): Promise<void> {
           </div>
 
           <p class="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
-            Nesta fase, o acesso apenas valida os campos e abre o protótipo navegável.
+            Nesta fase, o acesso apenas valida os campos e abre o protótipo navegável. O papel
+            escolhido decide qual perspectiva abre, não o que você pode ver.
           </p>
         </form>
       </main>

@@ -18,7 +18,7 @@ Classificação usada:
 | Rota                 | Situação               | Experiência atual                                                                   |
 | -------------------- | ---------------------- | ----------------------------------------------------------------------------------- |
 | `/`                  | Implementado           | Redireciona para `/login`.                                                          |
-| `/login`             | Implementado na N1     | Valida localmente e abre `/provas`; não autentica.                                  |
+| `/login`             | Implementado na N1     | Escolha de papel, valida o formato e abre a perspectiva escolhida; não autentica.   |
 | `/provas`            | Implementado na N1     | Workspace para buscar, filtrar, ordenar, abrir e criar provas.                      |
 | `/provas/:id`        | Protótipo em avaliação | Editor A4 em tela cheia, autoria por blocos, aplicação em turma e pré-visualização. |
 | `/aplicacoes`        | Implementado na N1     | Lista aplicações por prova e turma; detalhe somente leitura das versões existentes. |
@@ -28,6 +28,7 @@ Classificação usada:
 | `/correcoes`         | Implementado na N1     | Fila de atribuição manual de nota (RF09), com busca, filtros e detalhe da regra.    |
 | `/relatorios`        | Implementado na N1     | Relatório por aplicação e consolidado, com filtros e exportação desabilitada.       |
 | `/suporte`           | Implementado na N1     | Perguntas frequentes com busca e contato; envio depende de backend.                 |
+| `/estudante`         | Implementado na N1     | Histórico de notas do aluno logado, em casca própria sem abas.                      |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
 As seções de domínio aparecem nas abas para tornar a arquitetura do produto visível sem
@@ -431,6 +432,41 @@ para Correções.
 CSV, Excel e PDF são requisito do RF10, mas dependem de backend: os três botões ficam
 desabilitados com Tooltip explicando o limite, no mesmo padrão de Integrações e da
 geração de PDF. Nenhum arquivo é gerado.
+
+## Perspectiva do estudante
+
+O produto tem duas perspectivas na web: o espaço de trabalho do professor e o histórico
+do estudante. Até aqui só a primeira existia, e RF11 não tinha por onde entrar.
+
+### Entrada
+
+O login ganhou a escolha de papel ("Sou professor" / "Sou estudante") acima dos campos,
+com a mesma validação de formato para os dois. O papel decide o destino: `/provas` ou
+`/estudante`. O placeholder do e-mail acompanha o papel, porque RF01 separa os domínios
+(`@catolicasc.org.br` para professor, `@catolicasc.edu.br` para estudante).
+
+A escolha **não é autorização**. Sem backend, ela só abre uma das duas perspectivas, e o
+texto abaixo do formulário diz isso: "o papel escolhido decide qual perspectiva abre, não
+o que você pode ver".
+
+### Casca do estudante
+
+Mesma moldura, casca mais enxuta: a barra externa tem marca, Ajuda e perfil, e **não há
+fileira de abas**. RF11 dá ao aluno uma única área — o próprio histórico — e uma aba
+sozinha seria moldura sem função.
+
+`BarraSuperior` é a mesma dos dois lados, configurada por props (quem está logado, para
+onde a marca leva, se Integrações aparece). Duas barras separadas fariam toda mudança
+visual precisar ser feita duas vezes, e uma delas seria esquecida. Integrações não
+aparece para o aluno: ele não tem o que integrar.
+
+A rota usa `meta.casca: 'estudante'`, que é o que `App.vue` lê para escolher a casca.
+
+### Isolamento
+
+O "isolamento total" de RF11 é regra de backend. Aqui o aluno logado é sempre
+`estudanteLogadoMock` e as notas exibidas são as dele; não existe forma de trocar de
+aluno pela interface. É o mais honesto possível sem autenticação: nada finge autorizar.
 
 ## Ajuda
 

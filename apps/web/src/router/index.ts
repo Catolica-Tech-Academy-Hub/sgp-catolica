@@ -4,8 +4,9 @@ import Provas from '@/telas/Provas.vue';
 /**
  * Rotas da aplicacao web.
  *
- * N1: a tela de Provas e a base do produto. As demais secoes existem para a
- * navegacao ficar completa e serao preenchidas nas proximas entregas.
+ * Dois grupos: a perspectiva do professor, que usa a casca com abas de secao, e a do
+ * estudante, marcada com `meta.casca: 'estudante'`. `meta.telaCheia` dispensa a casca
+ * inteira e e usada pelo login e pelo editor de prova.
  */
 const rotas: RouteRecordRaw[] = [
   { path: '/', redirect: '/login' },
@@ -63,6 +64,15 @@ const rotas: RouteRecordRaw[] = [
     name: 'relatorios',
     component: () => import('@/telas/Relatorios.vue'),
     meta: { titulo: 'Relatorios' },
+  },
+  // --- Perspectiva do estudante (RF11) ---
+  // Grupo separado do professor de propósito: `meta.casca` escolhe a casca enxuta, sem
+  // as abas de Provas/Turmas/Correções, que não pertencem ao aluno.
+  {
+    path: '/estudante',
+    name: 'estudante-historico',
+    component: () => import('@/telas/estudante/Historico.vue'),
+    meta: { titulo: 'Minhas notas', casca: 'estudante' },
   },
   {
     path: '/suporte',
