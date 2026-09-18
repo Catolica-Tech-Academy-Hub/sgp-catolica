@@ -27,9 +27,10 @@ Classificação usada:
 | `/turmas/:id`        | Implementado na N1     | Detalhe da turma: editar, arquivar, código de convite e matrículas.                 |
 | `/correcoes`         | Implementado na N1     | Fila de atribuição manual de nota (RF09), com busca, filtros e detalhe da regra.    |
 | `/relatorios`        | Implementado na N1     | Relatório por aplicação e consolidado, com filtros e exportação desabilitada.       |
+| `/suporte`           | Implementado na N1     | Perguntas frequentes com busca e contato; envio depende de backend.                 |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
-As seis seções aparecem nas abas para tornar a arquitetura do produto visível sem
+As seções de domínio aparecem nas abas para tornar a arquitetura do produto visível sem
 simular funções prontas. Login e editor usam `meta.telaCheia`; as demais rotas usam a
 casca autenticada.
 
@@ -431,9 +432,42 @@ CSV, Excel e PDF são requisito do RF10, mas dependem de backend: os três botõ
 desabilitados com Tooltip explicando o limite, no mesmo padrão de Integrações e da
 geração de PDF. Nenhum arquivo é gerado.
 
+## Ajuda
+
+`/suporte` responde o que o botão "Ajuda" da barra superior prometia e não cumpria. Não
+corresponde a nenhum RF — é utilitário de produto, não requisito do cliente.
+
+A rota fica **dentro da casca autenticada, mas fora das abas**: as abas são as seções de
+domínio, e misturar uma utilidade entre elas competiria com o trabalho. O acesso é pelo
+ícone da barra externa, que é onde o usuário já procura ajuda.
+
+| Região          | Conteúdo                                                               |
+| --------------- | ---------------------------------------------------------------------- |
+| Painel esquerdo | Busca na ajuda e recorte por assunto, com contagem.                    |
+| Conteúdo        | Perguntas frequentes em `Accordion`, e o cartão "Falar com o suporte". |
+
+A busca cobre pergunta, resposta e assunto — quem procura "QR Code" não sabe em qual
+assunto ele está — e **abre as respostas que casaram**, em vez de devolver uma lista de
+títulos fechados. Limpar a busca fecha tudo de volta.
+
+O formulário de contato existe com os campos desabilitados e a explicação de que o envio
+depende de backend, no mesmo padrão de Integrações e da exportação. Os canais de contato
+aparecem ao lado como informação.
+
+### Onde o conteúdo vive
+
+Em `src/lib/conteudo-de-ajuda.ts`. Não é dado de domínio, então não entra em
+`@sgp/mocks`; não é documentação da equipe, então não entra em `docs/`. É conteúdo que o
+usuário final lê dentro do produto.
+
+As respostas descrevem o comportamento real, incluindo os limites: que a persistência é
+só do navegador, que a senha não é verificada e que a leitura de QR Code é exclusiva do
+aplicativo. A tela de ajuda é o lugar mais barato de ser honesto sobre a fase.
+
 ## Limites e próximos passos
 
-- autenticação, logout, Integrações e Ajuda não estão conectados;
+- autenticação, logout e Integrações não estão conectados;
+- o formulário de contato da Ajuda não envia: sem servidor, não há para onde mandar;
 - matricular aluno por e-mail ou por código de convite (fluxo de entrada do estudante)
   fica fora de Turmas: não há autenticação nem sessão de estudante na N1 web;
 - importar lista de alunos por planilha em Turmas depende de um pedido do cliente
