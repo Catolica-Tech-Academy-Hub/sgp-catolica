@@ -19,6 +19,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | [Design system mobile](design/design-system-mobile.md)             | Padroes de UI do aplicativo do professor                      |
 | [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                     |
 | [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui     |
+| [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um    |
 
 ## Por onde comecar
 
@@ -27,6 +28,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
   entidades, e os tipos em `packages/shared-types`.
 - Para **projetar ou revisar UI/UX**: design system web, depois experiencia web atual.
   No aplicativo do professor, design system mobile e experiencia mobile atual.
+- Para ver **o modelo em diagramas**: diagramas UML, comecando pelo caso de uso.
 - Para saber **o que ainda nao esta decidido**: pendencias. Nada ali deve ser tratado
   como definido.
 
@@ -39,7 +41,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | `decisoes/`     | Registro das decisoes ja tomadas pela equipe       | vazio                                                    |
 | `design/`       | Design system, mapa de telas e fluxos de navegacao | em uso                                                   |
 | `telas/`        | Prints das telas, referenciados pelo README        | em uso (convencao em [telas/README.md](telas/README.md)) |
-| `uml/`          | Diagramas de casos de uso, classes e atividades    | vazio                                                    |
+| `uml/`          | Diagramas UML com o passo a passo da construcao    | em uso (indice em [uml/README.md](uml/README.md))        |
 | `arquitetura/`  | Diagramas de arquitetura e camadas                 | vazio                                                    |
 | `api/`          | Especificacao de endpoints e colecoes de teste     | vazio                                                    |
 
