@@ -4,9 +4,10 @@ Diagramas UML do SGP Católica, feitos na N2 (atividade Parte 1). Cada documento
 passo a passo da construção, do levantamento dos elementos até a versão final, e liga o
 diagrama aos [requisitos funcionais](../produto/requisitos-funcionais.md).
 
-| Diagrama    | O que mostra                  | Documento                        |
-| ----------- | ----------------------------- | -------------------------------- |
-| Caso de uso | Quem usa o sistema e para quê | [caso-de-uso.md](caso-de-uso.md) |
+| Diagrama    | O que mostra                                                                   | Documento                        |
+| ----------- | ------------------------------------------------------------------------------ | -------------------------------- |
+| Caso de uso | Quem usa o sistema e para quê                                                  | [caso-de-uso.md](caso-de-uso.md) |
+| Atividade   | A ordem do processo de aplicar e corrigir uma prova, com raias por responsável | [atividade.md](atividade.md)     |
 
 ## Notação
 
