@@ -9,6 +9,7 @@ diagrama aos [requisitos funcionais](../produto/requisitos-funcionais.md).
 | Caso de uso | Quem usa o sistema e para quê                                                  | [caso-de-uso.md](caso-de-uso.md) |
 | Atividade   | A ordem do processo de aplicar e corrigir uma prova, com raias por responsável | [atividade.md](atividade.md)     |
 | Classe      | A estrutura do domínio: classes, atributos, operações e associações            | [classe.md](classe.md)           |
+| Sequência   | As mensagens trocadas na correção pelo aplicativo e na sincronização (RF08)    | [sequencia.md](sequencia.md)     |
 
 ## Notação
 
