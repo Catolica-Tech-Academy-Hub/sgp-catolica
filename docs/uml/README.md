@@ -1,0 +1,25 @@
+# Diagramas UML
+
+Diagramas UML do SGP Católica, feitos na N2 (atividade Parte 1). Cada documento traz o
+passo a passo da construção, do levantamento dos elementos até a versão final, e liga o
+diagrama aos [requisitos funcionais](../produto/requisitos-funcionais.md).
+
+| Diagrama    | O que mostra                  | Documento                        |
+| ----------- | ----------------------------- | -------------------------------- |
+| Caso de uso | Quem usa o sistema e para quê | [caso-de-uso.md](caso-de-uso.md) |
+
+## Notação
+
+Os diagramas são escritos em [Mermaid](https://mermaid.js.org/) dentro do próprio
+Markdown. O GitHub desenha o diagrama ao abrir o arquivo, e uma alteração aparece no diff
+como texto. O Mermaid não tem um tipo próprio para alguns diagramas UML. Nesses casos, o
+documento explica a convenção usada e traz uma legenda.
+
+## Escopo
+
+Os diagramas modelam o comportamento e o domínio descritos na especificação (v1.10). Não
+modelam a implementação da N1, que usa dados estáticos e simula câmera, QR Code e
+sincronização.
+
+Pontos que as fontes não resolvem continuam em [pendências](../pendencias.md). Os
+diagramas não os decidem.
