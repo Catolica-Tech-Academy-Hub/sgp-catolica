@@ -141,6 +141,19 @@ identificador gerado no dispositivo e situacao de sincronizacao (`pending`, `syn
 - O identificador gerado no dispositivo garante deduplicacao idempotente
 - Atribuir o estudante preenche o registro existente; nunca cria outro
 
+## Modelo fisico
+
+O esquema do banco (MySQL) esta em `apps/api/prisma/schema.prisma`, com as migracoes em
+`apps/api/prisma/migrations/` (ver [API](../api/README.md)). Os modelos e campos usam os
+mesmos nomes dos tipos de `@sgp/shared-types`. Diferencas em relacao a este dicionario:
+
+- `RefreshToken` ainda nao tem tabela; entra com a autenticacao.
+- A alternativa de questao objetiva vira tabela propria (`alternativas`), com a ordem
+  de cadastro e chave composta por questao e alternativa.
+- A lista de questoes da prova vira a tabela `questoes_da_prova`, com ordem e pontuacao.
+- Layout da versao, resultados objetivos e notas discursivas ficam em colunas JSON:
+  sao lidos e gravados inteiros, nunca consultados por partes.
+
 ## Tipos que nao sao entidades
 
 `relatorio.ts` reune projecoes de leitura usadas pelos relatorios e pelo historico do

@@ -308,7 +308,30 @@ A prévia não gera PDF nem cria uma aplicação.
 
 ## Estado e persistência da N1
 
-Não há backend. O navegador usa três chaves independentes:
+### Com a API ligada
+
+Com `VITE_API_URL` definida (`apps/web/.env.example`), **turmas, matrículas, estudantes
+e o banco de questões** vêm da API (`apps/api`, ver [docs/api](../api/README.md)), e não
+de mocks ou do `localStorage`:
+
+- `main.ts` carrega esses dados antes de montar a aplicação, porque as telas leem o
+  estado de forma síncrona e uma rota aberta direto (F5 em `/turmas/:id`) não pode
+  encontrar o acervo vazio;
+- cada alteração é aplicada na tela na hora e gravada em seguida, em fila, na ordem em
+  que foi feita (`lib/api.ts`). Se o servidor recusar, um toast avisa e o estado é
+  recarregado dele;
+- regenerar o código de convite espera a resposta, porque quem gera o código é o
+  servidor; mostrar um código provisório faria o professor copiar um convite que não
+  vale;
+- se a API estiver fora do ar, um toast avisa e as telas abrem vazias.
+
+Provas, cabeçalhos, aplicações e correções continuam locais, como descrito abaixo, até
+ganharem endpoints.
+
+### Sem a API
+
+É o modo da versão hospedada enquanto a API não tem hospedagem. O navegador usa estas
+chaves independentes:
 
 | Chave                        | Conteúdo                                      |
 | ---------------------------- | --------------------------------------------- |

@@ -13,6 +13,8 @@ professor e os pacotes compartilhados entre os dois.
 - Os documentos da disciplina apresentam **Node.js + Express + MySQL** como stack
   obrigatoria, enquanto a spec descreve **NestJS ou Fastify** para a API. Essa
   divergencia de backend continua aberta e nao deve ser resolvida por inferencia.
+  A proposta em andamento (issue #66) e **NestJS sobre Express com MySQL e Prisma**,
+  ja em `apps/api`; ela so vira decisao com ADR em `docs/decisoes/`.
 
 ## Fase atual: N1 — interfaces navegaveis
 
@@ -21,6 +23,9 @@ professor e os pacotes compartilhados entre os dois.
 - Nao ha banco de dados, backend real, autenticacao real ou infraestrutura de
   orquestracao nesta fase.
 - Todo dado exibido vem de `packages/mocks`. Nenhuma tela faz requisicao de rede.
+  Excecao em andamento (issue #66): com `VITE_API_URL` definida, turmas, matriculas,
+  estudantes e o banco de questoes vem da API, sempre pelos modulos
+  `apps/web/src/lib/estado-*.ts`, nunca de dentro de uma tela.
 - Arquitetura simples e direta, sem camadas de abstracao antecipadas, mas organizada
   para que o backend possa ser ligado depois sem reescrever as telas.
 
@@ -29,6 +34,7 @@ professor e os pacotes compartilhados entre os dois.
 ```
 apps/web       aplicacao web em Vite + Vue, para professor e estudante
 apps/mobile    aplicativo do professor (React Native), correcao de provas
+apps/api       API em NestJS com MySQL via Prisma (proposta da issue #66, ver docs/api)
 packages/design-tokens  tokens visuais compartilhados (cores, espacamento, tipografia)
 packages/mocks          dados estaticos da fase N1
 packages/shared-types   tipos do dominio, derivados da especificacao

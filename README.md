@@ -78,15 +78,17 @@ O projeto é um monorepo TypeScript com **Vue e Vite** na experiência web,
 tipos, dados de demonstração e identidade visual.
 
 ```text
-apps/       web · mobile
+apps/       web · mobile · api
 packages/   shared-types · mocks · design-tokens
 docs/       produto · design · decisões · modelo de dados · API
 ```
 
-Na N1, as aplicações consomem somente mocks. A escolha do backend futuro permanece
-aberta porque as fontes divergem entre Node.js com Express e NestJS/Fastify. A
-arquitetura completa será publicada em [`docs/arquitetura/`](docs/arquitetura) quando
-houver uma decisão formal da equipe.
+Na N1, as aplicações consomem somente mocks. A API em `apps/api` (**NestJS** sobre
+Express, com **MySQL** via Prisma) é a proposta da
+[issue #66](https://github.com/Catolica-Tech-Academy-Hub/sgp-catolica/issues/66) para
+resolver a divergência entre Node.js com Express e NestJS/Fastify. Ela já atende turmas
+e banco de questões e vira decisão formal com o acordo da equipe. Como rodar e os
+endpoints estão em [`docs/api/`](docs/api/README.md).
 
 ## Executar localmente
 
@@ -101,8 +103,9 @@ npm ci
 ```bash
 npm run web        # aplicação web em http://localhost:5173
 npm run mobile     # aplicativo do professor com Expo
+npm run api        # API em http://localhost:3000 (requer o MySQL, ver docs/api)
 npm run typecheck  # valida todos os workspaces
-npm run lint       # ESLint em web e mobile
+npm run lint       # ESLint em web, mobile e api
 npm run format     # aplica a formatação do Prettier
 ```
 
