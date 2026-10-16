@@ -12,6 +12,8 @@
     "web": "npm run dev --workspace @sgp/web",
     "web:build": "npm run build --workspace @sgp/web",
     "web:preview": "npm run preview --workspace @sgp/web",
+    "api": "npm run dev --workspace @sgp/api",
+    "api:build": "npm run build --workspace @sgp/api",
     "mobile": "npm run start --workspace @sgp/mobile",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "audit:mocks": "npm run audit --workspace @sgp/mocks",
