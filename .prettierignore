@@ -5,3 +5,6 @@ apps/mobile/dist
 apps/mobile/.expo
 packages/*/dist
 coverage
+apps/api/dist
+# Cliente gerado pelo `prisma generate` no postinstall da API
+apps/api/src/generated
