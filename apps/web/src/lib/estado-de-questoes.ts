@@ -1,15 +1,23 @@
 /**
- * Extensão local do banco de questões para o protótipo N1.
+ * Banco de questões do professor (RF02).
  *
- * Os mocks continuam sendo a semente imutável. Questões criadas dentro da prova só
- * entram aqui quando o professor escolhe “Salvar no banco”, e sobrevivem ao F5 no
- * navegador até a API de RF02 existir.
+ * Com a API ligada (`VITE_API_URL`, ver `api.ts`), o acervo inteiro vem do servidor por
+ * `carregarQuestoesDoServidor`, chamada antes de montar a aplicação — inclusive as
+ * excluídas logicamente —, e cada alteração é gravada lá.
+ *
+ * Sem a API, é a extensão local do protótipo N1: os mocks continuam sendo a semente
+ * imutável, e questões criadas dentro da prova só entram aqui quando o professor escolhe
+ * “Salvar no banco”, sobrevivendo ao F5 no navegador.
  */
 import { reactive, watch } from 'vue';
 import { questoesMock } from '@sgp/mocks';
 import type { Questao } from '@sgp/shared-types';
+import { apiLigada, enviarAoServidor, requisitar } from './api';
 
 const CHAVE = 'sgp:questoes-locais:v1';
+
+/** Com a API ligada não há semente: o servidor já devolve o acervo completo. */
+const semente: Questao[] = apiLigada ? [] : questoesMock;
 
 function clonar(questao: Questao): Questao {
   return JSON.parse(JSON.stringify(questao)) as Questao;
@@ -26,19 +34,40 @@ function ler(): Questao[] {
   }
 }
 
-const questoesLocais = reactive<Questao[]>(ler());
+const questoesLocais = reactive<Questao[]>(apiLigada ? [] : ler());
 
-watch(
-  questoesLocais,
-  () => {
-    try {
-      window.localStorage.setItem(CHAVE, JSON.stringify(questoesLocais));
-    } catch {
-      // O editor continua funcionando sem persistência local.
-    }
-  },
-  { deep: true },
-);
+if (!apiLigada) {
+  watch(
+    questoesLocais,
+    () => {
+      try {
+        window.localStorage.setItem(CHAVE, JSON.stringify(questoesLocais));
+      } catch {
+        // O editor continua funcionando sem persistência local.
+      }
+    },
+    { deep: true },
+  );
+}
+
+/** Substitui o acervo pelo que o servidor tem. Só faz sentido com a API ligada. */
+export async function carregarQuestoesDoServidor(): Promise<void> {
+  const questoes = await requisitar<Questao[]>('/questoes?incluirExcluidas=true');
+  questoesLocais.splice(0, questoesLocais.length, ...questoes);
+}
+
+/** Grava uma alteração já aplicada na memória e sincroniza a questão com a resposta. */
+function enviarQuestao(caminho: string, opcoes: RequestInit): void {
+  if (!apiLigada) return;
+  enviarAoServidor(
+    () => requisitar<Questao>(caminho, opcoes),
+    carregarQuestoesDoServidor,
+    (resposta) => {
+      const indice = questoesLocais.findIndex((item) => item.id === resposta.id);
+      if (indice >= 0) questoesLocais[indice] = resposta;
+    },
+  );
+}
 
 /**
  * Acervo ativo do banco: exclui o que foi excluido logicamente.
@@ -50,7 +79,7 @@ watch(
 export function listarQuestoesDoBanco(): Questao[] {
   return [
     ...questoesLocais,
-    ...questoesMock.filter((mock) => !questoesLocais.some((item) => item.id === mock.id)),
+    ...semente.filter((mock) => !questoesLocais.some((item) => item.id === mock.id)),
   ].filter((questao) => !questao.deletedAt);
 }
 
@@ -64,7 +93,7 @@ export function listarQuestoesDoBanco(): Questao[] {
 export function encontrarQuestaoDoBanco(id: string): Questao | undefined {
   return (
     questoesLocais.find((questao) => questao.id === id) ??
-    questoesMock.find((questao) => questao.id === id)
+    semente.find((questao) => questao.id === id)
   );
 }
 
@@ -75,6 +104,18 @@ export function questaoEstaNoBanco(id: string): boolean {
 export function salvarQuestaoNoBanco(questao: Questao): 'criada' | 'atualizada' {
   const indice = questoesLocais.findIndex((item) => item.id === questao.id);
   const copia = clonar(questao);
+  // Salvar devolve a questão ao acervo ativo, como faz a API.
+  if (apiLigada) delete copia.deletedAt;
+
+  // Só os campos do tipo: o editor pode carregar alternativas de quando a questão era
+  // objetiva, e a API recusa discursiva com alternativas.
+  const { id, type, statement, tags, alternatives, correctAlternativeId, maxScore } = copia;
+  const doTipo = type === 'objetiva' ? { alternatives, correctAlternativeId } : { maxScore };
+  enviarQuestao(`/questoes/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ type, statement, tags, ...doTipo }),
+  });
+
   if (indice >= 0) {
     questoesLocais[indice] = copia;
     return 'atualizada';
@@ -84,6 +125,8 @@ export function salvarQuestaoNoBanco(questao: Questao): 'criada' | 'atualizada' 
 }
 
 export function excluirQuestaoDoBanco(id: string): void {
+  enviarQuestao(`/questoes/${id}`, { method: 'DELETE' });
+
   const indice = questoesLocais.findIndex((item) => item.id === id);
 
   if (indice >= 0) {
@@ -94,7 +137,7 @@ export function excluirQuestaoDoBanco(id: string): void {
     return;
   }
 
-  const doMock = questoesMock.find((item) => item.id === id);
+  const doMock = semente.find((item) => item.id === id);
 
   if (!doMock) return;
 
@@ -114,4 +157,5 @@ export function restaurarQuestaoDoBanco(id: string): void {
   delete atual.deletedAt;
 
   questoesLocais[indice] = atual;
+  enviarQuestao(`/questoes/${id}/restaurar`, { method: 'POST' });
 }

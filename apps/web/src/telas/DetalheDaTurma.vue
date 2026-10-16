@@ -15,7 +15,6 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { ArrowLeft, Archive, KeyRound, Pencil, RefreshCw, UserMinus, Users } from '@lucide/vue';
 import { toast } from 'vue-sonner';
-import { estudantesMock } from '@sgp/mocks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,6 +43,7 @@ import { formatarData, statusDaTurma, varianteDoStatusDaTurma } from '@/lib/domi
 import {
   arquivarTurma,
   atualizarTurma,
+  encontrarEstudante,
   encontrarTurma,
   listarMatriculasDaTurma,
   regenerarCodigoDeConvite,
@@ -63,14 +63,14 @@ onMounted(() => {
 
 interface AlunoNaTela {
   matricula: ReturnType<typeof listarMatriculasDaTurma>[number];
-  estudante: (typeof estudantesMock)[number];
+  estudante: NonNullable<ReturnType<typeof encontrarEstudante>>;
 }
 
 const alunosMatriculados = computed<AlunoNaTela[]>(() => {
   if (!turma.value) return [];
   const itens: AlunoNaTela[] = [];
   for (const matricula of listarMatriculasDaTurma(turma.value.id)) {
-    const estudante = estudantesMock.find((item) => item.id === matricula.studentId);
+    const estudante = encontrarEstudante(matricula.studentId);
     if (estudante) itens.push({ matricula, estudante });
   }
   return itens;
@@ -120,12 +120,18 @@ function arquivar(): void {
 
 // --- Código de convite ------------------------------------------------------------
 
-function regenerarCodigo(): void {
+async function regenerarCodigo(): Promise<void> {
   if (!turma.value) return;
-  const novoCodigo = regenerarCodigoDeConvite(turma.value.id);
-  if (novoCodigo) {
-    toast.success('Código de convite regenerado', {
-      description: 'O código anterior foi invalidado.',
+  try {
+    const novoCodigo = await regenerarCodigoDeConvite(turma.value.id);
+    if (novoCodigo) {
+      toast.success('Código de convite regenerado', {
+        description: 'O código anterior foi invalidado.',
+      });
+    }
+  } catch {
+    toast.error('Não foi possível regenerar o código', {
+      description: 'O código atual continua valendo.',
     });
   }
 }

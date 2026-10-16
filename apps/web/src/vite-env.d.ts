@@ -11,3 +11,12 @@ declare module '*.md' {
   const componente: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>;
   export default componente;
 }
+
+interface ImportMetaEnv {
+  /** Endereço da API (`apps/api`). Sem ele, a web roda com os dados de demonstração. */
+  readonly VITE_API_URL?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
