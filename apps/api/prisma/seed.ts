@@ -26,6 +26,12 @@ import { criarAdaptadorMysql } from '../src/prisma/adaptador';
 
 const prisma = new PrismaClient({ adapter: criarAdaptadorMysql() });
 
+/**
+ * O padrao do Prisma (5 s) nao basta contra um banco hospedado: cada insert faz uma ida e
+ * volta pela rede, e a transacao expirava no meio, desfazendo o que ja tinha gravado.
+ */
+const TEMPO_DA_TRANSACAO = { maxWait: 20_000, timeout: 180_000 };
+
 async function semear(): Promise<void> {
   await prisma.$transaction(async (tx) => {
     // Ordem inversa das chaves estrangeiras.
@@ -118,7 +124,7 @@ async function semear(): Promise<void> {
         confirmedAt: new Date(correcao.confirmedAt),
       })),
     });
-  });
+  }, TEMPO_DA_TRANSACAO);
 }
 
 semear()
