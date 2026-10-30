@@ -22,6 +22,13 @@ interface Props {
   /** Ocupa toda a largura disponivel. Usado na acao principal de uma tela. */
   largura?: 'auto' | 'total';
   icone?: ReactNode;
+  /**
+   * Botao que funciona como opcao de uma escolha (ex.: a letra marcada numa questao).
+   * Vira `accessibilityState.selected`, para o leitor de tela anunciar a selecao.
+   */
+  selecionado?: boolean;
+  /** Nome acessivel, quando o titulo visivel sozinho nao basta (ex.: so "B"). */
+  rotuloAcessivel?: string;
 }
 
 export function Botao({
@@ -33,6 +40,8 @@ export function Botao({
   carregando = false,
   largura = 'auto',
   icone,
+  selecionado,
+  rotuloAcessivel,
 }: Props) {
   const inativo = desabilitado || carregando;
   const corDoTexto = corDoTextoPorVariante[variante];
@@ -40,8 +49,8 @@ export function Botao({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: inativo, busy: carregando }}
-      accessibilityLabel={titulo}
+      accessibilityState={{ disabled: inativo, busy: carregando, selected: selecionado }}
+      accessibilityLabel={rotuloAcessivel ?? titulo}
       disabled={inativo}
       onPress={onPress}
       style={({ pressed }) => [

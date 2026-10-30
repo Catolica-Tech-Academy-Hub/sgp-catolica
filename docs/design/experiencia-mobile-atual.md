@@ -16,12 +16,47 @@ Classificação usada, a mesma da web:
 Stack simples; o fluxo do professor é linear. Nomes das rotas conforme
 `src/navegacao/index.tsx`.
 
-| Rota       | Situação           | Experiência atual                                                           |
-| ---------- | ------------------ | --------------------------------------------------------------------------- |
-| `Ambiente` | Implementado na N1 | Valida a arquitetura: navegação, tokens sincronizados, primitivos e estado. |
+| Rota                     | Situação                    | Experiência atual                                                                                       |
+| ------------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `AplicacoesParaCorrigir` | Implementado na N1 (mínimo) | Rota inicial. Aplicações com prova gerada e pendências; aviso de correção salva na fila. Completa: #24. |
+| `SelecionarProva`        | Implementado na N1 (mínimo) | Escolha da prova na lista, no lugar da leitura do QR Code. Completa: #25.                               |
+| `ConferenciaObjetiva`    | Implementado na N1 (mínimo) | Toque na letra marcada; certo/errado contra o gabarito e nota objetiva. Completa: #26.                  |
+| `NotasDiscursivas`       | Implementado na N1          | Notas discursivas, nota total, identificação auxiliar e "Confirmar correção" (#27).                     |
+| `Ambiente`               | Implementado na N1          | Valida a arquitetura. Continua registrada, mas deixou de ser a rota inicial.                            |
 
-As telas do fluxo de correção (RF08) entram nas entregas seguintes e substituem
-`Ambiente` como rota inicial.
+As três primeiras telas foram feitas no mínimo necessário para o fluxo chegar à correção
+discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para completá-las.
+
+### Fluxo de correção (RF08)
+
+1. **Aplicações para corrigir.** Lista de `listarAplicacoesGeradas()`. Prova sem
+   identificação não tem total impresso conhecido, então mostra "Sem contagem de provas"
+   em vez de um número inventado.
+2. **Selecionar prova.** Lista de `listarAtribuicoesDaAplicacao()`. Prova já corrigida
+   aparece, mas não reabre: RF08 nunca sobrescreve uma correção em silêncio.
+3. **Conferência objetiva.** Para cada questão objetiva, as letras na ordem impressa
+   daquela versão (`printedOrder`). O professor toca na letra marcada a caneta; a tela
+   mostra se acertou e a nota objetiva no rodapé. Só avança com todas marcadas, porque a
+   alternativa escolhida (`selectedAlternativeId`) é o que vai para a fila.
+4. **Notas discursivas.** Para cada questão discursiva: número impresso, enunciado (do
+   banco de questões, pelo `questionId`), máximo e campo de nota. A nota aceita vírgula
+   ou ponto e até duas casas decimais, não pode ser negativa nem passar do `maxScore` do
+   gabarito local. A nota total — **objetiva + soma das discursivas** — é recalculada a
+   cada digitação e marcada como parcial enquanto houver nota inválida.
+5. **Confirmar correção.** Valida as notas e chama `enfileirarCorrecao`. O item nasce
+   `pending`, e o professor volta à lista com o aviso de que a correção está na fila
+   local, sem ter sido enviada. A tela da fila é a issue #28.
+
+Sem cópia local do gabarito (hoje, versões 0 e 4 dos mocks), a conferência e a
+confirmação ficam desabilitadas e explicadas.
+
+### Prova sem identificação e o limite do RF09
+
+Quando `withStudentIdentification` é `false`, a tela de notas mostra campos de nome e
+matrícula, opcionais, com o aviso de que são **apenas auxiliares**. Eles vão para a fila
+como `reportedStudentName` e `reportedStudentRegistration`, mas a correção segue **sem
+`studentId`**: a nota é calculada e exibida, sem dono. Atribuí-la a um aluno é o RF09,
+feito pela web (issue #18); o aplicativo não cria esse vínculo.
 
 ## Arquitetura
 

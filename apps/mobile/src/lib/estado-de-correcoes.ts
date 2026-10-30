@@ -6,6 +6,7 @@ import {
   estudantesMock,
   filaCorrecoesMock,
   provasMock,
+  questoesMock,
   turmasMock,
   versoesMock,
 } from '@sgp/mocks';
@@ -175,6 +176,159 @@ export function listarAtribuicoesDaAplicacao(applicationId: string): AtribuicaoP
  */
 export function obterGabaritoDaVersao(examVersionId: string) {
   return filaCorrecoesMock.find((item) => item.examVersionId === examVersionId)?.answerKeySnapshot;
+}
+
+// --- Prova a corrigir (conferencia objetiva e notas discursivas) --------------------
+
+const LETRAS = ['A', 'B', 'C', 'D', 'E'];
+
+export interface QuestaoObjetivaParaConferir {
+  questionId: string;
+  /** Numero impresso naquela versao (posicao em `layout.questionOrder`). */
+  numero: number;
+  enunciado?: string;
+  pontuacao: number;
+  correctAlternativeId: string;
+  /** Alternativas na ordem impressa, ja com a letra que o aluno viu na folha. */
+  alternativas: { id: string; letra: string }[];
+}
+
+export interface QuestaoDiscursivaParaCorrigir {
+  questionId: string;
+  numero: number;
+  enunciado?: string;
+  maxScore: number;
+}
+
+export interface ProvaParaCorrigir {
+  examVersionId: string;
+  versionNumber: number;
+  comIdentificacao: boolean;
+  objetivas: QuestaoObjetivaParaConferir[];
+  discursivas: QuestaoDiscursivaParaCorrigir[];
+  /** Soma da pontuacao das objetivas: o teto da nota objetiva. */
+  maximoObjetivo: number;
+  /** Soma dos `maxScore` das discursivas. */
+  maximoDiscursivo: number;
+}
+
+/**
+ * Junta o que as telas de conferencia e de notas precisam de uma versao.
+ *
+ * Pontuacao, alternativa correta e `maxScore` vem **da copia local do gabarito**, e nao
+ * do cadastro da questao: e o gabarito que vai junto do item da fila e que o servidor usa
+ * para recalcular (RF08). O enunciado nao faz parte do gabarito, entao vem do banco de
+ * questoes pelo `questionId`; o numero da questao e a posicao impressa naquela versao.
+ *
+ * Devolve `undefined` quando nao ha copia local do gabarito — a situacao em que RF08
+ * proibe confirmar a correcao.
+ */
+export function obterProvaParaCorrigir(examVersionId: string): ProvaParaCorrigir | undefined {
+  const gabarito = obterGabaritoDaVersao(examVersionId);
+  const versao = versoesMock.find((item) => item.id === examVersionId);
+  if (!gabarito || !versao) return undefined;
+
+  const ordemImpressa = versao.layout.questionOrder;
+  const numeroDa = (questionId: string) => ordemImpressa.indexOf(questionId) + 1;
+  const enunciadoDa = (questionId: string) =>
+    questoesMock.find((questao) => questao.id === questionId)?.statement;
+
+  const objetivas = gabarito.objectiveQuestions
+    .map((questao) => ({
+      questionId: questao.questionId,
+      numero: numeroDa(questao.questionId),
+      enunciado: enunciadoDa(questao.questionId),
+      pontuacao: questao.score,
+      correctAlternativeId: questao.correctAlternativeId,
+      alternativas: questao.printedOrder.map((id, indice) => ({ id, letra: LETRAS[indice] })),
+    }))
+    .sort((a, b) => a.numero - b.numero);
+
+  const discursivas = gabarito.discursiveQuestions
+    .map((questao) => ({
+      questionId: questao.questionId,
+      numero: numeroDa(questao.questionId),
+      enunciado: enunciadoDa(questao.questionId),
+      maxScore: questao.maxScore,
+    }))
+    .sort((a, b) => a.numero - b.numero);
+
+  return {
+    examVersionId,
+    versionNumber: versao.versionNumber,
+    comIdentificacao: versao.withStudentIdentification,
+    objetivas,
+    discursivas,
+    maximoObjetivo: somar(objetivas.map((questao) => questao.pontuacao)),
+    maximoDiscursivo: somar(discursivas.map((questao) => questao.maxScore)),
+  };
+}
+
+/** Respostas marcadas na folha: alternativa escolhida por questao objetiva. */
+export type RespostasObjetivas = { questionId: string; selectedAlternativeId: string }[];
+
+/**
+ * Nota objetiva: soma a pontuacao das questoes em que a alternativa marcada e a correta
+ * do gabarito. Questao sem marcacao nao pontua.
+ */
+export function calcularNotaObjetiva(prova: ProvaParaCorrigir, respostas: RespostasObjetivas) {
+  return somar(
+    prova.objetivas
+      .filter((questao) =>
+        respostas.some(
+          (resposta) =>
+            resposta.questionId === questao.questionId &&
+            resposta.selectedAlternativeId === questao.correctAlternativeId,
+        ),
+      )
+      .map((questao) => questao.pontuacao),
+  );
+}
+
+/** Nota total da prova (RF08): nota objetiva + soma das notas discursivas. */
+export function calcularNotaTotal(notaObjetiva: number, notasDiscursivas: NotaDiscursiva[]) {
+  return somar([notaObjetiva, ...notasDiscursivas.map((nota) => nota.score)]);
+}
+
+/**
+ * Le a nota digitada. Aceita virgula ou ponto, porque o teclado numerico brasileiro
+ * digita virgula. Devolve `undefined` quando o texto nao e um numero.
+ */
+export function lerNota(texto: string): number | undefined {
+  const limpo = texto.trim().replace(',', '.');
+  if (!/^-?\d+(\.\d{1,2})?$/.test(limpo)) return undefined;
+  return Number(limpo);
+}
+
+/**
+ * Valida a nota de uma questao discursiva contra o `maxScore` daquela versao.
+ * Devolve a mensagem de erro, ou `undefined` quando a nota e valida.
+ */
+export function validarNotaDiscursiva(texto: string, maxScore: number): string | undefined {
+  if (texto.trim() === '') return 'Informe a nota desta questão.';
+  const nota = lerNota(texto);
+  if (nota === undefined) return 'Use apenas números, com até duas casas decimais (ex.: 1,5).';
+  if (nota < 0) return 'A nota não pode ser negativa.';
+  if (nota > maxScore) return `A nota não pode passar de ${formatarNota(maxScore)}.`;
+  return undefined;
+}
+
+/**
+ * Formato de nota em pt-BR, igual ao `formatarPontos` da web (uma casa decimal fixa),
+ * mas aceitando a segunda casa que a validacao permite — senao 1,25 apareceria como 1,3.
+ */
+const formatadorDeNota = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2,
+});
+
+export function formatarNota(nota: number): string {
+  return formatadorDeNota.format(nota);
+}
+
+/** Soma arredondada em centesimos, para 0,1 + 0,2 nao virar 0,30000000000000004. */
+function somar(valores: number[]): number {
+  return Math.round(valores.reduce((total, valor) => total + valor, 0) * 100) / 100;
 }
 
 // --- Fila local ---------------------------------------------------------------------
