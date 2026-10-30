@@ -30,6 +30,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
   entidades, e os tipos em `packages/shared-types`.
 - Para **projetar ou revisar UI/UX**: design system web, depois experiencia web atual.
   No aplicativo do professor, design system mobile e experiencia mobile atual.
+- Para visualizar a **fila mobile de correções**: [captura da tela](telas/mobile-fila-correcoes.png).
 - Para ver **o modelo em diagramas**: diagramas UML, comecando pelo caso de uso.
 - Para saber **o que ainda nao esta decidido**: pendencias. Nada ali deve ser tratado
   como definido.

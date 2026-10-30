@@ -340,12 +340,47 @@ export function listarFila(): ItemFilaCorrecao[] {
   return [...fila].sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
 }
 
+export interface DetalhesDaCorrecaoNaFila {
+  tituloDaProva: string;
+  versao: number | undefined;
+  identificacao: string;
+}
+
+export function obterDetalhesDaCorrecaoNaFila(item: ItemFilaCorrecao): DetalhesDaCorrecaoNaFila {
+  const versao = versoesMock.find((registro) => registro.id === item.examVersionId);
+  const aplicacao = aplicacoesMock.find((registro) => registro.id === versao?.applicationId);
+  const prova = provasMock.find((registro) => registro.id === aplicacao?.examId);
+  const estudante = estudantesMock.find((registro) => registro.id === item.studentId);
+
+  return {
+    tituloDaProva: prova?.title ?? 'Prova indisponível',
+    versao: versao?.versionNumber,
+    identificacao:
+      item.reportedStudentName ??
+      estudante?.fullName ??
+      (item.studentId ? 'Estudante não identificado' : 'Prova sem identificação'),
+  };
+}
+
 export function totalPorStatus(): Record<StatusSincronizacao, number> {
   return {
     pending: fila.filter((item) => item.syncStatus === 'pending').length,
     synced: fila.filter((item) => item.syncStatus === 'synced').length,
     error: fila.filter((item) => item.syncStatus === 'error').length,
   };
+}
+
+/**
+ * Simula uma nova tentativa manual, deixando o item pendente sem alegar sincronizacao.
+ */
+export function tentarNovamente(clientCorrectionId: string): boolean {
+  const item = fila.find((registro) => registro.clientCorrectionId === clientCorrectionId);
+  if (!item || item.syncStatus !== 'error') return false;
+
+  item.syncStatus = 'pending';
+  item.syncError = undefined;
+  notificar();
+  return true;
 }
 
 /** Correcoes que contam como "ja corrigida": as dos mocks e as confirmadas na sessao. */

@@ -6,6 +6,7 @@ import type { RespostasObjetivas } from '../lib/estado-de-correcoes';
 import { AplicacoesParaCorrigir } from '../telas/AplicacoesParaCorrigir';
 import { Ambiente } from '../telas/Ambiente';
 import { ConferenciaObjetiva } from '../telas/ConferenciaObjetiva';
+import { FilaCorrecoes } from '../telas/FilaCorrecoes';
 import { NotasDiscursivas } from '../telas/NotasDiscursivas';
 import { SelecionarProva } from '../telas/SelecionarProva';
 
@@ -33,6 +34,7 @@ export type RotasDoAplicativo = {
   SelecionarProva: { applicationId: string; tituloDaProva: string };
   ConferenciaObjetiva: ProvaEscolhida;
   NotasDiscursivas: ProvaEscolhida & { respostas: RespostasObjetivas };
+  FilaCorrecoes: undefined;
   Ambiente: undefined;
 };
 
@@ -78,6 +80,11 @@ export function Navegacao() {
           name="NotasDiscursivas"
           component={NotasDiscursivas}
           options={{ title: 'Notas discursivas' }}
+        />
+        <Stack.Screen
+          name="FilaCorrecoes"
+          component={FilaCorrecoes}
+          options={{ title: 'Fila de correções' }}
         />
         <Stack.Screen name="Ambiente" component={Ambiente} options={{ title: 'SGP Católica' }} />
       </Stack.Navigator>
