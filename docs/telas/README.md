@@ -58,3 +58,4 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 | Entrada, com escolha de papel       | `/login`      | [login.png](login.png)                                   |
 | Estudante: histórico de notas       | `/estudante`  | [estudante-historico.png](estudante-historico.png)       |
 | Estudante: detalhamento de uma nota | `/estudante`  | [estudante-nota.png](estudante-nota.png)                 |
+| Mobile: fila de correções           | Navegação     | [mobile-fila-correcoes.png](mobile-fila-correcoes.png)   |
