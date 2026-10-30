@@ -310,8 +310,8 @@ A prévia não gera PDF nem cria uma aplicação.
 
 ### Com a API ligada
 
-Com `VITE_API_URL` definida (`apps/web/.env.example`), **turmas, matrículas, estudantes
-e o banco de questões** vêm da API (`apps/api`, ver [docs/api](../api/README.md)), e não
+Com `VITE_API_URL` definida (`apps/web/.env.example`), **turmas, matrículas, estudantes,
+o banco de questões e as provas** vêm da API (`apps/api`, ver [docs/api](../api/README.md)), e não
 de mocks ou do `localStorage`:
 
 - `main.ts` carrega esses dados antes de montar a aplicação, porque as telas leem o
@@ -323,10 +323,14 @@ de mocks ou do `localStorage`:
 - regenerar o código de convite espera a resposta, porque quem gera o código é o
   servidor; mostrar um código provisório faria o professor copiar um convite que não
   vale;
+- provas são a exceção à gravação imediata: o editor muda a prova a cada tecla, então
+  `estado-de-provas.ts` espera uma pausa curta e envia só as provas que mudaram desde o
+  último envio (título, descrição, situação, questões e blocos do editor). Fechar a aba
+  envia o que estiver pendente;
 - se a API estiver fora do ar, um toast avisa e as telas abrem vazias.
 
-Provas, cabeçalhos, aplicações e correções continuam locais, como descrito abaixo, até
-ganharem endpoints.
+Cabeçalhos, aplicações e correções continuam locais, como descrito abaixo, até ganharem
+endpoints.
 
 ### Sem a API
 

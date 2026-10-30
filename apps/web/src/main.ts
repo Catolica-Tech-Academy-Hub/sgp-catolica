@@ -4,6 +4,7 @@ import './styles/global.css';
 import App from './App.vue';
 import { router } from './router';
 import { apiLigada } from './lib/api';
+import { carregarProvasDoServidor } from './lib/estado-de-provas';
 import { carregarQuestoesDoServidor } from './lib/estado-de-questoes';
 import { carregarTurmasDoServidor } from './lib/estado-de-turmas';
 
@@ -15,7 +16,11 @@ import { carregarTurmasDoServidor } from './lib/estado-de-turmas';
 async function carregarDoServidor(): Promise<void> {
   if (!apiLigada) return;
   try {
-    await Promise.all([carregarTurmasDoServidor(), carregarQuestoesDoServidor()]);
+    await Promise.all([
+      carregarTurmasDoServidor(),
+      carregarQuestoesDoServidor(),
+      carregarProvasDoServidor(),
+    ]);
   } catch (erro) {
     console.error(erro);
     // O Toaster ainda não está montado; o aviso entra depois que a casca existir.

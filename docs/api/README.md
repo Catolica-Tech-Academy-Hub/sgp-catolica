@@ -104,11 +104,27 @@ mais de um problema.
   obrigatório; objetiva com 2 a 5 alternativas com texto e ids distintos, e a correta
   entre elas; discursiva com pontuação máxima maior que zero e sem alternativas.
 
+### Provas (RF04)
+
+| Método | Caminho       | Corpo                                                 | Resposta              |
+| ------ | ------------- | ----------------------------------------------------- | --------------------- |
+| GET    | `/provas`     | —                                                     | `(Prova & blocos?)[]` |
+| PUT    | `/provas/:id` | `{ title, description?, status, questions, blocos? }` | `Prova & blocos?`     |
+
+- `PUT` cria ou atualiza pelo id, que nasce no navegador para o editor abrir sem esperar.
+  Valida: título até 200 caracteres, no máximo 20 questões, pontuação não negativa.
+- `questions` vira a tabela `questoes_da_prova`, mas só com questões que já existem no
+  banco do professor (inclusive excluídas). A questão criada dentro da prova e ainda não
+  salva no banco vive só em `blocos`; uma questão repetida conta uma vez.
+- `blocos` é o layout do editor (texto, imagem, espaço, questões rascunho), protótipo da
+  issue #12 guardado como chega, em coluna JSON. Por causa das imagens, o corpo JSON
+  aceita até 5 MB.
+
 ## Ainda não coberto
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em
   `src/professor-atual.ts`, ponto único a trocar.
-- Provas, aplicações, correções e relatórios: as tabelas já existem e o seed as
-  preenche, mas não há endpoints. Provas dependem do modelo de blocos (issue #12).
+- Aplicações, correções e relatórios: as tabelas já existem e o seed as preenche, mas
+  não há endpoints. Exclusão de prova também não, porque a tela não oferece a ação.
 - Sincronização da fila do aplicativo (RF08).
 - Hospedagem da API (item 8 das pendências).

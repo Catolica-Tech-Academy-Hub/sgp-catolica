@@ -23,8 +23,8 @@ professor e os pacotes compartilhados entre os dois.
 - Nao ha banco de dados, backend real, autenticacao real ou infraestrutura de
   orquestracao nesta fase.
 - Todo dado exibido vem de `packages/mocks`. Nenhuma tela faz requisicao de rede.
-  Excecao em andamento (issue #66): com `VITE_API_URL` definida, turmas, matriculas,
-  estudantes e o banco de questoes vem da API, sempre pelos modulos
+  Excecao em andamento (issues #66 e #71): com `VITE_API_URL` definida, turmas,
+  matriculas, estudantes, o banco de questoes e as provas vem da API, sempre pelos modulos
   `apps/web/src/lib/estado-*.ts`, nunca de dentro de uma tela.
 - Arquitetura simples e direta, sem camadas de abstracao antecipadas, mas organizada
   para que o backend possa ser ligado depois sem reescrever as telas.
