@@ -20,6 +20,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                     |
 | [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui     |
 | [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um    |
+| [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis        |
 
 ## Por onde comecar
 
@@ -43,7 +44,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | `telas/`        | Prints das telas, referenciados pelo README        | em uso (convencao em [telas/README.md](telas/README.md)) |
 | `uml/`          | Diagramas UML com o passo a passo da construcao    | em uso (indice em [uml/README.md](uml/README.md))        |
 | `arquitetura/`  | Diagramas de arquitetura e camadas                 | vazio                                                    |
-| `api/`          | Especificacao de endpoints e colecoes de teste     | vazio                                                    |
+| `api/`          | Especificacao de endpoints e colecoes de teste     | em uso ([api/README.md](api/README.md))                  |
 
 As demais pastas vazias entram no repositorio com um `.gitkeep` e sao preenchidas
 conforme as fases avancam. O mapa de telas e os fluxos atualmente implementados estao em

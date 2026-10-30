@@ -33,7 +33,7 @@ reutilizável exige atualizar `docs/design/design-system-web.md` na mesma entreg
 1. Requisito e critérios de aceite: [docs/produto/requisitos-funcionais.md](../../../docs/produto/requisitos-funcionais.md).
 2. Domínio: [docs/modelo-dados/dicionario-de-entidades.md](../../../docs/modelo-dados/dicionario-de-entidades.md) e os tipos de `packages/shared-types`; não invente campo nem entidade.
 3. Rota e situação: `apps/web/src/router/index.ts` e o mapa de navegação da experiência atual — várias seções ainda são marcadores, e marcador não deve ganhar controle que finja funcionar.
-4. Dados: somente `packages/mocks`. Nenhuma tela faz requisição de rede na fase N1.
+4. Dados: nenhuma tela importa `@sgp/mocks` nem faz requisição de rede; tudo passa pelos módulos `apps/web/src/lib/estado-*.ts`. Com `VITE_API_URL`, turmas, matrículas, estudantes e questões vêm da API (`lib/api.ts`, [docs/api](../../../docs/api/README.md)); sem ela, dos mocks.
 5. Aberto em [docs/pendencias.md](../../../docs/pendencias.md) não se resolve por inferência.
 
 ## Limites que não se negociam

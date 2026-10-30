@@ -1,0 +1,281 @@
+// Modelo fisico do SGP. Deriva de docs/modelo-dados/dicionario-de-entidades.md e de
+// docs/uml/classe.md. Os nomes dos modelos e dos campos seguem `@sgp/shared-types`,
+// para a API devolver o formato que as telas ja consomem sem traducao campo a campo.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum PapelUsuario {
+  professor
+  estudante
+}
+
+enum StatusTurma {
+  active
+  archived
+}
+
+enum StatusMatricula {
+  active
+  removed
+}
+
+enum OrigemMatricula {
+  teacher
+  invite_code
+}
+
+enum TipoQuestao {
+  objetiva
+  discursiva
+}
+
+enum StatusProva {
+  draft
+  ready
+  closed
+}
+
+enum StatusAplicacao {
+  draft
+  generated
+  closed
+}
+
+enum StatusSincronizacao {
+  pending
+  synced
+  error
+}
+
+/// User: base comum de professor e estudante (RF01).
+model Usuario {
+  id           String       @id @default(uuid()) @db.VarChar(64)
+  role         PapelUsuario
+  fullName     String       @db.VarChar(160)
+  /// Unico no sistema; o dominio e validado pelo papel no cadastro.
+  email        String       @unique @db.VarChar(254)
+  /// Preenchido quando a autenticacao existir.
+  passwordHash String?      @db.VarChar(255)
+  /// Matricula academica do estudante.
+  registration String?      @unique @db.VarChar(32)
+  createdAt    DateTime     @default(now())
+  /// RF01.1: anonimizacao (LGPD).
+  anonymizedAt DateTime?
+
+  turmas          Turma[]
+  matriculas      Matricula[]
+  questoes        Questao[]
+  provas          Prova[]
+  aplicacoes      Aplicacao[]
+  atribuicoes     AtribuicaoVersao[]
+  correcoes       Correcao[]         @relation("CorrecaoEstudante")
+  correcoesFeitas Correcao[]         @relation("CorrecaoAutor")
+
+  @@map("usuarios")
+}
+
+/// Class: turma (RF03). Arquivar e exclusao logica.
+model Turma {
+  id         String      @id @default(uuid()) @db.VarChar(64)
+  teacherId  String      @db.VarChar(64)
+  name       String      @db.VarChar(160)
+  subject    String      @db.VarChar(160)
+  term       String      @db.VarChar(16)
+  status     StatusTurma @default(active)
+  /// Unico e regeneravel; regenerar invalida o anterior imediatamente.
+  inviteCode String      @unique @db.VarChar(32)
+  createdAt  DateTime    @default(now())
+
+  professor  Usuario     @relation(fields: [teacherId], references: [id])
+  matriculas Matricula[]
+  aplicacoes Aplicacao[]
+
+  @@index([teacherId])
+  @@map("turmas")
+}
+
+/// ClassEnrollment: matricula. Remover nao apaga notas ja lancadas.
+model Matricula {
+  id          String          @id @default(uuid()) @db.VarChar(64)
+  classId     String          @db.VarChar(64)
+  studentId   String          @db.VarChar(64)
+  enrolledAt  DateTime        @default(now())
+  status      StatusMatricula @default(active)
+  enrolledVia OrigemMatricula
+
+  turma     Turma   @relation(fields: [classId], references: [id])
+  estudante Usuario @relation(fields: [studentId], references: [id])
+
+  /// O mesmo codigo de convite usado duas vezes nao duplica a matricula.
+  @@unique([classId, studentId])
+  @@map("matriculas")
+}
+
+/// Question: questao do banco do professor (RF02).
+model Questao {
+  id                   String      @id @default(uuid()) @db.VarChar(64)
+  teacherId            String      @db.VarChar(64)
+  type                 TipoQuestao
+  /// Markdown basico.
+  statement            String      @db.Text
+  tags                 Json
+  /// Somente objetiva: aponta para uma das alternativas.
+  correctAlternativeId String?     @db.VarChar(64)
+  /// Somente discursiva.
+  maxScore             Decimal?    @db.Decimal(6, 2)
+  /// Exclusao logica: provas que ja referenciam a questao continuam renderizando.
+  deletedAt            DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  professor     Usuario          @relation(fields: [teacherId], references: [id])
+  alternativas  Alternativa[]
+  questoesProva QuestaoDaProva[]
+
+  @@index([teacherId, deletedAt])
+  @@map("questoes")
+}
+
+/// Alternativa de questao objetiva; `position` guarda a ordem de cadastro. O id e
+/// unico dentro da questao, nao no sistema: e gerado pelo editor no navegador.
+model Alternativa {
+  id         String @db.VarChar(64)
+  questionId String @db.VarChar(64)
+  text       String @db.Text
+  position   Int
+
+  questao Questao @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, id])
+  @@unique([questionId, position])
+  @@map("alternativas")
+}
+
+/// Exam: prova, conteudo reutilizavel sem vinculo com turma (RF04).
+model Prova {
+  id          String      @id @default(uuid()) @db.VarChar(64)
+  teacherId   String      @db.VarChar(64)
+  title       String      @db.VarChar(200)
+  description String?     @db.Text
+  status      StatusProva @default(draft)
+  createdAt   DateTime    @default(now())
+
+  professor  Usuario          @relation(fields: [teacherId], references: [id])
+  questoes   QuestaoDaProva[]
+  aplicacoes Aplicacao[]
+
+  @@index([teacherId])
+  @@map("provas")
+}
+
+/// Questao dentro de uma prova, com ordem e pontuacao individual (ate 20 por prova).
+model QuestaoDaProva {
+  examId     String  @db.VarChar(64)
+  questionId String  @db.VarChar(64)
+  order      Int
+  /// Pendencia #16: hoje independente de `Questao.maxScore`.
+  score      Decimal @db.Decimal(6, 2)
+
+  prova   Prova   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questao Questao @relation(fields: [questionId], references: [id])
+
+  @@id([examId, questionId])
+  @@map("questoes_da_prova")
+}
+
+/// Application: uma prova aplicada a uma turma (RF05).
+model Aplicacao {
+  id        String          @id @default(uuid()) @db.VarChar(64)
+  examId    String          @db.VarChar(64)
+  classId   String          @db.VarChar(64)
+  teacherId String          @db.VarChar(64)
+  status    StatusAplicacao @default(draft)
+  /// PDF unico consolidado, sobrescrito a cada regeneracao.
+  pdfUrl    String?         @db.VarChar(500)
+  createdAt DateTime        @default(now())
+
+  prova     Prova         @relation(fields: [examId], references: [id])
+  turma     Turma         @relation(fields: [classId], references: [id])
+  professor Usuario       @relation(fields: [teacherId], references: [id])
+  versoes   VersaoProva[]
+
+  @@index([teacherId])
+  @@map("aplicacoes")
+}
+
+/// ExamVersion: versao impressa, onde o embaralhamento fica materializado (RF06).
+model VersaoProva {
+  id                        String    @id @default(uuid()) @db.VarChar(64)
+  applicationId             String    @db.VarChar(64)
+  versionNumber             Int
+  shuffleQuestions          Boolean
+  shuffleAlternatives       Boolean
+  withStudentIdentification Boolean
+  /// LayoutVersao: ordem efetivamente impressa de questoes e alternativas.
+  layout                    Json
+  answerKeyPublished        Boolean   @default(false)
+  answerKeyPublishedAt      DateTime?
+  /// Rota publica de gabarito; distinto do payload do QR Code.
+  publicCode                String    @unique @db.VarChar(32)
+  /// Uso exclusivo do aplicativo do professor.
+  qrCodePayload             String    @unique @db.VarChar(255)
+  createdAt                 DateTime  @default(now())
+
+  aplicacao   Aplicacao          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  atribuicoes AtribuicaoVersao[]
+  correcoes   Correcao[]
+
+  @@unique([applicationId, versionNumber])
+  @@map("versoes_prova")
+}
+
+/// ExamAssignment: so existe quando a versao foi gerada com identificacao.
+model AtribuicaoVersao {
+  id            String @id @default(uuid()) @db.VarChar(64)
+  examVersionId String @db.VarChar(64)
+  studentId     String @db.VarChar(64)
+  qrCodePayload String @unique @db.VarChar(255)
+
+  versao    VersaoProva @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+  estudante Usuario     @relation(fields: [studentId], references: [id])
+
+  @@unique([examVersionId, studentId])
+  @@map("atribuicoes_versao")
+}
+
+/// Correction: correcao confirmada, a entidade da nota (RF08 e RF09).
+model Correcao {
+  id                          String              @id @default(uuid()) @db.VarChar(64)
+  examVersionId               String              @db.VarChar(64)
+  /// Ausente enquanto pendente de atribuicao manual (RF09).
+  studentId                   String?             @db.VarChar(64)
+  reportedStudentName         String?             @db.VarChar(160)
+  reportedStudentRegistration String?             @db.VarChar(32)
+  /// ResultadoObjetivo[]
+  objectiveResults            Json
+  /// NotaDiscursiva[]
+  discursiveScores            Json
+  totalScore                  Decimal             @db.Decimal(6, 2)
+  notes                       String?             @db.Text
+  confirmedAt                 DateTime
+  correctedBy                 String              @db.VarChar(64)
+  isAutomaticallyAssigned     Boolean
+  /// Gerado no dispositivo; garante deduplicacao idempotente na sincronizacao.
+  clientCorrectionId          String              @unique @db.VarChar(64)
+  syncStatus                  StatusSincronizacao @default(synced)
+
+  versao    VersaoProva @relation(fields: [examVersionId], references: [id])
+  estudante Usuario?    @relation("CorrecaoEstudante", fields: [studentId], references: [id])
+  autor     Usuario     @relation("CorrecaoAutor", fields: [correctedBy], references: [id])
+
+  @@index([examVersionId])
+  @@map("correcoes")
+}

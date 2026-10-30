@@ -12,11 +12,11 @@ correspondente, e sai desta lista.
 
 ## Divergencias entre fontes
 
-| #   | Tema             | O que cada fonte diz                                                                                                                                                                                      |
-| --- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Pesos da N1      | A metodologia indica 25% para cada um dos quatro criterios. O documento de escopo indica 10% para o codigo-fonte, 20% para o sistema hospedado, 20% para o README e 50% para o diario individual com PRs. |
-| 2   | UML na N1        | A metodologia inclui casos de uso e diagrama de classes na N1. O documento de escopo pede esboco inicial de classes. O modelo de README posiciona UML na N2.                                              |
-| 3   | Stack do backend | A especificacao do produto descreve NestJS ou Fastify para a API. Os documentos da disciplina apresentam Node.js com Express e MySQL como stack obrigatoria.                                              |
+| #   | Tema             | O que cada fonte diz                                                                                                                                                                                                                                                                                                                                                                 |
+| --- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Pesos da N1      | A metodologia indica 25% para cada um dos quatro criterios. O documento de escopo indica 10% para o codigo-fonte, 20% para o sistema hospedado, 20% para o README e 50% para o diario individual com PRs.                                                                                                                                                                            |
+| 2   | UML na N1        | A metodologia inclui casos de uso e diagrama de classes na N1. O documento de escopo pede esboco inicial de classes. O modelo de README posiciona UML na N2.                                                                                                                                                                                                                         |
+| 3   | Stack do backend | A especificacao do produto descreve NestJS ou Fastify para a API. Os documentos da disciplina apresentam Node.js com Express e MySQL como stack obrigatoria. Proposta em andamento na [issue #66](https://github.com/Catolica-Tech-Academy-Hub/sgp-catolica/issues/66): NestJS sobre Express com MySQL, ja implementada em `apps/api`, aguardando o acordo da equipe para virar ADR. |
 
 ## Definicoes ausentes
 

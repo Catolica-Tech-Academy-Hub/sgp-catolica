@@ -1,0 +1,23 @@
+# Banco MySQL de desenvolvimento da API (apps/api). Nao e configuracao de producao.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: sgp
+      MYSQL_USER: sgp
+      MYSQL_PASSWORD: sgp
+      MYSQL_ROOT_PASSWORD: sgp-root
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-dados:/var/lib/mysql
+      - ./apps/api/docker/mysql-init.sql:/docker-entrypoint-initdb.d/01-privilegios.sql:ro
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-usgp', '-psgp']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql-dados:
