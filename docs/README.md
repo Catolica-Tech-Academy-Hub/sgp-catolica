@@ -22,6 +22,9 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um    |
 | [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis        |
 
+A captura da [lista mobile de aplicações para corrigir](telas/mobile-lista-aplicacoes.png)
+registra o início do fluxo de correção do professor.
+
 ## Por onde comecar
 
 - Para entender **o que o sistema faz**: visao do produto, depois requisitos funcionais.

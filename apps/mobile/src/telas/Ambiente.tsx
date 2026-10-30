@@ -42,10 +42,14 @@ export function Ambiente() {
               <Text style={estilos.itemTitulo}>{aplicacao.tituloDaProva}</Text>
               <Text style={estilos.itemDescricao}>{aplicacao.nomeDaTurma}</Text>
             </View>
-            <Badge
-              texto={`${aplicacao.pendentes} a corrigir`}
-              variante={aplicacao.pendentes > 0 ? 'padrao' : 'outline'}
-            />
+            {aplicacao.pendentes === undefined ? (
+              <Badge texto="Sem identificação" variante="outline" />
+            ) : (
+              <Badge
+                texto={`${aplicacao.pendentes} a corrigir`}
+                variante={aplicacao.pendentes > 0 ? 'padrao' : 'outline'}
+              />
+            )}
           </View>
         ))}
       </Cartao>
