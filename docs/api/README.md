@@ -28,8 +28,7 @@ npm run web
 ```
 
 Sem `VITE_API_URL`, a web continua no modo de demonstração local (mocks e
-`localStorage`), que é o que a versão hospedada usa enquanto a API não tem hospedagem
-(item 8 das pendências).
+`localStorage`).
 
 | Script (`--workspace @sgp/api`) | O que faz                                                  |
 | ------------------------------- | ---------------------------------------------------------- |
@@ -39,6 +38,48 @@ Sem `VITE_API_URL`, a web continua no modo de demonstração local (mocks e
 | `db:deploy`                     | Aplica as migrações pendentes                              |
 | `db:seed`                       | Apaga os dados e repopula com `@sgp/mocks`                 |
 | `db:reset`                      | Apaga o banco inteiro, reaplica as migrações e roda o seed |
+
+## Produção
+
+Na N2 o sistema roda em serviços gratuitos (issue #70):
+
+```text
+navegador → web (Render, site estático) → API (Render, web service) → MySQL (Aiven)
+```
+
+**MySQL (Aiven, plano Free).** A URL do serviço traz `ssl-mode=REQUIRED`. Com ela, a API
+e o Prisma exigem `DATABASE_CA_CERT` com o conteúdo do `ca.pem` do serviço e conferem o
+certificado do servidor contra ele (`src/prisma/adaptador.ts` e `prisma.config.ts`).
+Migração e seed rodam de uma máquina da equipe, apontando para o banco hospedado:
+
+```bash
+# DATABASE_URL e DATABASE_CA_CERT do Aiven no ambiente (nunca no repositório)
+npm run db:deploy --workspace @sgp/api
+npm run db:seed --workspace @sgp/api      # só na primeira vez: apaga e repopula
+```
+
+**API (Render, Web Service gratuito).** Repositório na raiz, branch `main`.
+
+| Campo         | Valor                                                                             |
+| ------------- | --------------------------------------------------------------------------------- |
+| Build Command | `npm ci && npm run build --workspace @sgp/api`                                    |
+| Start Command | `npm run start --workspace @sgp/api`                                              |
+| Variáveis     | `NODE_VERSION=22`, `DATABASE_URL`, `DATABASE_CA_CERT`, `CORS_ORIGIN` (URL da web) |
+
+A instância gratuita hiberna depois de 15 minutos sem uso; a primeira requisição depois
+disso leva cerca de um minuto. Antes de uma demonstração, abra `/saude` para acordá-la.
+
+**Web (Render, Static Site).**
+
+| Campo             | Valor                                             |
+| ----------------- | ------------------------------------------------- |
+| Build Command     | `npm ci && npm run build --workspace @sgp/web`    |
+| Publish Directory | `apps/web/dist`                                   |
+| Variáveis         | `NODE_VERSION=22`, `VITE_API_URL` (URL da API)    |
+| Rewrite           | `/*` → `/index.html`, para o F5 em rotas internas |
+
+Os dois serviços publicam de novo a cada push na `main`. Segredos ficam só nas
+variáveis dos serviços.
 
 ## Organização
 
@@ -127,4 +168,3 @@ mais de um problema.
 - Aplicações, correções e relatórios: as tabelas já existem e o seed as preenche, mas
   não há endpoints. Exclusão de prova também não, porque a tela não oferece a ação.
 - Sincronização da fila do aplicativo (RF08).
-- Hospedagem da API (item 8 das pendências).
