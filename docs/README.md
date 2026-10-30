@@ -7,20 +7,21 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 
 ## Documentos disponiveis
 
-| Documento                                                          | Conteudo                                                      |
-| ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| [Visao do produto](produto/visao-do-produto.md)                    | Problema que o sistema resolve e publico atendido             |
-| [Requisitos funcionais](produto/requisitos-funcionais.md)          | Os 12 requisitos com criterios de aceite                      |
-| [Requisitos nao funcionais](produto/requisitos-nao-funcionais.md)  | Os 9 requisitos de qualidade e restricao                      |
-| [Dicionario de entidades](modelo-dados/dicionario-de-entidades.md) | Entidades do dominio e correspondencia com os tipos do codigo |
-| [Pendencias](pendencias.md)                                        | Divergencias entre fontes e definicoes ainda ausentes         |
-| [Design system web](design/design-system-web.md)                   | Padroes de UI, componentes, temas e paleta                    |
-| [Experiencia web atual](design/experiencia-web-atual.md)           | Mapa de telas, navegacao e fluxos implementados               |
-| [Design system mobile](design/design-system-mobile.md)             | Padroes de UI do aplicativo do professor                      |
-| [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                     |
-| [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui     |
-| [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um    |
-| [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis        |
+| Documento                                                          | Conteudo                                                          |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| [Visao do produto](produto/visao-do-produto.md)                    | Problema que o sistema resolve e publico atendido                 |
+| [Requisitos funcionais](produto/requisitos-funcionais.md)          | Os 12 requisitos com criterios de aceite                          |
+| [Requisitos nao funcionais](produto/requisitos-nao-funcionais.md)  | Os 9 requisitos de qualidade e restricao                          |
+| [Dicionario de entidades](modelo-dados/dicionario-de-entidades.md) | Entidades do dominio e correspondencia com os tipos do codigo     |
+| [Pendencias](pendencias.md)                                        | Divergencias entre fontes e definicoes ainda ausentes             |
+| [Design system web](design/design-system-web.md)                   | Padroes de UI, componentes, temas e paleta                        |
+| [Experiencia web atual](design/experiencia-web-atual.md)           | Mapa de telas, navegacao e fluxos implementados                   |
+| [Design system mobile](design/design-system-mobile.md)             | Padroes de UI do aplicativo do professor                          |
+| [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                         |
+| [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui         |
+| [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um        |
+| [Modelo de dados (DER)](modelo-dados/der.md)                       | Diagrama entidade-relacionamento do MySQL e decisoes de modelagem |
+| [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis            |
 
 ## Por onde comecar
 

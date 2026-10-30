@@ -8,14 +8,17 @@ O professor prepara e aplica avaliações, corrige cartões-resposta pelo celula
 acompanha resultados. O estudante consulta suas notas com mais rapidez e clareza.
 
 [![Status](https://img.shields.io/badge/status-em%20desenvolvimento-F5A623?style=flat-square)](#fase-atual)
-[![Entrega](https://img.shields.io/badge/entrega-N1-3D348B?style=flat-square)](#fase-atual)
+[![Entrega](https://img.shields.io/badge/entrega-N2-3D348B?style=flat-square)](#fase-atual)
 [![Vue](https://img.shields.io/badge/Vue-3-42B883?style=flat-square&logo=vuedotjs&logoColor=white)](apps/web)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](package.json)
 [![React Native](https://img.shields.io/badge/React%20Native-mobile-61DAFB?style=flat-square&logo=react&logoColor=111111)](apps/mobile)
 [![Expo](https://img.shields.io/badge/Expo-51-000020?style=flat-square&logo=expo&logoColor=white)](apps/mobile)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white)](.nvmrc)
+[![NestJS](https://img.shields.io/badge/NestJS-API-E0234E?style=flat-square&logo=nestjs&logoColor=white)](apps/api)
+[![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=flat-square&logo=mysql&logoColor=white)](docs/modelo-dados/der.md)
 ![Licença](https://img.shields.io/badge/licença-uso%20acadêmico-7B4FA6?style=flat-square)
 
+**[Sistema hospedado](https://sgp-catolica.onrender.com)** ·
 [Visão do produto](docs/produto/visao-do-produto.md) ·
 [Documentação](docs/README.md) ·
 [Executar localmente](#executar-localmente) ·
@@ -47,16 +50,32 @@ O fluxo central conecta as três superfícies:
 
 ## Fase atual
 
-> **N1 — interfaces navegáveis.** A experiência está sendo construída com dados
-> estáticos de [`packages/mocks`](packages/mocks), sem banco de dados, API,
-> autenticação ou processamento real de câmera nesta etapa.
+> **N2 — integração real com banco de dados.** A web passou a ler e gravar num MySQL
+> real por meio de uma API própria. Turmas, matrículas, banco de questões e provas
+> funcionam de ponta a ponta, do navegador ao banco.
 
-O conjunto final de telas da N1 ainda depende de validação da equipe e da professora.
-As divergências e definições pendentes permanecem registradas em
-[`docs/pendencias.md`](docs/pendencias.md), sem serem tratadas como decisões.
+| Sistema             | Endereço                                                         |
+| ------------------- | ---------------------------------------------------------------- |
+| Aplicação web       | [sgp-catolica.onrender.com](https://sgp-catolica.onrender.com)   |
+| API (saúde e banco) | [sgp-api.onrender.com/saude](https://sgp-api.onrender.com/saude) |
 
-Quando o fluxo for aprovado, os registros visuais da entrega serão publicados em
-[`docs/telas/`](docs/telas) e o mapa de navegação em [`docs/design/`](docs/design).
+A API roda numa instância gratuita que hiberna sem uso: o primeiro acesso depois de um
+tempo parado leva cerca de um minuto para carregar.
+
+### Estado da integração com o banco
+
+| Tela                                     | Dados                                           |
+| ---------------------------------------- | ----------------------------------------------- |
+| Turmas e detalhe da turma (RF03)         | MySQL: criar, editar, arquivar, convite, alunos |
+| Banco de questões (RF02)                 | MySQL: criar, editar, excluir e restaurar       |
+| Provas e editor de prova (RF04)          | MySQL: criar, editar título, questões e blocos  |
+| Aplicações, correções, relatórios, aluno | Ainda em dados de demonstração (próxima etapa)  |
+
+O banco começa com os dados de demonstração de [`packages/mocks`](packages/mocks),
+carregados pelo seed, para a apresentação ter conteúdo desde o primeiro acesso. O
+modelo completo já existe no banco, inclusive as tabelas das próximas telas; o que
+falta para elas são os endpoints. Divergências e definições em aberto continuam em
+[`docs/pendencias.md`](docs/pendencias.md).
 
 ## Produto e requisitos
 
@@ -67,35 +86,62 @@ continue simples e orientada à visão geral:
 - [Requisitos funcionais](docs/produto/requisitos-funcionais.md) — RF01 a RF11 e critérios de aceite.
 - [Requisitos não funcionais](docs/produto/requisitos-nao-funcionais.md) — desempenho, segurança, privacidade, operação offline e qualidade.
 - [Dicionário de entidades](docs/modelo-dados/dicionario-de-entidades.md) — conceitos do domínio e correspondência com os tipos do código.
+- [Diagramas UML](docs/uml/README.md) — casos de uso, atividade, classes e sequência, com o passo a passo de cada um.
+- [Modelo de dados (DER)](docs/modelo-dados/der.md) — tabelas, chaves e cardinalidades do MySQL, com as decisões de modelagem.
 
 O recorte de requisitos por entrega ainda não foi aprovado. A especificação descreve
-o produto completo; ela não deve ser confundida com o escopo técnico da N1.
+o produto completo; ela não deve ser confundida com o escopo técnico de cada fase.
 
-## Fundação técnica
+## Arquitetura
 
 O projeto é um monorepo TypeScript com **Vue e Vite** na experiência web,
-**React Native e Expo** no aplicativo do professor e pacotes compartilhados para
-tipos, dados de demonstração e identidade visual.
+**React Native e Expo** no aplicativo do professor, uma **API em NestJS** e pacotes
+compartilhados para tipos, dados de demonstração e identidade visual.
 
 ```text
 apps/       web · mobile · api
 packages/   shared-types · mocks · design-tokens
-docs/       produto · design · decisões · modelo de dados · API
+docs/       produto · design · uml · modelo de dados · api · decisões
 ```
 
-Na N1, as aplicações consomem somente mocks. A API em `apps/api` (**NestJS** sobre
-Express, com **MySQL** via Prisma) é a proposta da
-[issue #66](https://github.com/Catolica-Tech-Academy-Hub/sgp-catolica/issues/66) para
-resolver a divergência entre Node.js com Express e NestJS/Fastify. Ela já atende turmas
-e banco de questões e vira decisão formal com o acordo da equipe. Como rodar e os
-endpoints estão em [`docs/api/`](docs/api/README.md).
+A aplicação é organizada em camadas, cada uma falando só com a vizinha:
+
+```mermaid
+flowchart LR
+    subgraph Web["apps/web (Vue)"]
+        T[Telas] --> E["Estado<br/>lib/estado-*.ts"]
+        E --> C["Cliente HTTP<br/>lib/api.ts"]
+    end
+    subgraph API["apps/api (NestJS)"]
+        CT[Controllers<br/>e DTOs] --> S[Services<br/>regras de negócio]
+        S --> P[Prisma<br/>acesso a dados]
+    end
+    C -- "HTTP/JSON" --> CT
+    P -- "TLS" --> DB[(MySQL)]
+```
+
+- **Telas** não sabem de onde vêm os dados: leem e alteram o estado.
+- **Estado** (`lib/estado-*.ts`) é o único ponto que fala com a API. Sem `VITE_API_URL`,
+  usa os dados de demonstração, o que mantém o modo offline da N1 para desenvolvimento.
+- **Controllers** validam a entrada (DTOs com `class-validator`); **services** aplicam as
+  regras dos requisitos (por exemplo, 2 a 5 alternativas na questão objetiva, até 20
+  questões por prova); o **Prisma** faz o acesso ao MySQL.
+- Os tipos de `@sgp/shared-types` são o contrato entre as duas pontas: a API devolve
+  exatamente o formato que as telas consomem.
+
+A stack da API (NestJS sobre Express, MySQL e Prisma) é a proposta da
+[issue #66](https://github.com/Catolica-Tech-Academy-Hub/sgp-catolica/issues/66) para a
+divergência entre Node.js com Express e NestJS/Fastify; ela vira decisão formal em
+`docs/decisoes/` com o acordo da equipe. Endpoints, execução e hospedagem estão em
+[`docs/api/`](docs/api/README.md).
 
 ## Executar localmente
 
-Use **Node.js 20 ou superior** e **npm 10 ou superior**.
+Versões usadas: **Node.js 20 ou superior** (22 na hospedagem), **npm 10 ou superior**,
+**MySQL 8.4** (via Docker) e **Docker** com Compose para o banco local.
 
 ```bash
-git clone https://github.com/LeoAnders/sgp-catolica.git
+git clone https://github.com/Catolica-Tech-Academy-Hub/sgp-catolica.git
 cd sgp-catolica
 npm ci
 ```
@@ -109,7 +155,20 @@ npm run lint       # ESLint em web, mobile e api
 npm run format     # aplica a formatação do Prettier
 ```
 
-O sistema hospedado será disponibilizado durante a entrega da N1.
+Para usar a web com o banco local:
+
+```bash
+docker compose up -d                            # MySQL 8.4 em localhost:3306
+cp apps/api/.env.example apps/api/.env
+npm run db:deploy --workspace @sgp/api          # cria as tabelas
+npm run db:seed --workspace @sgp/api            # carrega os dados de demonstração
+npm run api                                     # API em http://localhost:3000
+cp apps/web/.env.example apps/web/.env.local    # VITE_API_URL=http://localhost:3000
+npm run web
+```
+
+A publicação (MySQL no Aiven, API e web no Render) está descrita em
+[`docs/api/README.md`](docs/api/README.md#produção).
 
 ## Documentação
 
