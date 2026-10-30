@@ -167,6 +167,9 @@ model Prova {
   description String?     @db.Text
   status      StatusProva @default(draft)
   createdAt   DateTime    @default(now())
+  /// Layout do editor por blocos: prototipo da issue #12, fora do dominio aprovado.
+  /// Guarda texto, imagem, espaco e questoes rascunho que ainda nao estao no banco.
+  blocos      Json?
 
   professor  Usuario          @relation(fields: [teacherId], references: [id])
   questoes   QuestaoDaProva[]
