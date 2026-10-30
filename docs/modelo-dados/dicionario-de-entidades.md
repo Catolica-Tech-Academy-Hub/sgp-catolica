@@ -151,6 +151,9 @@ mesmos nomes dos tipos de `@sgp/shared-types`. Diferencas em relacao a este dici
 - A alternativa de questao objetiva vira tabela propria (`alternativas`), com a ordem
   de cadastro e chave composta por questao e alternativa.
 - A lista de questoes da prova vira a tabela `questoes_da_prova`, com ordem e pontuacao.
+- `provas.blocos` (JSON, opcional) guarda o layout do editor por blocos, prototipo da
+  issue #12 que nao faz parte deste dicionario. E nele que fica a questao criada dentro
+  da prova e ainda nao salva no banco, por isso ela nao aparece em `questoes_da_prova`.
 - Layout da versao, resultados objetivos e notas discursivas ficam em colunas JSON:
   sao lidos e gravados inteiros, nunca consultados por partes.
 

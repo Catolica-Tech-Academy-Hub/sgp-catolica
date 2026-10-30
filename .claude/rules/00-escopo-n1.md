@@ -21,8 +21,8 @@ codigo, sem criar a implementacao real.
 
 Excecao em andamento: a issue #66 introduz a API em `apps/api` (NestJS, MySQL,
 Prisma) e o `docker-compose.yml` do MySQL de desenvolvimento. Ela cobre turmas,
-matriculas, estudantes e banco de questoes; o resto da lista acima continua valendo
-ate ter issue propria.
+matriculas, estudantes e banco de questoes, e a issue #71 acrescenta provas; o resto
+da lista acima continua valendo ate ter issue propria.
 
 A web usa Vite + Vue, conforme a especificacao v1.10 e o alinhamento confirmado em
 2026-08-17. A migracao do scaffold foi concluida; nao reintroduza React na web.
