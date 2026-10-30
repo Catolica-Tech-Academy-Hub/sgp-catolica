@@ -18,7 +18,7 @@ acompanha resultados. O estudante consulta suas notas com mais rapidez e clareza
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=flat-square&logo=mysql&logoColor=white)](docs/modelo-dados/der.md)
 ![Licença](https://img.shields.io/badge/licença-uso%20acadêmico-7B4FA6?style=flat-square)
 
-**[Sistema hospedado](https://sgp-catolica.onrender.com)** ·
+**[Sistema hospedado](https://sgp-catolica-oft9.onrender.com)** ·
 [Visão do produto](docs/produto/visao-do-produto.md) ·
 [Documentação](docs/README.md) ·
 [Executar localmente](#executar-localmente) ·
@@ -54,10 +54,10 @@ O fluxo central conecta as três superfícies:
 > real por meio de uma API própria. Turmas, matrículas, banco de questões e provas
 > funcionam de ponta a ponta, do navegador ao banco.
 
-| Sistema             | Endereço                                                         |
-| ------------------- | ---------------------------------------------------------------- |
-| Aplicação web       | [sgp-catolica.onrender.com](https://sgp-catolica.onrender.com)   |
-| API (saúde e banco) | [sgp-api.onrender.com/saude](https://sgp-api.onrender.com/saude) |
+| Sistema             | Endereço                                                                   |
+| ------------------- | -------------------------------------------------------------------------- |
+| Aplicação web       | [sgp-catolica-oft9.onrender.com](https://sgp-catolica-oft9.onrender.com)   |
+| API (saúde e banco) | [sgp-api-pfpk.onrender.com/saude](https://sgp-api-pfpk.onrender.com/saude) |
 
 A API roda numa instância gratuita que hiberna sem uso: o primeiro acesso depois de um
 tempo parado leva cerca de um minuto para carregar.
