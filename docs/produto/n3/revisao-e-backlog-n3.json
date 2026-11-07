@@ -1,0 +1,1237 @@
+{
+  "entrega": "Revisão e Backlog N3",
+  "revisado_em": "2026-11-06",
+  "issue_da_entrega": 79,
+  "periodo": {
+    "inicio": "2026-11-09",
+    "fim": "2026-11-25",
+    "entrega_n3": "2026-11-27"
+  },
+  "fontes": [
+    "docs/produto/visao-do-produto.md (resumo da especificação v1.10 e do relato do cliente)",
+    "docs/produto/requisitos-funcionais.md",
+    "docs/produto/requisitos-nao-funcionais.md",
+    "docs/pendencias.md",
+    "docs/api/README.md (seção Ainda não coberto)",
+    "docs/design/experiencia-web-atual.md e experiencia-mobile-atual.md (seções de limites)"
+  ],
+  "observacoes": [
+    "O recorte da N3 ainda não foi aprovado (pendência 5). Esta revisão é a proposta da equipe para fechar o MVP, a ser validada com a professora e o cliente.",
+    "Prioridade Alta = indispensável para o fluxo central do MVP (criar prova, aplicar, gerar PDF, corrigir no aplicativo, ver a nota). Média = critério de aceite do MVP fora do fluxo central. Baixa = qualidade operacional que pode ser entregue de forma reduzida.",
+    "Estimativas em horas de trabalho por pessoa; datas previstas consideram a entrega da N3 em 27/11/2026 com dois dias de folga.",
+    "Os pedidos do cliente 12 a 15 das pendências não entram no backlog: dependem de validação antes de virar critério de aceite."
+  ],
+  "equipe": [
+    { "nome": "Cintia Wilbert Lorenzetti", "github": "CintiaWilbert" },
+    { "nome": "Gabriel Massaia de Oliveira", "github": "gabrielmassaia" },
+    { "nome": "Leonardo Matheus Anders", "github": "LeoAnders" },
+    { "nome": "Rian Carlos Odwazny Flexa", "github": "rianflexa" },
+    { "nome": "Wesley Diorrani Ferreira", "github": "WesleyDIO" }
+  ],
+  "requisitos": [
+    {
+      "id": "RF01",
+      "tipo": "Funcional",
+      "requisito": "Cadastro e autenticação de professor e estudante",
+      "situacao_atual": "Não iniciado. O login da web e do aplicativo só valida o formato e abre a perspectiva escolhida; a API usa um professor fixo (src/professor-atual.ts).",
+      "o_que_falta": "Cadastro por tipo com validação de domínio e senha mínima; e-mail único; login com JWT e refresh token; recuperação de senha por e-mail; rate limiting; logout do dispositivo e de todos os dispositivos; endpoint dos próprios dados; telas reais na web e no aplicativo.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T01", "T02", "T03", "T05", "T16"]
+    },
+    {
+      "id": "RF01.1",
+      "tipo": "Funcional",
+      "requisito": "Anonimização de conta (LGPD)",
+      "situacao_atual": "Não iniciado.",
+      "o_que_falta": "Operação autenticada e irreversível que substitui nome e e-mail, invalida a senha, revoga os refresh tokens e registra a data, preservando correções, notas e matrículas; conta anonimizada não faz login e libera o e-mail.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Média",
+      "tarefas": ["T06"]
+    },
+    {
+      "id": "RF02",
+      "tipo": "Funcional",
+      "requisito": "Gerenciamento de questões",
+      "situacao_atual": "Implementado na web e na API (MySQL): criar, editar, excluir logicamente, restaurar, busca por texto e filtro por tipo.",
+      "o_que_falta": "Filtro por tags; Markdown básico no enunciado; questões vinculadas ao professor autenticado; testes das validações (2 a 5 alternativas, uma correta).",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Média",
+      "tarefas": ["T07", "T04", "T29"]
+    },
+    {
+      "id": "RF03",
+      "tipo": "Funcional",
+      "requisito": "Criação de turmas e matrículas",
+      "situacao_atual": "Implementado na web e na API: criar, editar, arquivar, código de convite com regeneração, listar e remover alunos sem apagar notas.",
+      "o_que_falta": "Matrícula por e-mail feita pelo professor; auto-matrícula do estudante pelo código de convite, criando a conta quando não existir e devolvendo o estudante autenticado; turma ligada ao professor autenticado; testes.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T08", "T09", "T04"]
+    },
+    {
+      "id": "RF04",
+      "tipo": "Funcional",
+      "requisito": "Criação de provas",
+      "situacao_atual": "Implementado na web e na API: editor por blocos, até 20 questões, pontuação por questão, filtros por situação.",
+      "o_que_falta": "Encerrar (arquivar) a prova pela interface e pela API; transição automática de draft para ready na primeira aplicação; testes do limite de 20 questões.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Média",
+      "tarefas": ["T10", "T29"]
+    },
+    {
+      "id": "RF05",
+      "tipo": "Funcional",
+      "requisito": "Criação de aplicações",
+      "situacao_atual": "Parcial: a web cria a aplicação em draft, mas ela vive no navegador (localStorage). A tabela existe no MySQL, sem endpoints.",
+      "o_que_falta": "Endpoints de aplicações; tela de aplicações e editor ligados à API; transição para generated quando o PDF é gerado.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T11"]
+    },
+    {
+      "id": "RF06",
+      "tipo": "Funcional",
+      "requisito": "Geração de PDF e versões",
+      "situacao_atual": "Não iniciado. O botão Gerar PDF está desabilitado; o QR Code do editor é só reserva visual.",
+      "o_que_falta": "Versões com embaralhamento de questões e alternativas materializado e persistido; atribuição por estudante matriculado; QR Code por versão ou por versão e aluno; PDF único consolidado; regeneração bloqueada depois de correção confirmada.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T12", "T13"]
+    },
+    {
+      "id": "RF07",
+      "tipo": "Funcional",
+      "requisito": "Publicação de gabarito",
+      "situacao_atual": "Não iniciado. O estado de publicação só existe nos dados de demonstração.",
+      "o_que_falta": "Publicar por aplicação ou por versão; rota pública com código de gabarito; visualização autenticada para o aluno só depois da publicação.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Média",
+      "tarefas": ["T14"]
+    },
+    {
+      "id": "RF08",
+      "tipo": "Funcional",
+      "requisito": "Correção via aplicativo mobile",
+      "situacao_atual": "Parcial: fluxo navegável com dados de demonstração (lista de aplicações, escolha da prova na lista, conferência por toque, notas discursivas e confirmação). Sem câmera, sem API e fila só em memória.",
+      "o_que_falta": "Login no aplicativo; lista de aplicações e download antecipado dos gabaritos pela API; leitura real do QR Code; leitura do cartão-resposta pela câmera com correção manual antes de confirmar; fila local persistente; sincronização em lote idempotente, com conflito sinalizado e recálculo pelo answerKeySnapshot.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T15", "T16", "T17", "T18", "T19", "T20"]
+    },
+    {
+      "id": "RF09",
+      "tipo": "Funcional",
+      "requisito": "Lançamento manual de nota",
+      "situacao_atual": "Parcial: a fila de atribuição da web está pronta, com dados de demonstração e persistência no navegador.",
+      "o_que_falta": "Endpoints de correções pendentes e de atribuição que preenchem o vínculo na correção existente, recusando duas correções da mesma versão para o mesmo aluno; tela ligada à API.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T21"]
+    },
+    {
+      "id": "RF10",
+      "tipo": "Funcional",
+      "requisito": "Relatórios de notas",
+      "situacao_atual": "Parcial: relatório por aplicação e consolidado na web, calculados sobre dados de demonstração; exportação desabilitada.",
+      "o_que_falta": "Estatísticas (média, mediana, desvio padrão, distribuição) a partir das correções do MySQL; filtros por turma, disciplina e período na API; exportação em CSV, Excel e PDF.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Média",
+      "tarefas": ["T22"]
+    },
+    {
+      "id": "RF11",
+      "tipo": "Funcional",
+      "requisito": "Histórico de notas do estudante",
+      "situacao_atual": "Parcial: histórico, filtros, gráfico de evolução e detalhamento por questão prontos na web, com aluno fixo dos dados de demonstração.",
+      "o_que_falta": "Endpoint do histórico do estudante autenticado com isolamento total; detalhamento por questão só com gabarito publicado; registro de acesso a notas.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Média",
+      "tarefas": ["T23"]
+    },
+    {
+      "id": "RNF01",
+      "tipo": "Não funcional",
+      "requisito": "Escalabilidade: 500 a 600 professores e 10.000 alunos ativos",
+      "situacao_atual": "Não verificado.",
+      "o_que_falta": "Teste de carga com volume proporcional e registro do resultado e dos limites da hospedagem gratuita.",
+      "acao": "Testar",
+      "prioridade": "Baixa",
+      "tarefas": ["T27"]
+    },
+    {
+      "id": "RNF02",
+      "tipo": "Não funcional",
+      "requisito": "Performance: p95 abaixo de 300 ms nas operações comuns",
+      "situacao_atual": "Não medido.",
+      "o_que_falta": "Medir o p95 das operações comuns e registrar o resultado.",
+      "acao": "Testar",
+      "prioridade": "Baixa",
+      "tarefas": ["T27"]
+    },
+    {
+      "id": "RNF03",
+      "tipo": "Não funcional",
+      "requisito": "Disponibilidade: 99,5% de uptime mensal",
+      "situacao_atual": "Não atendido na hospedagem atual: a instância gratuita da API hiberna depois de 15 minutos sem uso.",
+      "o_que_falta": "Monitor de disponibilidade apontando para /saude e registro do limite da hospedagem gratuita.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Baixa",
+      "tarefas": ["T26"]
+    },
+    {
+      "id": "RNF04",
+      "tipo": "Não funcional",
+      "requisito": "Segurança: HTTPS, JWT e refresh token, rate limiting, isolamento entre alunos",
+      "situacao_atual": "Parcial: HTTPS na hospedagem e TLS até o MySQL. Sem autenticação, sem rate limiting e sem isolamento por usuário.",
+      "o_que_falta": "JWT e refresh token, rate limiting, dados filtrados pelo usuário autenticado e testes de acesso indevido.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T02", "T03", "T04"]
+    },
+    {
+      "id": "RNF05",
+      "tipo": "Não funcional",
+      "requisito": "Privacidade (LGPD): aluno vê só os próprios dados, registro de acesso a notas, anonimização",
+      "situacao_atual": "Parcial: GET /estudantes já se restringe aos alunos das turmas do professor. Sem registro de acesso e sem anonimização.",
+      "o_que_falta": "Isolamento do histórico por estudante autenticado, registro de acesso a notas e anonimização sob demanda.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Média",
+      "tarefas": ["T04", "T06", "T23"]
+    },
+    {
+      "id": "RNF06",
+      "tipo": "Não funcional",
+      "requisito": "Operação offline do aplicativo de correção",
+      "situacao_atual": "Parcial: a fila existe só na memória da sessão e não há sincronização.",
+      "o_que_falta": "Fila persistente que sobrevive ao fechamento do aplicativo, gabaritos baixados antecipadamente e sincronização automática ao reconectar.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T17", "T20"]
+    },
+    {
+      "id": "RNF07",
+      "tipo": "Não funcional",
+      "requisito": "Observabilidade: logs estruturados, métricas e alertas",
+      "situacao_atual": "Não iniciado: a API usa o log padrão do Nest.",
+      "o_que_falta": "Logs estruturados em JSON com identificador de requisição, métrica básica de tempo de resposta e alerta de indisponibilidade.",
+      "acao": "Desenvolver",
+      "prioridade": "Baixa",
+      "tarefas": ["T26"]
+    },
+    {
+      "id": "RNF08",
+      "tipo": "Não funcional",
+      "requisito": "Backup diário do banco com retenção de 30 dias",
+      "situacao_atual": "Não verificado no plano gratuito do Aiven.",
+      "o_que_falta": "Conferir a política de backup do plano usado; se não cobrir 30 dias, registrar o limite e um procedimento de dump manual.",
+      "acao": "Testar",
+      "prioridade": "Baixa",
+      "tarefas": ["T26"]
+    },
+    {
+      "id": "RNF09",
+      "tipo": "Não funcional",
+      "requisito": "Testes: cobertura mínima de 80% nas regras críticas de negócio",
+      "situacao_atual": "Não iniciado: não há nenhum teste automatizado no repositório, e o CI não roda typecheck (issue #52).",
+      "o_que_falta": "Definir o conjunto de regras críticas (pendência 11); configurar testes na API e no CI com relatório de cobertura; corrigir o typecheck do mobile; teste de ponta a ponta do fluxo completo.",
+      "acao": "Desenvolver e testar",
+      "prioridade": "Alta",
+      "tarefas": ["T24", "T25", "T29", "T30"]
+    }
+  ],
+  "tarefas": [
+    {
+      "id": "T01",
+      "titulo": "[api] Cadastro de professor e estudante com validação de domínio (RF01)",
+      "resumo": "Cadastro separado por tipo, com nome, e-mail único, senha com hash e validação de domínio.",
+      "requisitos": ["RF01"],
+      "area": "API",
+      "labels": ["enhancement"],
+      "responsavel": "LeoAnders",
+      "estimativa_h": 8,
+      "prioridade": "Alta",
+      "inicio": "2026-11-09",
+      "data_prevista": "2026-11-10",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 80,
+      "relacionadas": [],
+      "contexto": "RF01 exige cadastro separado por tipo (professor ou estudante), com nome completo, e-mail único e senha de no mínimo 8 caracteres, aceitando `@catolicasc.org.br` para professor e `@catolicasc.edu.br` para estudante. Hoje não existe cadastro: a API usa o professor fixo de `src/professor-atual.ts` e a tabela `Usuario` já existe no Prisma.",
+      "escopo": [
+        "Endpoint `POST /auth/cadastro` com DTO validado (nome, e-mail, senha, tipo).",
+        "Validação de domínio por tipo e de e-mail único (409 quando já existe).",
+        "Senha gravada com hash (bcrypt ou argon2), nunca em texto.",
+        "Testes unitários das regras de domínio, senha e unicidade."
+      ],
+      "fora_de_escopo": ["Login e emissão de tokens (T02).", "Telas de cadastro na web (T05)."],
+      "documentacao": [
+        "**Técnica**: endpoints em `docs/api/README.md`; campos de `Usuario` em `docs/modelo-dados/dicionario-de-entidades.md` se mudarem."
+      ],
+      "checklist": [
+        "Cadastro por tipo com validação de domínio e senha mínima",
+        "E-mail único com resposta 409",
+        "Senha armazenada com hash",
+        "Testes das regras de cadastro"
+      ]
+    },
+    {
+      "id": "T02",
+      "titulo": "[api] Login com JWT e refresh token, logout e endpoint dos próprios dados (RF01)",
+      "resumo": "Login, renovação de token, logout do dispositivo e de todos os dispositivos, e /eu.",
+      "requisitos": ["RF01", "RNF04"],
+      "area": "API",
+      "labels": ["enhancement"],
+      "responsavel": "LeoAnders",
+      "estimativa_h": 10,
+      "prioridade": "Alta",
+      "inicio": "2026-11-11",
+      "data_prevista": "2026-11-13",
+      "dependencias": ["T01"],
+      "issue_existente": null,
+      "issue": 81,
+      "relacionadas": [],
+      "contexto": "RF01 e RNF04 pedem login que retorna JWT e refresh token, logout que revoga só o refresh token do dispositivo atual, opção de sair de todos os dispositivos e endpoint autenticado com os próprios dados. É a base de todas as tarefas que trocam o professor fixo pelo usuário real.",
+      "escopo": [
+        "`POST /auth/login` devolvendo JWT de curta duração e refresh token por dispositivo.",
+        "`POST /auth/renovar`, `POST /auth/sair` (dispositivo atual) e `POST /auth/sair-de-todos`.",
+        "Refresh tokens persistidos com hash e revogáveis; tabela nova via migração Prisma.",
+        "`GET /eu` autenticado e guarda de autenticação reutilizável nos módulos.",
+        "Segredo do JWT por variável de ambiente, documentado no `.env.example`."
+      ],
+      "fora_de_escopo": [
+        "Recuperação de senha e rate limiting (T03).",
+        "Troca do professor fixo nos módulos existentes (T04)."
+      ],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` (autenticação, variáveis no Render) e DER em `docs/modelo-dados/der.md` com a tabela de refresh tokens."
+      ],
+      "checklist": [
+        "Login com JWT e refresh token",
+        "Renovação, logout do dispositivo e de todos",
+        "Endpoint `/eu` autenticado",
+        "Testes de emissão, expiração e revogação"
+      ]
+    },
+    {
+      "id": "T03",
+      "titulo": "[api] Recuperação de senha por e-mail e rate limiting do login (RF01)",
+      "resumo": "Fluxo de redefinição de senha com token de uso único e limite de tentativas.",
+      "requisitos": ["RF01", "RNF04"],
+      "area": "API",
+      "labels": ["enhancement"],
+      "responsavel": "LeoAnders",
+      "estimativa_h": 6,
+      "prioridade": "Média",
+      "inicio": "2026-11-16",
+      "data_prevista": "2026-11-17",
+      "dependencias": ["T02"],
+      "issue_existente": null,
+      "issue": 82,
+      "relacionadas": [],
+      "contexto": "RF01 inclui recuperação de senha por e-mail e rate limiting contra força bruta (também em RNF04). Sem isso a autenticação fica incompleta para o MVP.",
+      "escopo": [
+        "`POST /auth/esqueci-a-senha` e `POST /auth/redefinir-senha` com token de uso único e expiração.",
+        "Envio de e-mail por serviço gratuito configurável por variável de ambiente; sem credencial no repositório.",
+        "Rate limiting (`@nestjs/throttler`) no login, cadastro e recuperação.",
+        "Redefinir a senha revoga os refresh tokens do usuário."
+      ],
+      "fora_de_escopo": ["Tela de recuperação na web (entra em T05)."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` com os endpoints e as variáveis de e-mail."
+      ],
+      "checklist": [
+        "Recuperação de senha com token de uso único",
+        "Rate limiting nas rotas de autenticação",
+        "Testes do fluxo e do limite de tentativas"
+      ]
+    },
+    {
+      "id": "T04",
+      "titulo": "[api] Trocar o professor fixo pelo usuário autenticado e isolar os dados por dono (RNF04)",
+      "resumo": "Turmas, questões e provas passam a pertencer ao professor do token.",
+      "requisitos": ["RF02", "RF03", "RF04", "RNF04", "RNF05"],
+      "area": "API",
+      "labels": ["enhancement"],
+      "responsavel": "WesleyDIO",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-13",
+      "data_prevista": "2026-11-16",
+      "dependencias": ["T02"],
+      "issue_existente": null,
+      "issue": 83,
+      "relacionadas": [66],
+      "contexto": "Desde a issue #66 todos os endpoints atuam sobre o professor fixo `prof-1` (`src/professor-atual.ts`, ponto único a trocar). Com a autenticação (T02), cada professor só pode ver e alterar o que é dele.",
+      "escopo": [
+        "Substituir `professor-atual.ts` pelo usuário do JWT em turmas, matrículas, estudantes, questões e provas.",
+        "Responder 404 para recurso de outro professor, sem revelar existência.",
+        "Rotas de professor recusam token de estudante (403).",
+        "Seed com mais de um professor para demonstrar o isolamento.",
+        "Testes de acesso cruzado entre professores."
+      ],
+      "fora_de_escopo": [
+        "Endpoints novos de aplicação, correção e relatório, que já nascem com o dono (T11, T15, T21, T22)."
+      ],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` (remover o professor fixo de Ainda não coberto)."
+      ],
+      "checklist": [
+        "Professor fixo removido",
+        "Isolamento por professor em todos os módulos existentes",
+        "Testes de acesso cruzado"
+      ]
+    },
+    {
+      "id": "T05",
+      "titulo": "[web] Login, cadastro, sessão e logout reais (RF01)",
+      "resumo": "Telas de login e cadastro ligadas à API, com sessão, renovação de token e rotas protegidas.",
+      "requisitos": ["RF01"],
+      "area": "Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "gabrielmassaia",
+      "estimativa_h": 8,
+      "prioridade": "Alta",
+      "inicio": "2026-11-16",
+      "data_prevista": "2026-11-17",
+      "dependencias": ["T02"],
+      "issue_existente": null,
+      "issue": 84,
+      "relacionadas": [30],
+      "contexto": "`/login` hoje só valida o formato e abre a perspectiva escolhida (`experiencia-web-atual.md`). Com T02 a web passa a autenticar de verdade e o papel vem do token, não da escolha na tela.",
+      "escopo": [
+        "Login real pela API; o destino (`/provas` ou `/estudante`) vem do tipo do usuário.",
+        "Tela de cadastro com validação de domínio por tipo e tela de recuperação de senha.",
+        "Sessão no cliente com renovação automática do token em `lib/api.ts`.",
+        "Guarda de rota: sem sessão volta ao login; estudante não abre rotas de professor.",
+        "Menu do perfil com Sair e Sair de todos os dispositivos.",
+        "Modo de demonstração sem `VITE_API_URL` continua funcionando."
+      ],
+      "fora_de_escopo": ["Anonimização de conta (T06)."],
+      "documentacao": [
+        "**Técnica**: `docs/design/experiencia-web-atual.md` (seções Login e Casca autenticada).",
+        "**Referência de IA**: conferir `.claude/skills/sgp-catolica-web`.",
+        "**Usuário**: prints de login e cadastro em `docs/telas/`."
+      ],
+      "checklist": [
+        "Login e cadastro reais",
+        "Renovação de token e guarda de rotas",
+        "Logout do dispositivo e de todos"
+      ]
+    },
+    {
+      "id": "T06",
+      "titulo": "[api][web] Anonimização de conta (RF01.1)",
+      "resumo": "Operação irreversível que desassocia os dados pessoais preservando notas e matrículas.",
+      "requisitos": ["RF01.1", "RNF05"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "gabrielmassaia",
+      "estimativa_h": 5,
+      "prioridade": "Média",
+      "inicio": "2026-11-18",
+      "data_prevista": "2026-11-18",
+      "dependencias": ["T02", "T05"],
+      "issue_existente": null,
+      "issue": 85,
+      "relacionadas": [],
+      "contexto": "RF01.1 pede anonimização sob demanda: nome e e-mail viram valores substitutos não reversíveis, senha invalidada, refresh tokens revogados e data registrada. Não é exclusão: correções, notas e matrículas continuam. Conta anonimizada não faz login e o e-mail original fica livre.",
+      "escopo": [
+        "`POST /eu/anonimizar` autenticado, com confirmação explícita no corpo.",
+        "Substituição irreversível de nome e e-mail, senha invalidada, tokens revogados e `anonymizedAt` registrado.",
+        "Ação na web, no menu do perfil, com diálogo de confirmação que explica a irreversibilidade.",
+        "Testes: conta anonimizada não faz login; e-mail pode ser cadastrado de novo; notas preservadas."
+      ],
+      "fora_de_escopo": ["Exclusão física de dados, fora do MVP segundo RNF05."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md`."
+      ],
+      "checklist": [
+        "Endpoint de anonimização",
+        "Confirmação na web",
+        "Testes de login bloqueado e notas preservadas"
+      ]
+    },
+    {
+      "id": "T07",
+      "titulo": "[web] Banco de questões: filtro por tags e Markdown básico no enunciado (RF02)",
+      "resumo": "Completa os critérios de aceite do RF02 que faltam na tela.",
+      "requisitos": ["RF02"],
+      "area": "Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "gabrielmassaia",
+      "estimativa_h": 5,
+      "prioridade": "Média",
+      "inicio": "2026-11-09",
+      "data_prevista": "2026-11-10",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 86,
+      "relacionadas": [15],
+      "contexto": "RF02 pede filtros por tipo, tags e texto e suporte a Markdown básico no enunciado. `/banco-de-questoes` (issue #15) filtra por tipo e texto, mas não por tag, e mostra o enunciado como texto puro.",
+      "escopo": [
+        "Filtro por tags no painel esquerdo, combinável com tipo e busca.",
+        "Renderização segura de Markdown básico (negrito, itálico, listas, código) no enunciado, sem HTML arbitrário.",
+        "Mesma renderização na pré-visualização do editor de prova."
+      ],
+      "fora_de_escopo": ["Markdown no PDF gerado (acompanha T13)."],
+      "documentacao": [
+        "**Técnica**: `docs/design/experiencia-web-atual.md` (Banco de questões).",
+        "**Referência de IA**: conferir `.claude/skills/sgp-catolica-web`.",
+        "**Usuário**: print atualizado do banco de questões em `docs/telas/`."
+      ],
+      "checklist": ["Filtro por tags", "Markdown básico renderizado com segurança"]
+    },
+    {
+      "id": "T08",
+      "titulo": "[api][web] Matrícula de aluno por e-mail feita pelo professor (RF03)",
+      "resumo": "O professor matricula, pelo e-mail, um estudante já cadastrado.",
+      "requisitos": ["RF03"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "WesleyDIO",
+      "estimativa_h": 5,
+      "prioridade": "Alta",
+      "inicio": "2026-11-09",
+      "data_prevista": "2026-11-10",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 87,
+      "relacionadas": [16, 66],
+      "contexto": "RF03 permite ao professor matricular por e-mail um aluno já cadastrado. O detalhe da turma hoje só lista e remove alunos; o estado vazio diz que a entrada é pelo código de convite.",
+      "escopo": [
+        "`POST /turmas/:id/matriculas` com o e-mail do estudante; 404 se não houver conta de estudante, sem duplicar matrícula existente.",
+        "Ação Matricular por e-mail no detalhe da turma, ligada por `estado-de-turmas.ts`.",
+        "Turma arquivada não aceita matrícula nova.",
+        "Testes de duplicidade e de e-mail inexistente."
+      ],
+      "fora_de_escopo": [
+        "Auto-matrícula pelo código de convite (T09).",
+        "Importação por planilha (pendência 12, a validar)."
+      ],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md` (Detalhe da turma).",
+        "**Usuário**: print do detalhe da turma em `docs/telas/`."
+      ],
+      "checklist": [
+        "Endpoint de matrícula por e-mail",
+        "Ação na tela de detalhe da turma",
+        "Testes de duplicidade"
+      ]
+    },
+    {
+      "id": "T09",
+      "titulo": "[api][web] Auto-matrícula do estudante pelo código de convite (RF03)",
+      "resumo": "O aluno entra na turma pelo código; sem conta, ela é criada e o aluno sai autenticado.",
+      "requisitos": ["RF03", "RF01"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "WesleyDIO",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-20",
+      "data_prevista": "2026-11-20",
+      "dependencias": ["T02", "T05"],
+      "issue_existente": null,
+      "issue": 88,
+      "relacionadas": [],
+      "contexto": "RF03: o aluno se matricula sozinho com o código de convite; se o e-mail não tiver conta, o sistema cria a conta (validando o domínio de estudante), matricula na mesma operação e devolve o estudante autenticado com JWT e refresh token. O mesmo código não duplica a matrícula.",
+      "escopo": [
+        "`POST /convites/:codigo/matricula` para estudante autenticado e para cadastro novo na mesma operação.",
+        "Código regenerado deixa de valer; turma arquivada recusa a entrada.",
+        "Tela de entrada por código na web (link compartilhável `/entrar/:codigo`), que leva ao histórico do estudante.",
+        "Testes: conta criada e matriculada numa transação; segunda entrada não duplica."
+      ],
+      "fora_de_escopo": ["Listagem das provas atribuídas ao aluno além do histórico (RF11)."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md`.",
+        "**Usuário**: print da tela de entrada por código em `docs/telas/`."
+      ],
+      "checklist": [
+        "Endpoint de auto-matrícula com criação de conta",
+        "Tela de entrada por código",
+        "Testes de transação e duplicidade"
+      ]
+    },
+    {
+      "id": "T10",
+      "titulo": "[api][web] Encerrar prova e transição automática de draft para ready (RF04)",
+      "resumo": "Completa o ciclo de vida da prova.",
+      "requisitos": ["RF04"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "rianflexa",
+      "estimativa_h": 4,
+      "prioridade": "Média",
+      "inicio": "2026-11-11",
+      "data_prevista": "2026-11-11",
+      "dependencias": ["T11"],
+      "issue_existente": null,
+      "issue": 89,
+      "relacionadas": [71],
+      "contexto": "RF04: a prova fica em `draft` até a primeira aplicação, quando passa a `ready` automaticamente; arquivar fecha a prova (`closed`), que deixa de aceitar aplicações mas continua listada. Hoje a tela não oferece encerrar e a transição não acontece no servidor.",
+      "escopo": [
+        "Transição `draft` → `ready` no servidor, na criação da primeira aplicação.",
+        "`POST /provas/:id/encerrar` e ação Encerrar prova no editor.",
+        "Prova encerrada recusa aplicação nova (API e diálogo Aplicar a uma turma).",
+        "Testes das transições."
+      ],
+      "fora_de_escopo": ["Exclusão de prova, que não está nos critérios de aceite."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md` (Editor de prova)."
+      ],
+      "checklist": [
+        "Transição automática para ready",
+        "Encerrar prova na API e na tela",
+        "Testes das transições"
+      ]
+    },
+    {
+      "id": "T11",
+      "titulo": "[api][web] Endpoints de aplicações e tela de aplicações ligada ao MySQL (RF05)",
+      "resumo": "Aplicações deixam o localStorage e passam a viver na API.",
+      "requisitos": ["RF05"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "rianflexa",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-09",
+      "data_prevista": "2026-11-10",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 90,
+      "relacionadas": [17, 71],
+      "contexto": "RF05: a aplicação combina uma prova e uma turma, pertence a um professor e nasce em `draft`. A tabela já existe no MySQL e o seed a preenche, mas não há endpoints (`docs/api/README.md`, Ainda não coberto); a web grava a aplicação no navegador.",
+      "escopo": [
+        "`GET /aplicacoes`, `GET /aplicacoes/:id` e `POST /aplicacoes` (prova + turma do mesmo professor).",
+        "Reaplicação à mesma turma permitida (segunda chamada), cada aplicação independente.",
+        "`estado-de-aplicacoes.ts` lendo e gravando pela API quando `VITE_API_URL` está definida.",
+        "Testes de criação e de turma ou prova de outro professor."
+      ],
+      "fora_de_escopo": ["Geração de versões e PDF (T12, T13)."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md`, `docs/design/experiencia-web-atual.md` (Aplicações) e tabela de integração do `README.md`."
+      ],
+      "checklist": ["Endpoints de aplicações", "Tela e editor ligados à API", "Testes"]
+    },
+    {
+      "id": "T12",
+      "titulo": "[api] Geração de versões com embaralhamento materializado e atribuições por estudante (RF06)",
+      "resumo": "Gera as versões, a ordem impressa e o conteúdo dos QR Codes antes do PDF.",
+      "requisitos": ["RF06"],
+      "area": "API",
+      "labels": ["enhancement"],
+      "responsavel": "rianflexa",
+      "estimativa_h": 10,
+      "prioridade": "Alta",
+      "inicio": "2026-11-12",
+      "data_prevista": "2026-11-16",
+      "dependencias": ["T11"],
+      "issue_existente": null,
+      "issue": 91,
+      "relacionadas": [],
+      "contexto": "RF06: uma ou mais versões, com embaralhamento de questões e/ou alternativas por versão; a ordem embaralhada é materializada e persistida na geração, sem o que o aplicativo não interpreta a marcação. Com identificação, cada estudante matriculado recebe uma atribuição e um QR Code único (versão + aluno); sem identificação, o QR identifica só a versão. A pendência 17 (ordem quando não há embaralhamento) precisa de resposta antes do fechamento.",
+      "escopo": [
+        "`POST /aplicacoes/:id/gerar` com quantidade de versões, embaralhamento e identificação.",
+        "Persistência de `VersaoProva` com `printedOrder`/`alternativeOrder` e de `AtribuicaoVersao` por matriculado.",
+        "Conteúdo do QR Code (uso exclusivo do aplicativo) separado do código público do gabarito.",
+        "Regeneração bloqueada depois de correção confirmada; ao regenerar, versões e atribuições antigas são substituídas.",
+        "Endpoint de gabarito por versão para o aplicativo.",
+        "Testes do embaralhamento determinístico e das regras de regeneração."
+      ],
+      "fora_de_escopo": ["Arquivo PDF e desenho do QR Code (T13)."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e DER, se o modelo mudar; resposta da pendência 17 registrada em `docs/decisoes/` ou nas pendências."
+      ],
+      "checklist": [
+        "Versões e ordem materializadas",
+        "Atribuições por estudante",
+        "Regra de regeneração",
+        "Testes"
+      ]
+    },
+    {
+      "id": "T13",
+      "titulo": "[api][web] PDF consolidado com QR Code por versão e aluno (RF06)",
+      "resumo": "Gera o arquivo único para impressão e libera o botão Gerar PDF.",
+      "requisitos": ["RF06", "RF05"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "rianflexa",
+      "estimativa_h": 12,
+      "prioridade": "Alta",
+      "inicio": "2026-11-17",
+      "data_prevista": "2026-11-20",
+      "dependencias": ["T12"],
+      "issue_existente": null,
+      "issue": 92,
+      "relacionadas": [12],
+      "contexto": "RF06: o PDF é um único arquivo consolidado com todas as provas em sequência, cada uma com seu QR Code e, com identificação, o nome do aluno. Ao gerar, a aplicação passa a `generated` (RF05). O botão Gerar PDF está desabilitado na web e o QR do editor é só reserva visual.",
+      "escopo": [
+        "Renderização do PDF a partir da ordem materializada, com cabeçalho, nome do aluno, QR Code e cartão-resposta com área de marcação.",
+        "Blocos que não cabem numa página A4 não são partidos (limite registrado em `experiencia-web-atual.md`).",
+        "Arquivo sobrescrito ao regenerar; aplicação passa a `generated`.",
+        "Botão Gerar PDF habilitado no detalhe da aplicação, com opções de versões, embaralhamento e identificação, e download.",
+        "Layout do cartão-resposta combinado com quem faz a leitura no aplicativo (T19)."
+      ],
+      "fora_de_escopo": ["Prova em formato editável de texto (pendência 14, a validar)."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md` (Aplicações).",
+        "**Usuário**: print do diálogo de geração e exemplo de PDF em `docs/telas/`."
+      ],
+      "checklist": [
+        "PDF consolidado com QR Code",
+        "Cartão-resposta no layout combinado",
+        "Botão Gerar PDF na web",
+        "Testes de geração"
+      ]
+    },
+    {
+      "id": "T14",
+      "titulo": "[api][web] Publicação de gabarito por aplicação ou versão (RF07)",
+      "resumo": "Publicar o gabarito e expô-lo por rota pública com código e ao aluno autenticado.",
+      "requisitos": ["RF07", "RF11"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "gabrielmassaia",
+      "estimativa_h": 6,
+      "prioridade": "Média",
+      "inicio": "2026-11-18",
+      "data_prevista": "2026-11-19",
+      "dependencias": ["T12"],
+      "issue_existente": null,
+      "issue": 93,
+      "relacionadas": [],
+      "contexto": "RF07: o professor publica o gabarito por aplicação inteira ou por versão; o aluno só o vê depois de publicado, por rota pública com código próprio ou autenticado. O detalhamento por questão do RF11 também depende da publicação.",
+      "escopo": [
+        "`POST /aplicacoes/:id/gabarito/publicar` (aplicação inteira ou versões selecionadas).",
+        "Rota pública `GET /gabaritos/:codigo` e página pública na web.",
+        "Ação Publicar gabarito no detalhe da aplicação.",
+        "Testes: gabarito não publicado não é exposto por nenhuma rota."
+      ],
+      "fora_de_escopo": ["Despublicar gabarito, que não está nos critérios de aceite."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md`.",
+        "**Usuário**: print da página pública do gabarito em `docs/telas/`."
+      ],
+      "checklist": [
+        "Publicação por aplicação e por versão",
+        "Rota e página pública com código",
+        "Testes de não exposição"
+      ]
+    },
+    {
+      "id": "T15",
+      "titulo": "[api] Correções: gabaritos para o aplicativo e sincronização em lote idempotente (RF08)",
+      "resumo": "Endpoints que o aplicativo usa para baixar gabaritos e enviar a fila de correções.",
+      "requisitos": ["RF08", "RNF06"],
+      "area": "API",
+      "labels": ["enhancement"],
+      "responsavel": "WesleyDIO",
+      "estimativa_h": 12,
+      "prioridade": "Alta",
+      "inicio": "2026-11-17",
+      "data_prevista": "2026-11-19",
+      "dependencias": ["T12", "T04"],
+      "issue_existente": null,
+      "issue": 94,
+      "relacionadas": [28],
+      "contexto": "RF08: o aplicativo baixa os gabaritos de todas as versões ao abrir uma aplicação e envia as correções em lote ao reconectar. O reenvio é idempotente pelo `clientCorrectionId`; se o gabarito mudou, o servidor recalcula com o `answerKeySnapshot`; duas correções para o mesmo aluno e versão mantêm a primeira e sinalizam revisão, nunca sobrescrevem em silêncio.",
+      "escopo": [
+        "`GET /aplicacoes/para-corrigir` e `GET /aplicacoes/:id/gabaritos` para o professor autenticado.",
+        "`POST /correcoes/lote` com resultado por item (`synced` ou `error` com motivo).",
+        "Idempotência por `clientCorrectionId`, recálculo por snapshot e sinalização de conflito.",
+        "Correção sem identificação gravada sem `studentId`, com nome e matrícula informados.",
+        "Testes de idempotência, conflito e recálculo (regras críticas do RNF09)."
+      ],
+      "fora_de_escopo": ["Atribuição manual (T21).", "Fila e sincronização no aplicativo (T20)."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` (remover correções de Ainda não coberto)."
+      ],
+      "checklist": [
+        "Endpoints de gabaritos para o aplicativo",
+        "Sincronização em lote idempotente",
+        "Conflito e recálculo por snapshot",
+        "Testes"
+      ]
+    },
+    {
+      "id": "T16",
+      "titulo": "[mobile] Login real do professor no aplicativo (RF01, RF08)",
+      "resumo": "Autenticação do aplicativo na API, com token guardado de forma segura.",
+      "requisitos": ["RF01", "RF08"],
+      "area": "Mobile",
+      "labels": ["enhancement", "mobile"],
+      "responsavel": "LeoAnders",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-18",
+      "data_prevista": "2026-11-19",
+      "dependencias": ["T02"],
+      "issue_existente": null,
+      "issue": 95,
+      "relacionadas": [23],
+      "contexto": "O aplicativo não tem login real (`experiencia-mobile-atual.md`); a issue #23 tratava o login com escopo da N1. Na N3 o aplicativo precisa do token para baixar gabaritos e sincronizar a fila.",
+      "escopo": [
+        "Tela de login ligada a `POST /auth/login`; só professor entra.",
+        "Token e refresh token em `expo-secure-store`, com renovação automática.",
+        "Sessão expirada sem rede não apaga a fila local; o aplicativo pede login ao reconectar.",
+        "Sair do dispositivo atual."
+      ],
+      "fora_de_escopo": ["Cadastro pelo aplicativo, que é feito na web."],
+      "documentacao": [
+        "**Técnica**: `docs/design/experiencia-mobile-atual.md`.",
+        "**Referência de IA**: conferir `.claude/skills/sgp-catolica-mobile`."
+      ],
+      "checklist": [
+        "Login real com token seguro",
+        "Renovação de sessão",
+        "Fila preservada com sessão expirada"
+      ]
+    },
+    {
+      "id": "T17",
+      "titulo": "[mobile] Aplicações para corrigir pela API com download antecipado dos gabaritos (RF08)",
+      "resumo": "A lista inicial do aplicativo passa a vir da API e guarda os gabaritos para uso offline.",
+      "requisitos": ["RF08", "RNF06"],
+      "area": "Mobile",
+      "labels": ["enhancement", "mobile"],
+      "responsavel": "CintiaWilbert",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-23",
+      "data_prevista": "2026-11-24",
+      "dependencias": ["T15", "T16"],
+      "issue_existente": null,
+      "issue": 96,
+      "relacionadas": [24],
+      "contexto": "RF08: ao abrir uma aplicação com conexão, o aplicativo baixa o gabarito de todas as versões para corrigir sem sinal; sem conexão e sem cópia local, não permite confirmar. A tela `AplicacoesParaCorrigir` (issue #24, escopo N1) lê os dados de demonstração.",
+      "escopo": [
+        "`estado-de-correcoes.ts` lendo aplicações e gabaritos da API.",
+        "Cópia local persistente dos gabaritos, com data da última atualização visível.",
+        "Durante a correção, tenta o gabarito atualizado e usa a cópia local sem conexão.",
+        "Estados de carregando, sem conexão e sem gabarito local."
+      ],
+      "fora_de_escopo": ["Fila e sincronização (T20)."],
+      "documentacao": ["**Técnica**: `docs/design/experiencia-mobile-atual.md`."],
+      "checklist": [
+        "Lista vinda da API",
+        "Gabaritos guardados para uso offline",
+        "Estados de conexão"
+      ]
+    },
+    {
+      "id": "T18",
+      "titulo": "[mobile] Leitura real do QR Code pela câmera (RF08)",
+      "resumo": "Substitui a escolha manual da prova pela leitura do QR Code impresso.",
+      "requisitos": ["RF08"],
+      "area": "Mobile",
+      "labels": ["enhancement", "mobile"],
+      "responsavel": "CintiaWilbert",
+      "estimativa_h": 8,
+      "prioridade": "Alta",
+      "inicio": "2026-11-16",
+      "data_prevista": "2026-11-19",
+      "dependencias": ["T12"],
+      "issue_existente": null,
+      "issue": 97,
+      "relacionadas": [25],
+      "contexto": "RF08: o aplicativo lê o QR Code impresso e identifica a versão e, quando houver, o aluno. Na N1 a tela `SelecionarProva` (issue #25) substituiu a leitura por uma escolha em lista, porque câmera era fora de escopo. O formato do conteúdo do QR é definido em T12.",
+      "escopo": [
+        "Leitura com `expo-camera`, com permissão de câmera e mensagem quando negada.",
+        "Interpretação do conteúdo do QR (versão e aluno) e validação contra os gabaritos locais.",
+        "QR de outra aplicação, de geração substituída ou ilegível com erro claro.",
+        "Escolha em lista mantida como alternativa quando o QR estiver danificado."
+      ],
+      "fora_de_escopo": ["Leitura do cartão-resposta (T19)."],
+      "documentacao": [
+        "**Técnica**: `docs/design/experiencia-mobile-atual.md` (remover a limitação Sem câmera).",
+        "**Referência de IA**: conferir `.claude/skills/sgp-catolica-mobile`."
+      ],
+      "checklist": [
+        "Leitura de QR com a câmera",
+        "Validação do conteúdo e erros",
+        "Alternativa manual preservada"
+      ]
+    },
+    {
+      "id": "T19",
+      "titulo": "[mobile] Leitura do cartão-resposta pela câmera com correção manual antes de confirmar (RF08)",
+      "resumo": "Detecta as marcações do cartão e preenche a conferência objetiva.",
+      "requisitos": ["RF08"],
+      "area": "Mobile",
+      "labels": ["enhancement", "mobile"],
+      "responsavel": "CintiaWilbert",
+      "estimativa_h": 16,
+      "prioridade": "Alta",
+      "inicio": "2026-11-09",
+      "data_prevista": "2026-11-18",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 98,
+      "relacionadas": [26],
+      "contexto": "RF08: a câmera sobre o cartão-resposta detecta as marcações, confronta com o gabarito e mostra acerto ou erro questão a questão; o professor pode corrigir uma leitura antes de confirmar. Requisitos técnicos: offline, feedback visual da área detectada, erro inferior a 1% e tolerância a iluminação, rotação e distorção leve. É a tarefa de maior risco do backlog, por isso começa primeiro. Hoje a `ConferenciaObjetiva` (issue #26) é por toque.",
+      "escopo": [
+        "Prova de conceito da leitura com marcadores de canto no cartão (layout combinado com T13).",
+        "Detecção offline das marcações, com feedback visual da área detectada.",
+        "Resultado preenche a conferência objetiva existente; o toque continua para corrigir a leitura.",
+        "Medição da taxa de erro com um conjunto de fotos de teste, registrada na issue.",
+        "Se a meta de 1% não for atingida até 18/11, a conferência por toque fica como caminho principal da demonstração e o limite é registrado."
+      ],
+      "fora_de_escopo": ["Leitura de texto manuscrito (nome e matrícula continuam digitados)."],
+      "documentacao": [
+        "**Técnica**: `docs/design/experiencia-mobile-atual.md` com o resultado medido e os limites."
+      ],
+      "checklist": [
+        "Leitura das marcações offline",
+        "Feedback visual da área detectada",
+        "Correção manual antes de confirmar",
+        "Taxa de erro medida e registrada"
+      ]
+    },
+    {
+      "id": "T20",
+      "titulo": "[mobile] Fila local persistente e sincronização em segundo plano (RF08, RNF06)",
+      "resumo": "A fila sobrevive ao fechamento do aplicativo e é enviada ao reconectar.",
+      "requisitos": ["RF08", "RNF06"],
+      "area": "Mobile",
+      "labels": ["enhancement", "mobile"],
+      "responsavel": "CintiaWilbert",
+      "estimativa_h": 10,
+      "prioridade": "Alta",
+      "inicio": "2026-11-19",
+      "data_prevista": "2026-11-23",
+      "dependencias": ["T15"],
+      "issue_existente": null,
+      "issue": 99,
+      "relacionadas": [28],
+      "contexto": "RF08: toda correção é salva primeiro no dispositivo, a fila sobrevive ao fechamento do aplicativo e sincroniza em lote ao reconectar, com status `pending`, `synced` ou `error` por item e nova tentativa manual. Hoje a fila vive na memória da sessão; a tela da fila era a issue #28, com escopo N1.",
+      "escopo": [
+        "Persistência da fila no dispositivo (AsyncStorage ou SQLite), com o `answerKeySnapshot` de cada item.",
+        "Envio em lote para `POST /correcoes/lote` ao detectar conexão e por ação manual.",
+        "Tela da fila com status por item, motivo do erro, edição e reenvio.",
+        "Conflito sinalizado pelo servidor aparece para revisão, sem sobrescrever.",
+        "Teste manual: corrigir offline, fechar o aplicativo, reabrir e sincronizar."
+      ],
+      "fora_de_escopo": [
+        "Atribuição manual pelo aplicativo (RF09 permite, mas a web já cobre o fluxo)."
+      ],
+      "documentacao": [
+        "**Técnica**: `docs/design/experiencia-mobile-atual.md` (remover a limitação da fila em memória)."
+      ],
+      "checklist": [
+        "Fila persistente",
+        "Sincronização automática e manual",
+        "Tela da fila com status e reenvio",
+        "Teste offline documentado"
+      ]
+    },
+    {
+      "id": "T21",
+      "titulo": "[api][web] Lançamento manual de nota ligado à API (RF09)",
+      "resumo": "A fila de atribuição da web passa a usar as correções reais.",
+      "requisitos": ["RF09"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "WesleyDIO",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-23",
+      "data_prevista": "2026-11-24",
+      "dependencias": ["T15"],
+      "issue_existente": null,
+      "issue": 100,
+      "relacionadas": [18],
+      "contexto": "RF09: a correção sem identificação fica registrada sem vínculo; o professor lista as pendentes por aplicação e atribui, preenchendo o vínculo na correção existente, sem criar registro novo e sem aceitar duas correções da mesma versão para o mesmo aluno. A tela `/correcoes` (issue #18) está pronta com dados de demonstração.",
+      "escopo": [
+        "`GET /aplicacoes/:id/correcoes-pendentes` e `POST /correcoes/:id/atribuir` com observação opcional.",
+        "Desfazer a atribuição enquanto a tela oferece a ação.",
+        "`estado-de-correcoes.ts` da web pela API.",
+        "Testes: atribuir não cria registro; segunda correção da mesma versão para o mesmo aluno é recusada."
+      ],
+      "fora_de_escopo": ["Atribuição pelo aplicativo."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md` (Correções)."
+      ],
+      "checklist": [
+        "Endpoints de pendentes e atribuição",
+        "Tela ligada à API",
+        "Testes das regras do RF09"
+      ]
+    },
+    {
+      "id": "T22",
+      "titulo": "[api][web] Relatórios com estatísticas reais e exportação CSV, Excel e PDF (RF10)",
+      "resumo": "Relatórios calculados sobre o MySQL e exportação habilitada.",
+      "requisitos": ["RF10"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "gabrielmassaia",
+      "estimativa_h": 10,
+      "prioridade": "Média",
+      "inicio": "2026-11-10",
+      "data_prevista": "2026-11-13",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 101,
+      "relacionadas": [19],
+      "contexto": "RF10: relatório por aplicação (alunos, notas, média, mediana, desvio padrão, distribuição), consolidado de várias aplicações, filtros por turma, disciplina e período, exportação em CSV, Excel e PDF e gráficos simples. `/relatorios` (issue #19) calcula sobre dados de demonstração e tem a exportação desabilitada. O seed já tem correções para começar antes de T15.",
+      "escopo": [
+        "`GET /relatorios/aplicacoes/:id` e `GET /relatorios/consolidado` com filtros.",
+        "Estatísticas calculadas no servidor, com testes de média, mediana e desvio padrão.",
+        "Exportação em CSV, Excel e PDF, com os botões habilitados na tela.",
+        "Tela de relatórios pela API."
+      ],
+      "fora_de_escopo": [
+        "Formato do sistema acadêmico e estatística por alternativa (pendências 13 e 15, a validar)."
+      ],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md` (Relatórios).",
+        "**Usuário**: prints atualizados dos relatórios em `docs/telas/`."
+      ],
+      "checklist": [
+        "Endpoints de relatório com filtros",
+        "Exportação CSV, Excel e PDF",
+        "Testes das estatísticas"
+      ]
+    },
+    {
+      "id": "T23",
+      "titulo": "[api][web] Histórico do estudante pela API com isolamento e registro de acesso (RF11)",
+      "resumo": "O portal do estudante passa a mostrar as notas reais do aluno autenticado.",
+      "requisitos": ["RF11", "RNF05"],
+      "area": "API + Web",
+      "labels": ["enhancement", "web"],
+      "responsavel": "gabrielmassaia",
+      "estimativa_h": 6,
+      "prioridade": "Média",
+      "inicio": "2026-11-20",
+      "data_prevista": "2026-11-23",
+      "dependencias": ["T05", "T14"],
+      "issue_existente": null,
+      "issue": 102,
+      "relacionadas": [31],
+      "contexto": "RF11: o aluno consulta o próprio histórico completo, com detalhamento por questão só quando o gabarito estiver publicado, e isolamento total. RNF05 pede registro de acesso a notas. `/estudante` (issue #31) usa o aluno fixo dos dados de demonstração.",
+      "escopo": [
+        "`GET /eu/notas` e `GET /eu/notas/:correcaoId` para o estudante autenticado.",
+        "Detalhamento por questão só com gabarito publicado (RF07).",
+        "Registro de acesso a notas (quem, o quê, quando).",
+        "Tela do estudante pela API.",
+        "Testes: um aluno não acessa nota de outro."
+      ],
+      "fora_de_escopo": ["Provas futuras atribuídas ao aluno."],
+      "documentacao": [
+        "**Técnica**: `docs/api/README.md` e `docs/design/experiencia-web-atual.md` (Portal do estudante)."
+      ],
+      "checklist": [
+        "Endpoints do histórico do aluno",
+        "Detalhamento condicionado à publicação",
+        "Registro de acesso",
+        "Testes de isolamento"
+      ]
+    },
+    {
+      "id": "T24",
+      "titulo": "[mobile] typecheck não passa e o CI não executa typecheck",
+      "resumo": "Corrigir a configuração de tipos do mobile e incluir typecheck no CI.",
+      "requisitos": ["RNF09"],
+      "area": "Infra",
+      "labels": ["bug", "mobile", "infra"],
+      "responsavel": "LeoAnders",
+      "estimativa_h": 3,
+      "prioridade": "Alta",
+      "inicio": "2026-11-13",
+      "data_prevista": "2026-11-13",
+      "dependencias": [],
+      "issue_existente": 52,
+      "issue": 52,
+      "relacionadas": [],
+      "contexto": "Issue já existente. Registrada aqui porque o MVP precisa do CI validando tipos antes de as tarefas de mobile da N3 crescerem.",
+      "escopo": [],
+      "fora_de_escopo": [],
+      "documentacao": [],
+      "checklist": []
+    },
+    {
+      "id": "T25",
+      "titulo": "docs: decisões pendentes para fechar o MVP (stack do backend, regras críticas e recorte da N3)",
+      "resumo": "Formalizar em docs/decisoes as decisões que o backlog da N3 assume.",
+      "requisitos": ["RNF09"],
+      "area": "Documentação",
+      "labels": ["documentation"],
+      "responsavel": "LeoAnders",
+      "estimativa_h": 3,
+      "prioridade": "Média",
+      "inicio": "2026-11-09",
+      "data_prevista": "2026-11-10",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 103,
+      "relacionadas": [66],
+      "contexto": "O backlog da N3 assume respostas para pontos ainda abertos em `docs/pendencias.md`: stack do backend (item 3, proposta da issue #66), recorte da N3 (item 5), regras críticas do RNF09 (item 11), pontuação da questão na prova (item 16), ordem sem embaralhamento (item 17) e ferramenta de backlog (item 9). Sem acordo registrado, essas respostas são só leituras de trabalho.",
+      "escopo": [
+        "Levar os itens 3, 5, 9, 11, 16 e 17 à equipe e, quando couber, à professora.",
+        "Registrar em `docs/decisoes/` cada item acordado e retirá-lo das pendências.",
+        "Lista das regras críticas do RNF09 que as tarefas usam como alvo de cobertura."
+      ],
+      "fora_de_escopo": ["Pedidos do cliente 12 a 15, que dependem do cliente."],
+      "documentacao": ["**Técnica**: `docs/decisoes/` e `docs/pendencias.md`."],
+      "checklist": [
+        "Itens levados à equipe",
+        "Decisões registradas em `docs/decisoes/`",
+        "Pendências atualizadas"
+      ]
+    },
+    {
+      "id": "T26",
+      "titulo": "infra: logs estruturados, monitor de disponibilidade e verificação de backup (RNF03, RNF07, RNF08)",
+      "resumo": "Observabilidade mínima e registro honesto dos limites da hospedagem gratuita.",
+      "requisitos": ["RNF03", "RNF07", "RNF08"],
+      "area": "Infra",
+      "labels": ["infra"],
+      "responsavel": "WesleyDIO",
+      "estimativa_h": 5,
+      "prioridade": "Baixa",
+      "inicio": "2026-11-11",
+      "data_prevista": "2026-11-12",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 104,
+      "relacionadas": [70],
+      "contexto": "RNF07 pede logs estruturados, métricas e alertas; RNF03, 99,5% de disponibilidade; RNF08, backup diário com retenção de 30 dias. A API usa o log padrão do Nest e a instância gratuita do Render hiberna depois de 15 minutos sem uso (issue #70).",
+      "escopo": [
+        "Logs em JSON com identificador de requisição, método, rota, status e duração.",
+        "Monitor gratuito de disponibilidade em `/saude`, com alerta por e-mail para a equipe.",
+        "Conferir a política de backup do plano do Aiven e registrar; se não cobrir 30 dias, documentar dump manual.",
+        "Registrar os limites que a hospedagem gratuita impõe a RNF03 e RNF08."
+      ],
+      "fora_de_escopo": ["Troca de hospedagem para plano pago."],
+      "documentacao": ["**Técnica**: `docs/api/README.md` (seção Produção)."],
+      "checklist": [
+        "Logs estruturados",
+        "Monitor de disponibilidade com alerta",
+        "Backup verificado e documentado"
+      ]
+    },
+    {
+      "id": "T27",
+      "titulo": "test: teste de carga e medição do p95 da API (RNF01, RNF02)",
+      "resumo": "Medir e registrar desempenho e capacidade da API hospedada.",
+      "requisitos": ["RNF01", "RNF02"],
+      "area": "Testes",
+      "labels": ["infra"],
+      "responsavel": "rianflexa",
+      "estimativa_h": 4,
+      "prioridade": "Baixa",
+      "inicio": "2026-11-23",
+      "data_prevista": "2026-11-23",
+      "dependencias": ["T22"],
+      "issue_existente": null,
+      "issue": 105,
+      "relacionadas": [],
+      "contexto": "RNF01 dimensiona 500 a 600 professores e 10.000 alunos ativos; RNF02 pede p95 abaixo de 300 ms nas operações comuns. Nada disso foi medido.",
+      "escopo": [
+        "Roteiro de carga (k6 ou autocannon) nas operações comuns: listar turmas, questões e provas, relatório por aplicação e sincronização em lote.",
+        "Execução contra ambiente local e contra a hospedagem, com a API já acordada.",
+        "Resultado (p95, erros, limites) registrado na documentação."
+      ],
+      "fora_de_escopo": ["Otimizações que o resultado indicar, que viram issues próprias."],
+      "documentacao": ["**Técnica**: resultado em `docs/api/README.md`."],
+      "checklist": ["Roteiro de carga versionado", "p95 medido e registrado"]
+    },
+    {
+      "id": "T28",
+      "titulo": "docs: README da N3, manual do usuário e roteiro da demonstração final",
+      "resumo": "Documentação de entrega da N3.",
+      "requisitos": [],
+      "area": "Documentação",
+      "labels": ["documentation"],
+      "responsavel": "gabrielmassaia",
+      "estimativa_h": 4,
+      "prioridade": "Média",
+      "inicio": "2026-11-24",
+      "data_prevista": "2026-11-25",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 106,
+      "relacionadas": [74],
+      "contexto": "O README está na versão da N2 (issue #74). A entrega final precisa do estado real da integração, do manual do usuário previsto em `docs/README.md` e de um roteiro de demonstração que inclua o aplicativo (pendência 6).",
+      "escopo": [
+        "README com a fase N3 e a tabela de integração atualizada.",
+        "Manual do usuário (professor e estudante) em `docs/`.",
+        "Roteiro da demonstração cobrindo web e aplicativo.",
+        "Prints atualizados em `docs/telas/`."
+      ],
+      "fora_de_escopo": [],
+      "documentacao": ["**Usuário**: manual e prints referenciados em `docs/README.md`."],
+      "checklist": [
+        "README da N3",
+        "Manual do usuário",
+        "Roteiro da demonstração",
+        "Prints atualizados"
+      ]
+    },
+    {
+      "id": "T29",
+      "titulo": "infra: testes automatizados na API e no CI com cobertura das regras críticas (RNF09)",
+      "resumo": "Base de testes que as demais tarefas usam.",
+      "requisitos": ["RNF09", "RF02", "RF04"],
+      "area": "Infra",
+      "labels": ["infra"],
+      "responsavel": "LeoAnders",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-10",
+      "data_prevista": "2026-11-11",
+      "dependencias": [],
+      "issue_existente": null,
+      "issue": 107,
+      "relacionadas": [32, 52],
+      "contexto": "RNF09 pede cobertura mínima de 80% nas regras críticas. O repositório não tem nenhum teste e o CI só roda commitlint, format e lint. As tarefas da N3 pedem testes; elas precisam de uma base pronta logo no início.",
+      "escopo": [
+        "Jest (padrão do Nest) na API, com script `test` e `test:cov` no workspace.",
+        "Testes de exemplo nas regras já existentes: questão objetiva (2 a 5 alternativas, uma correta) e limite de 20 questões por prova.",
+        "Job de testes no CI com relatório de cobertura e limite de 80% sobre os arquivos de regras críticas (lista de T25).",
+        "Guia curto de como escrever teste no `CONTRIBUTING.md`."
+      ],
+      "fora_de_escopo": ["Testes de interface da web e do aplicativo."],
+      "documentacao": ["**Técnica**: `CONTRIBUTING.md` e `README.md` (comandos)."],
+      "checklist": [
+        "Jest configurado na API",
+        "Testes das regras existentes",
+        "CI rodando testes com cobertura"
+      ]
+    },
+    {
+      "id": "T30",
+      "titulo": "test: teste de ponta a ponta do fluxo completo e correção de defeitos",
+      "resumo": "Validar o MVP do começo ao fim antes da entrega.",
+      "requisitos": ["RNF09", "RF05", "RF06", "RF08", "RF09", "RF10", "RF11"],
+      "area": "Testes",
+      "labels": ["infra"],
+      "responsavel": "rianflexa",
+      "estimativa_h": 6,
+      "prioridade": "Alta",
+      "inicio": "2026-11-24",
+      "data_prevista": "2026-11-25",
+      "dependencias": ["T13", "T17", "T20", "T21", "T23"],
+      "issue_existente": null,
+      "issue": 108,
+      "relacionadas": [],
+      "contexto": "O MVP só está pronto se o fluxo central funciona na hospedagem: criar a prova, aplicar, gerar o PDF, corrigir no aplicativo (com e sem identificação), sincronizar, atribuir, ver o relatório e a nota do aluno.",
+      "escopo": [
+        "Roteiro de teste manual do fluxo completo, versionado.",
+        "Execução na hospedagem com conta de professor e de estudante.",
+        "Defeitos encontrados registrados como issues e os bloqueantes corrigidos até 25/11."
+      ],
+      "fora_de_escopo": ["Melhorias não bloqueantes, que ficam como issues."],
+      "documentacao": ["**Técnica**: roteiro em `docs/`."],
+      "checklist": [
+        "Roteiro versionado",
+        "Fluxo executado na hospedagem",
+        "Defeitos bloqueantes corrigidos"
+      ]
+    }
+  ]
+}
