@@ -81,6 +81,121 @@ disso leva cerca de um minuto. Antes de uma demonstração, abra `/saude` para a
 Os dois serviços publicam de novo a cada push na `main`. Segredos ficam só nas
 variáveis dos serviços.
 
+### Logs (RNF07)
+
+A API escreve uma linha JSON por evento na saída do processo, que o Render guarda na aba
+**Logs** do serviço (`src/observabilidade/`). Cada requisição gera uma linha quando a
+resposta termina:
+
+```json
+{
+  "momento": "2026-11-13T23:55:09.988Z",
+  "nivel": "log",
+  "tipo": "requisicao",
+  "requisicaoId": "65677040-9977-4d8d-b5b1-4b648046ed52",
+  "metodo": "GET",
+  "rota": "/questoes/:id",
+  "status": 200,
+  "duracaoMs": 13.2
+}
+```
+
+- `rota` é o padrão da rota (`/questoes/:id`), não o caminho com os ids, para as linhas
+  da mesma rota poderem ser agrupadas.
+- `requisicaoId` vem do cabeçalho `X-Request-Id` quando o cliente manda um válido, ou é
+  gerado; volta na resposta no mesmo cabeçalho. Com ele, um erro visto na tela é achado
+  no log pela busca do Render.
+- Status 500 sai com `"nivel":"error"`, e o erro que o causou aparece numa linha
+  própria, com a pilha. Conexão fechada antes da resposta é registrada com status 499.
+- Corpo, query string e cabeçalhos **não** vão para o log: o corpo da matrícula leva o
+  e-mail do estudante, e depois da autenticação os cabeçalhos levam o token (RNF05).
+
+### Monitor de disponibilidade (RNF03)
+
+`GET /saude` consulta o banco: responde `200` com `{"status":"ok","banco":"ok"}` e `500`
+quando o MySQL não responde. É o endereço que o monitor deve vigiar.
+
+Monitor escolhido: **UptimeRobot**, plano Free (50 monitores, intervalo mínimo de 5
+minutos; <https://uptimerobot.com/pricing/>). A configuração é feita no painel do
+UptimeRobot, com uma conta da equipe:
+
+1. **Add New Monitor** → tipo **HTTP(s)**, URL `<URL da API>/saude`, intervalo de 5
+   minutos.
+2. Em **Alert Contacts**, cadastrar o e-mail de cada integrante e marcá-los no monitor.
+   A página de preços não deixa claro quais canais de alerta entram no plano Free;
+   confirmar que o e-mail aparece disponível ao criar o contato.
+3. Opcional: uma página de status pública (o plano Free inclui uma).
+
+O ping a cada 5 minutos também impede o Render de hibernar a API, já que ela só hiberna
+depois de 15 minutos sem tráfego. O custo é de horas: o Render dá **750 horas de
+instância gratuita por mês por workspace** e, quando elas acabam, **suspende todos os
+Web Services gratuitos do workspace até o mês seguinte**
+(<https://render.com/docs/free>). Uma API acordada o mês inteiro usa até 744 horas,
+então isso só cabe se ela for o único Web Service gratuito do workspace. Static Sites,
+como a web, não são Web Services. Se a conta tiver outro Web Service gratuito, use um
+intervalo maior que 15 minutos, que mantém o alerta e deixa a API hibernar.
+
+### Backup do banco (RNF08)
+
+O que a documentação do Aiven garante (<https://aiven.io/docs/platform/concepts/service_backups>):
+
+- todo serviço, exceto Kafka, tem **backup automático e criptografado**;
+- os backups **não podem ser baixados**; para ter uma cópia própria, a documentação
+  indica `mysqldump`;
+- ao religar um serviço desligado, o último backup é restaurado automaticamente.
+
+O que ela **não** diz: a frequência e por quantos dias os backups são guardados. Além
+disso, a página atual de planos (<https://aiven.io/docs/platform/concepts/free-plan>)
+lista o plano Free só para PostgreSQL, Kafka, OpenSearch e Valkey; para MySQL, cita o
+Developer tier. Como a seção acima registra "plano Free", falta conferir no console do
+Aiven, com a conta da equipe:
+
+1. qual é o plano do serviço MySQL e se ele está num período de teste com créditos (sem
+   cartão, serviços são desligados quando o teste ou os créditos acabam);
+2. na aba **Backups** do serviço, as datas dos backups existentes, que mostram a
+   frequência e quantos dias ficam guardados.
+
+Enquanto a retenção de 30 dias de RNF08 não estiver confirmada, a equipe mantém um dump
+manual. Ele roda de uma máquina com Docker, sem instalar o MySQL, e usa o mesmo
+certificado da API:
+
+```bash
+# Na raiz do repositório. ca.pem baixado do console do Aiven; dados da URL do serviço.
+mkdir -p backups
+docker run --rm -e MYSQL_PWD='<senha>' -v "$PWD/backups:/backups" \
+  -v "$PWD/backups/ca.pem:/ca.pem:ro" mysql:8.4 \
+  sh -c 'mysqldump --ssl-mode=VERIFY_CA --ssl-ca=/ca.pem -h <host> -P <porta> -u <usuario> \
+    --single-transaction --no-tablespaces --set-gtid-purged=OFF <banco> \
+    > /backups/sgp-$(date +%F).sql'
+```
+
+No Git Bash do Windows, comece o comando com `MSYS_NO_PATHCONV=1`; sem isso, o caminho
+`/backups` do container é convertido para um caminho do Windows.
+
+Para conferir ou restaurar um dump, use um banco separado: o arquivo apaga e recria as
+tabelas que contém. No MySQL local, do `docker-compose.yml`:
+
+```bash
+docker compose exec -T mysql mysql -usgp -psgp -e "CREATE DATABASE IF NOT EXISTS sgp_restaurado"
+docker compose exec -T mysql mysql -usgp -psgp sgp_restaurado < backups/sgp-AAAA-MM-DD.sql
+```
+
+A pasta `backups/` está no `.gitignore`: um dump tem dados de estudantes e nunca entra
+no repositório (RNF05). Guarde os arquivos num lugar privado da equipe e apague os com
+mais de 30 dias.
+
+### Limites da hospedagem gratuita
+
+Os planos gratuitos não permitem cumprir RNF03 e RNF08 como estão escritos. Trocar de
+plano está fora do escopo da N3 (issue #104).
+
+| Requisito                   | Limite                                                                                                                                                                                                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RNF03 (99,5% de uptime/mês) | A API hiberna depois de 15 minutos sem tráfego e leva cerca de um minuto para acordar (em 13/11/2026, a primeira resposta levou 34 s); o Render pode reiniciar instâncias gratuitas a qualquer momento; o MySQL roda em um único nó. Nenhum dos dois serviços gratuitos promete disponibilidade. |
+| RNF03                       | Se as 750 horas mensais do workspace acabarem, o Render suspende a API até o mês seguinte.                                                                                                                                                                                                       |
+| RNF08 (backup diário, 30 d) | O Aiven faz backup automático, mas não documenta frequência nem retenção, e os backups não podem ser baixados. Até a conferência no console, a retenção de 30 dias depende do dump manual.                                                                                                       |
+| RNF07 (métricas e alertas)  | Há logs estruturados e alerta de indisponibilidade; não há coleta de métricas (latência por rota ao longo do tempo); a duração de cada requisição só fica nos logs.                                                                                                                              |
+
 ## Organização
 
 | Onde                     | Papel                                                                                            |
