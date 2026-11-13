@@ -109,17 +109,18 @@ mais de um problema.
 
 ### Turmas e matrículas (RF03)
 
-| Método | Caminho                         | Corpo                          | Resposta      |
-| ------ | ------------------------------- | ------------------------------ | ------------- |
-| GET    | `/turmas`                       | —                              | `Turma[]`     |
-| POST   | `/turmas`                       | `{ id?, name, subject, term }` | `Turma`       |
-| PATCH  | `/turmas/:id`                   | `{ name, subject, term }`      | `Turma`       |
-| POST   | `/turmas/:id/arquivar`          | —                              | `Turma`       |
-| POST   | `/turmas/:id/codigo-de-convite` | —                              | `Turma`       |
-| GET    | `/matriculas`                   | —                              | `Matricula[]` |
-| DELETE | `/matriculas/:id`               | —                              | `Matricula`   |
-| POST   | `/matriculas/:id/restaurar`     | —                              | `Matricula`   |
-| GET    | `/estudantes`                   | —                              | `Estudante[]` |
+| Método | Caminho                         | Corpo                          | Resposta                   |
+| ------ | ------------------------------- | ------------------------------ | -------------------------- |
+| GET    | `/turmas`                       | —                              | `Turma[]`                  |
+| POST   | `/turmas`                       | `{ id?, name, subject, term }` | `Turma`                    |
+| PATCH  | `/turmas/:id`                   | `{ name, subject, term }`      | `Turma`                    |
+| POST   | `/turmas/:id/arquivar`          | —                              | `Turma`                    |
+| POST   | `/turmas/:id/codigo-de-convite` | —                              | `Turma`                    |
+| POST   | `/turmas/:id/matriculas`        | `{ email }`                    | `{ matricula, estudante }` |
+| GET    | `/matriculas`                   | —                              | `Matricula[]`              |
+| DELETE | `/matriculas/:id`               | —                              | `Matricula`                |
+| POST   | `/matriculas/:id/restaurar`     | —                              | `Matricula`                |
+| GET    | `/estudantes`                   | —                              | `Estudante[]`              |
 
 - O código de convite é gerado no servidor, que garante a unicidade; regenerar invalida
   o anterior no mesmo instante.
@@ -127,6 +128,14 @@ mais de um problema.
   esperar a resposta. Um `id` já existente responde `409`.
 - `GET /matriculas` traz ativas e removidas; remover só muda a situação, as notas ficam.
 - `GET /estudantes` traz só quem passou por alguma turma do professor (RNF05).
+- `POST /turmas/:id/matriculas` matricula por e-mail um estudante que já tem conta
+  (RF03, issue #87). O e-mail é comparado sem espaços nas pontas e sem diferenciar
+  maiúsculas. Responde `404` quando não há conta de estudante com o e-mail (inclusive
+  e-mail de professor ou conta anonimizada), `409` quando o aluno já está matriculado
+  ou a turma está arquivada, e `400` para e-mail inválido. Um aluno removido antes
+  volta a ativo na mesma matrícula, sem duplicar. A resposta traz também o estudante,
+  que pode nunca ter passado por uma turma do professor. A regra fica em
+  `src/turmas/regras-de-matricula.ts`, sem banco, para os testes da API (#107).
 
 ### Banco de questões (RF02)
 

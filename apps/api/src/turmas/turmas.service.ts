@@ -1,11 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { Matricula, Turma } from '@sgp/shared-types';
+import type { Estudante, Matricula, Turma } from '@sgp/shared-types';
+import { paraEstudante } from '../estudantes/mapeadores';
 import { ehViolacaoDeUnicidade } from '../prisma/erros';
 import { PrismaService } from '../prisma/prisma.service';
 import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import { gerarCodigoDeConvite } from './codigo-de-convite';
 import type { AtualizarTurmaDto, CriarTurmaDto } from './turmas.dto';
 import { paraMatricula, paraTurma } from './mapeadores';
+import { decidirMatricula, mensagemDaRecusa, normalizarEmail } from './regras-de-matricula';
 
 /** Colisao do codigo de convite e rara (32^4 por ano); poucas tentativas bastam. */
 const TENTATIVAS_DE_CODIGO = 5;
@@ -75,6 +77,66 @@ export class TurmasService {
       orderBy: [{ enrolledAt: 'asc' }, { id: 'asc' }],
     });
     return matriculas.map(paraMatricula);
+  }
+
+  /**
+   * RF03: matricula por e-mail um estudante que ja tem conta. Devolve tambem o
+   * estudante, que pode ainda nao estar entre os que a tela conhece (`GET /estudantes`
+   * so traz quem ja passou pelas turmas do professor).
+   */
+  async matricularPorEmail(
+    classId: string,
+    email: string,
+  ): Promise<{ matricula: Matricula; estudante: Estudante }> {
+    const turma = await this.prisma.turma.findFirst({
+      where: { id: classId, teacherId: PROFESSOR_ATUAL_ID },
+      select: { status: true },
+    });
+    if (!turma) throw new NotFoundException('Turma nao encontrada.');
+
+    // A colacao do MySQL ja compara sem diferenciar maiusculas; normalizar tira os espacos.
+    const estudante = await this.prisma.usuario.findFirst({
+      where: { email: normalizarEmail(email), role: 'estudante' },
+    });
+    const matriculaExistente = estudante
+      ? await this.prisma.matricula.findUnique({
+          where: { classId_studentId: { classId, studentId: estudante.id } },
+        })
+      : null;
+
+    const decisao = decidirMatricula({
+      statusDaTurma: turma.status,
+      estudante: estudante ? { anonimizado: estudante.anonymizedAt !== null } : undefined,
+      matriculaExistente: matriculaExistente ?? undefined,
+    });
+
+    if (decisao.tipo === 'recusar') {
+      const mensagem = mensagemDaRecusa[decisao.motivo];
+      throw decisao.motivo === 'estudante-inexistente'
+        ? new NotFoundException(mensagem)
+        : new ConflictException(mensagem);
+    }
+
+    // `decidirMatricula` so libera com estudante encontrado.
+    const studentId = estudante!.id;
+    try {
+      const matricula =
+        decisao.tipo === 'reativar'
+          ? await this.prisma.matricula.update({
+              where: { classId_studentId: { classId, studentId } },
+              data: { status: 'active', enrolledVia: 'teacher' },
+            })
+          : await this.prisma.matricula.create({
+              data: { classId, studentId, enrolledVia: 'teacher' },
+            });
+      return { matricula: paraMatricula(matricula), estudante: paraEstudante(estudante!) };
+    } catch (erro) {
+      // Duas matriculas simultaneas do mesmo aluno: a unicidade do banco decide.
+      if (ehViolacaoDeUnicidade(erro)) {
+        throw new ConflictException(mensagemDaRecusa['ja-matriculado']);
+      }
+      throw erro;
+    }
   }
 
   /** Remover nao apaga notas ja lancadas: a matricula so muda de situacao. */
