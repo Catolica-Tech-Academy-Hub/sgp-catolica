@@ -22,7 +22,18 @@ export function AplicacoesParaCorrigir({
   const correcaoSalva = route.params?.correcaoSalva;
 
   return (
-    <Tela titulo="Correções" descricao="Escolha a aplicação cuja prova você vai corrigir.">
+    <Tela
+      titulo="Correções"
+      descricao="Escolha a aplicação cuja prova você vai corrigir."
+      acao={
+        <Botao
+          titulo="Ver fila de correções"
+          variante="outline"
+          largura="total"
+          onPress={() => navigation.navigate('FilaCorrecoes')}
+        />
+      }
+    >
       {correcaoSalva ? (
         <Cartao titulo="Correção salva na fila local">
           <View accessibilityRole="alert" style={estilos.aviso}>

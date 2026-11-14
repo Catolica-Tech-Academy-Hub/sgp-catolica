@@ -22,6 +22,7 @@ Stack simples; o fluxo do professor é linear. Nomes das rotas conforme
 | `SelecionarProva`        | Implementado na N1 (mínimo) | Escolha da prova na lista, no lugar da leitura do QR Code. Completa: #25.                               |
 | `ConferenciaObjetiva`    | Implementado na N1 (mínimo) | Toque na letra marcada; certo/errado contra o gabarito e nota objetiva. Completa: #26.                  |
 | `NotasDiscursivas`       | Implementado na N1          | Notas discursivas, nota total, identificação auxiliar e "Confirmar correção" (#27).                     |
+| `FilaCorrecoes`          | Implementado na N1          | Itens da sessão, status demonstrativos e nova tentativa simulada. Completa: #28.                        |
 | `Ambiente`               | Implementado na N1          | Valida a arquitetura. Continua registrada, mas deixou de ser a rota inicial.                            |
 
 As três primeiras telas foram feitas no mínimo necessário para o fluxo chegar à correção
@@ -45,7 +46,12 @@ discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para complet
    cada digitação e marcada como parcial enquanto houver nota inválida.
 5. **Confirmar correção.** Valida as notas e chama `enfileirarCorrecao`. O item nasce
    `pending`, e o professor volta à lista com o aviso de que a correção está na fila
-   local, sem ter sido enviada. A tela da fila é a issue #28.
+   local, sem ter sido enviada. A ação "Ver fila de correções" abre a tela da issue #28.
+6. **Fila de correções.** Lista os itens mais recentes primeiro e mostra o status e o
+   horário registrado. Os itens com erro permitem uma tentativa manual simulada, que
+   volta o status para `pending` e informa que nenhum dado foi enviado ao servidor.
+   Estados `synced` e `error` dos mocks são exemplos de interface, não sincronizações
+   realizadas por este aplicativo.
 
 Sem cópia local do gabarito (hoje, versões 0 e 4 dos mocks), a conferência e a
 confirmação ficam desabilitadas e explicadas.
@@ -94,6 +100,9 @@ cópia local do gabarito e a fila local.
 
 - **A fila não sobrevive ao fechamento do aplicativo.** RF08 exige isso, e depende de
   armazenamento do dispositivo — fase com backend. Hoje a fila vive na memória da sessão.
+- **A fila não sincroniza com servidor na N1.** A ação de tentar novamente apenas
+  demonstra o retorno ao estado pendente; não há envio em segundo plano ou detecção de
+  conectividade.
 - **Sem câmera, sem QR Code, sem leitura de imagem.** Fora do escopo da N1
   (`.claude/rules/00-escopo-n1.md`). A seleção da prova a corrigir é feita por escolha na
   lista, que produz o mesmo efeito de uma leitura: chegar a uma versão e, quando há
