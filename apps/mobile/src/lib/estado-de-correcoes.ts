@@ -61,8 +61,8 @@ export interface AplicacaoParaCorrigir {
   nomeDaTurma: string;
   disciplina: string;
   /** Provas impressas desta aplicacao que ainda nao foram corrigidas. */
-  pendentes: number;
-  totalDeProvas: number;
+  pendentes: number | undefined;
+  totalDeProvas: number | undefined;
   criadaEm: string;
 }
 
@@ -81,6 +81,7 @@ export function listarAplicacoesGeradas(): AplicacaoParaCorrigir[] {
       const prova = provasMock.find((item) => item.id === aplicacao.examId);
       const turma = turmasMock.find((item) => item.id === aplicacao.classId);
       const versoes = versoesMock.filter((versao) => versao.applicationId === aplicacao.id);
+      const possuiVersaoAnonima = versoes.some((versao) => !versao.withStudentIdentification);
 
       const totalDeProvas = versoes.reduce(
         (total, versao) =>
@@ -89,7 +90,10 @@ export function listarAplicacoesGeradas(): AplicacaoParaCorrigir[] {
       );
       const corrigidas = versoes.reduce(
         (total, versao) =>
-          total + correcoesConfirmadas().filter((item) => item.examVersionId === versao.id).length,
+          total +
+          correcoesConfirmadas().filter(
+            (item) => item.examVersionId === versao.id && item.studentId !== undefined,
+          ).length,
         0,
       );
 
@@ -98,8 +102,8 @@ export function listarAplicacoesGeradas(): AplicacaoParaCorrigir[] {
         tituloDaProva: prova?.title ?? 'Prova indisponivel',
         nomeDaTurma: turma?.name ?? 'Turma indisponivel',
         disciplina: turma?.subject ?? '',
-        pendentes: Math.max(0, totalDeProvas - corrigidas),
-        totalDeProvas,
+        pendentes: possuiVersaoAnonima ? undefined : Math.max(0, totalDeProvas - corrigidas),
+        totalDeProvas: possuiVersaoAnonima ? undefined : totalDeProvas,
         criadaEm: aplicacao.createdAt,
       };
     })

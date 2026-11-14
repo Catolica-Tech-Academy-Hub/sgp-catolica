@@ -64,7 +64,9 @@ export function AplicacoesParaCorrigir({
             }
           >
             {/* Prova anonima nao tem total impresso conhecido: nao prometer um numero. */}
-            {aplicacao.totalDeProvas > 0 ? (
+            {aplicacao.totalDeProvas !== undefined &&
+            aplicacao.totalDeProvas > 0 &&
+            aplicacao.pendentes !== undefined ? (
               <Badge
                 texto={`${aplicacao.pendentes} a corrigir`}
                 variante={aplicacao.pendentes > 0 ? 'padrao' : 'outline'}
