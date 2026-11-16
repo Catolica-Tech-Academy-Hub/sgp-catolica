@@ -171,7 +171,11 @@ Da esquerda para a direita:
 - contador de até 20 questões, total de pontos e indicação de salvamento local;
 - **Pré-visualizar**;
 - **Aplicar a uma turma**, que abre um diálogo com as turmas ativas e cria uma aplicação
-  local em `draft`. A mesma prova pode ser aplicada novamente à mesma turma.
+  em `draft`; com a API ligada, a criação é persistida no servidor. A primeira aplicação
+  muda a prova para `ready`;
+- **Encerrar prova**, que pede confirmação e muda a situação para `closed`. Ela continua
+  no acervo e pode ser revisada, mas não aceita novas aplicações. A ação de aplicar fica
+  desabilitada para provas encerradas.
 
 ## Aplicações
 
@@ -180,7 +184,9 @@ lista de cartões. Cada cartão mostra prova, turma, situação, versões e data
 `Dialog` somente leitura com as versões já presentes nos mocks: número, embaralhamento,
 publicação do gabarito e código público.
 
-Aplicações novas ficam em `draft` e são preservadas no navegador. O detalhe mantém
+Aplicações criadas ficam em `draft` e são preservadas no navegador; quando a API está
+ligada, a criação também é gravada no servidor. A listagem e o detalhe ainda usam os
+dados locais e não são sincronizados. O detalhe mantém
 **Gerar PDF** desabilitado com a explicação de que a geração pertence ao RF06; nenhuma
 ação desta tela cria versão, QR Code ou atribuição.
 
@@ -329,8 +335,9 @@ de mocks ou do `localStorage`:
   envia o que estiver pendente;
 - se a API estiver fora do ar, um toast avisa e as telas abrem vazias.
 
-Cabeçalhos, aplicações e correções continuam locais, como descrito abaixo, até ganharem
-endpoints.
+Cabeçalhos, listagem/detalhe de aplicações e correções continuam locais. A criação de
+aplicação e o encerramento da prova são enviados à API; operações completas de RF05
+continuam pendentes.
 
 ### Sem a API
 

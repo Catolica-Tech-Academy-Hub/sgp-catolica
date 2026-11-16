@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import type { Aplicacao } from '@sgp/shared-types';
 import type { ProvaComBlocos } from './mapeadores';
-import { SalvarProvaDto } from './provas.dto';
+import { CriarAplicacaoDto, SalvarProvaDto } from './provas.dto';
 import { ProvasService } from './provas.service';
 
 /** RF04: provas do professor. */
@@ -16,5 +17,15 @@ export class ProvasController {
   @Put(':id')
   salvar(@Param('id') id: string, @Body() dados: SalvarProvaDto): Promise<ProvaComBlocos> {
     return this.provas.salvar(id, dados);
+  }
+
+  @Post(':id/aplicacoes')
+  criarAplicacao(@Param('id') id: string, @Body() dados: CriarAplicacaoDto): Promise<Aplicacao> {
+    return this.provas.criarAplicacao(id, dados.classId);
+  }
+
+  @Post(':id/encerrar')
+  encerrar(@Param('id') id: string): Promise<ProvaComBlocos> {
+    return this.provas.encerrar(id);
   }
 }

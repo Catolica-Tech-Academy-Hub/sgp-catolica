@@ -17,6 +17,12 @@ import type { StatusProva } from '@sgp/shared-types';
 /** Limite de questoes por prova definido em RF04. */
 export const MAXIMO_DE_QUESTOES = 20;
 
+export class CriarAplicacaoDto {
+  @IsString()
+  @MaxLength(64)
+  classId!: string;
+}
+
 export class QuestaoDaProvaDto {
   @IsString()
   @MaxLength(64)
