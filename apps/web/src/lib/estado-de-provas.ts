@@ -185,6 +185,18 @@ export function atualizarQuestoesDaProva(id: string, questions: Prova['questions
   if (prova) prova.questions = questions;
 }
 
+export async function encerrarProva(id: string): Promise<Prova> {
+  const prova = encontrarProva(id);
+  if (!prova) throw new Error('Prova nao encontrada.');
+  if (prova.status === 'closed') return prova;
+
+  const encerrada = apiLigada
+    ? await requisitar<ProvaDoServidor>(`/provas/${id}/encerrar`, { method: 'POST' })
+    : { ...prova, status: 'closed' as const };
+  Object.assign(prova, encerrada);
+  return prova;
+}
+
 /**
  * Blocos de uma prova, criados a partir das questões existentes na primeira visita e
  * preservados a partir daí.
