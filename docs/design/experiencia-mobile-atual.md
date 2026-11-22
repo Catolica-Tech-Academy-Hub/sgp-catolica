@@ -51,9 +51,10 @@ discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para complet
    ou ponto e até duas casas decimais, não pode ser negativa nem passar do `maxScore` do
    gabarito local. A nota total — **objetiva + soma das discursivas** — é recalculada a
    cada digitação e marcada como parcial enquanto houver nota inválida.
-5. **Confirmar correção.** Valida as notas e chama `enfileirarCorrecao`. O item nasce
-   `pending`, e o professor volta à lista com o aviso de que a correção está na fila
-   local, sem ter sido enviada. A tela da fila é a issue #28.
+5. **Confirmar correção.** Valida as notas e chama `enfileirarCorrecao`, que grava o item
+   no aparelho. Só depois da gravação a correção conta como confirmada: o item nasce
+   `pending`, e o professor volta à lista com o aviso de que ela está salva no aparelho,
+   sem ter sido enviada. A tela da fila é a issue #28.
 
 Sem cópia local do gabarito (hoje, versões 0 e 4 dos mocks), a conferência e a
 confirmação ficam desabilitadas e explicadas.
@@ -129,10 +130,10 @@ bloqueada"**, em vez de simular um resultado.
 
 #### O que foi verificado
 
-- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 89
-  de 89 testes passaram, incluindo a validação do QR Code, a segunda leitura, a saída com
-  divergência, a decisão manual em branco e a leitura com o núcleo real sobre uma imagem
-  sintética.
+- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 115
+  de 115 testes passaram, incluindo a fila persistente, a validação do QR Code, a segunda
+  leitura, a saída com divergência, a decisão manual em branco e a leitura com o núcleo
+  real sobre uma imagem sintética.
 
 #### O que ainda não foi verificado ou integrado
 
@@ -148,6 +149,35 @@ bloqueada"**, em vez de simular um resultado.
 - **Sombra dura sobre a folha pode aumentar a revisão manual.** Esse limite foi aceito na
   viabilidade: nos testes sintéticos, a regra prefere mandar a questão para revisão a
   arriscar uma resposta automática.
+
+### Fila local persistente (issue #99, em andamento)
+
+As correções confirmadas ficam salvas no aparelho com AsyncStorage, pela camada
+`src/lib/fila-persistente.ts`, e sobrevivem ao fechamento e à reabertura do aplicativo.
+
+- **Cada item é gravado completo**, em uma chave própria, com o `answerKeySnapshot` e o
+  status (`pending`, `synced` ou `error`).
+- **A confirmação só acontece depois da gravação local.** Se ela falhar, a tela avisa, a
+  correção não entra na fila e uma nova tentativa reutiliza o mesmo `clientCorrectionId`.
+- **A fila é carregada antes da navegação**, em `CargaDaFila`. Se a leitura falhar, o
+  aplicativo oferece nova tentativa e não abre, para uma prova corrigida não parecer
+  pendente.
+- **Item salvo ilegível não é apagado.** Ele não impede a leitura dos demais, e a lista de
+  aplicações avisa o professor.
+- **Os mocks não são gravados.** Ao carregar, mocks e itens salvos são unidos por
+  `clientCorrectionId`, sem duplicar; com o mesmo identificador, vale o item salvo.
+
+#### O que foi verificado
+
+- Testes automatizados cobrem gravação, reabertura, falhas e não duplicação, usando um
+  armazenamento em memória no lugar do AsyncStorage.
+
+#### O que ainda não foi verificado ou implementado
+
+- **O teste em aparelho físico com o AsyncStorage real ainda não foi executado.**
+- **A sincronização com o servidor ainda não existe** e depende das issues #94 e #95.
+- **O envio para `POST /correcoes/lote` ainda não está implementado.** Nenhum item é enviado,
+  e novas correções continuam como `pending`.
 
 ### Prova sem identificação e o limite do RF09
 
@@ -168,6 +198,7 @@ feito pela web (issue #18); o aplicativo não cria esse vínculo.
 | Estado     | `src/lib/estado-de-correcoes.ts` | Ponto único de integração quando a API existir.     |
 | Leitura    | `src/lib/leitura-do-cartao.ts`   | Sugestões, prioridade do professor e aceite.        |
 | QR Code    | `src/lib/leitura-do-qr.ts`       | Validação do QR como valor opaco.                   |
+| Fila local | `src/lib/fila-persistente.ts`    | Gravação e leitura da fila no aparelho.             |
 
 ### Estado local
 
@@ -183,9 +214,9 @@ identificar, a cópia local do gabarito e a fila local.
 
 ### Regras do RF08 respeitadas desde a arquitetura
 
-- **Sem cópia local do gabarito, não se confirma correção.** `enfileirarCorrecao` devolve
-  vazio quando não há gabarito para aquela versão, em vez de gravar uma correção sem
-  referência.
+- **Sem cópia local do gabarito, não se confirma correção.** `enfileirarCorrecao` recusa
+  a confirmação quando não há gabarito para aquela versão, em vez de gravar uma correção
+  sem referência.
 - **Identificador gerado no dispositivo.** Cada item da fila nasce com um
   `clientCorrectionId` local, que é o que permite a deduplicação idempotente. Não usa
   `crypto.randomUUID`, que não existe no runtime do React Native sem polyfill.
@@ -193,8 +224,8 @@ identificar, a cópia local do gabarito e a fila local.
 
 ## Limites conhecidos
 
-- **A fila não sobrevive ao fechamento do aplicativo.** RF08 exige isso, e depende de
-  armazenamento do dispositivo — fase com backend. Hoje a fila vive na memória da sessão.
+- **A fila persiste no aparelho, mas não sincroniza.** O envio para `POST /correcoes/lote`
+  depende das issues #94 e #95, e a persistência ainda não foi testada em aparelho físico.
 - **Leitura de QR Code sem validação em aparelho físico.** A câmera lê o QR (#97), mas esse
   fluxo ainda não foi testado em um aparelho, e o formato final do QR depende da #91. A
   escolha na lista continua como alternativa e produz o mesmo efeito: chegar a uma versão

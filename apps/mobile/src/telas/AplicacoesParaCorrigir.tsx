@@ -1,7 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { cores, espacamento, tipografia } from '@sgp/design-tokens';
 import { Badge, Botao, Cartao, Tela } from '../components/ui';
-import { listarAplicacoesGeradas, useEstadoDeCorrecoes } from '../lib/estado-de-correcoes';
+import {
+  contarCorrecoesIlegiveis,
+  listarAplicacoesGeradas,
+  useEstadoDeCorrecoes,
+} from '../lib/estado-de-correcoes';
 import type { PropsDaTela } from '../navegacao';
 
 /**
@@ -20,6 +24,7 @@ export function AplicacoesParaCorrigir({
   useEstadoDeCorrecoes();
   const aplicacoes = listarAplicacoesGeradas();
   const correcaoSalva = route.params?.correcaoSalva;
+  const correcoesIlegiveis = contarCorrecoesIlegiveis();
 
   return (
     <Tela titulo="Correções" descricao="Escolha a aplicação cuja prova você vai corrigir.">
@@ -29,8 +34,7 @@ export function AplicacoesParaCorrigir({
             <Badge texto="Pendente" variante="secondary" />
             <Text style={estilos.texto}>{correcaoSalva.resumo}</Text>
             <Text style={estilos.nota}>
-              Nada foi enviado ao servidor nesta fase, e a fila só existe enquanto o aplicativo
-              estiver aberto.
+              A correção ficou salva neste aparelho. Nada foi enviado ao servidor nesta fase.
             </Text>
           </View>
           <Botao
@@ -39,6 +43,17 @@ export function AplicacoesParaCorrigir({
             tamanho="sm"
             onPress={() => navigation.setParams({ correcaoSalva: undefined })}
           />
+        </Cartao>
+      ) : null}
+
+      {correcoesIlegiveis > 0 ? (
+        <Cartao titulo="Correções salvas com problema">
+          <Text accessibilityRole="alert" style={estilos.erro}>
+            {correcoesIlegiveis === 1
+              ? '1 correção salva neste aparelho não pôde ser lida.'
+              : `${correcoesIlegiveis} correções salvas neste aparelho não puderam ser lidas.`}{' '}
+            Os dados foram mantidos, mas essas provas podem aparecer como pendentes.
+          </Text>
         </Cartao>
       ) : null}
 
@@ -83,4 +98,5 @@ const estilos = StyleSheet.create({
   aviso: { gap: espacamento.xs },
   texto: { fontSize: tipografia.tamanho.md, color: cores.foreground },
   nota: { fontSize: tipografia.tamanho.sm, color: cores.mutedForeground },
+  erro: { fontSize: tipografia.tamanho.sm, color: cores.destructive },
 });

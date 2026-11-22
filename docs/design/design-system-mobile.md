@@ -95,10 +95,11 @@ Valem as mesmas regras da web, com a mesma severidade:
 - ação sem backend fica **desabilitada e explicada**, nunca simulada;
 - persistência local nunca é apresentada como sincronização real.
 
-No mobile isso tem um caso próprio e importante: a fila local de correções vive na
-memória da sessão. RF08 exige que a fila sobreviva ao fechamento do aplicativo, o que
-depende de armazenamento do dispositivo e pertence a uma fase com backend. A tela de fila
-diz isso em vez de fingir.
+No mobile isso tem um caso próprio e importante: a fila de correções é persistida no
+aparelho. Os itens sobrevivem ao fechamento e à reabertura do aplicativo, cada um com seu
+`answerKeySnapshot`, e a confirmação só ocorre depois da gravação local. Isso é
+persistência local, **não** sincronização com o servidor: o envio para
+`POST /correcoes/lote` continua fora desta etapa e depende das issues #94 e #95.
 
 ## Acessibilidade
 
