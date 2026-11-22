@@ -1,13 +1,13 @@
-import { Badge, Cartao, Tela } from '../components/ui';
+import { Badge, Botao, Cartao, Tela } from '../components/ui';
 import { listarAtribuicoesDaAplicacao, useEstadoDeCorrecoes } from '../lib/estado-de-correcoes';
 import type { PropsDaTela } from '../navegacao';
 
 /**
- * Escolha da prova a corrigir, no lugar da leitura do QR Code.
+ * Escolha da prova a corrigir, pelo QR Code (#97) ou pela lista.
  *
- * A N1 nao tem camera (`.claude/rules/00-escopo-n1.md`); o efeito da leitura e o mesmo:
- * chegar a uma versao e, quando a prova tem identificacao, a um aluno. Versao minima para
- * viabilizar a #27 — a tela completa e a issue #25.
+ * A lista continua como alternativa para QR danificado. O efeito das duas e o mesmo: chegar
+ * a uma versao e, quando a prova tem identificacao, a um aluno. Versao minima para viabilizar
+ * a #27 — a tela completa e a issue #25.
  */
 export function SelecionarProva({ navigation, route }: PropsDaTela<'SelecionarProva'>) {
   useEstadoDeCorrecoes();
@@ -17,7 +17,14 @@ export function SelecionarProva({ navigation, route }: PropsDaTela<'SelecionarPr
   return (
     <Tela
       titulo={tituloDaProva}
-      descricao="Nesta fase, escolher a prova na lista substitui a leitura do QR Code impresso."
+      descricao="Leia o QR Code impresso ou escolha a prova na lista."
+      acao={
+        <Botao
+          titulo="Ler QR Code"
+          largura="total"
+          onPress={() => navigation.navigate('LeituraQrCode', { applicationId, tituloDaProva })}
+        />
+      }
     >
       {atribuicoes.map((atribuicao) => {
         const descricao = [

@@ -11,6 +11,7 @@ import {
   versoesMock,
 } from '@sgp/mocks';
 import type { ItemFilaCorrecao, NotaDiscursiva, StatusSincronizacao } from '@sgp/shared-types';
+import type { EntradaDoQr } from './leitura-do-qr';
 
 /**
  * Estado do fluxo de correcao do aplicativo do professor (RF08).
@@ -162,6 +163,47 @@ export function listarAtribuicoesDaAplicacao(applicationId: string): AtribuicaoP
           comIdentificacao: true,
         };
       });
+  });
+}
+
+/**
+ * Provas que um QR Code pode identificar (RF06): com identificacao, o QR e o da atribuicao
+ * de cada aluno; sem identificacao, e o da versao. O QR da versao identificada nao entra,
+ * porque abriria uma correcao sem dono para uma prova que tem aluno.
+ */
+export function listarEntradasDoQr(): EntradaDoQr[] {
+  return versoesMock.flatMap<EntradaDoQr>((versao) => {
+    const base = {
+      applicationId: versao.applicationId,
+      examVersionId: versao.id,
+      temGabarito: Boolean(obterGabaritoDaVersao(versao.id)),
+    };
+
+    if (!versao.withStudentIdentification) {
+      return [
+        {
+          ...base,
+          qrCodePayload: versao.qrCodePayload,
+          nomeDoAluno: 'Prova sem identificacao',
+          jaCorrigida: false,
+        },
+      ];
+    }
+
+    return atribuicoesMock
+      .filter((atribuicao) => atribuicao.examVersionId === versao.id)
+      .map((atribuicao) => ({
+        ...base,
+        qrCodePayload: atribuicao.qrCodePayload,
+        studentId: atribuicao.studentId,
+        nomeDoAluno:
+          estudantesMock.find((item) => item.id === atribuicao.studentId)?.fullName ??
+          'Aluno indisponivel',
+        jaCorrigida: correcoesConfirmadas().some(
+          (correcao) =>
+            correcao.examVersionId === versao.id && correcao.studentId === atribuicao.studentId,
+        ),
+      }));
   });
 }
 
