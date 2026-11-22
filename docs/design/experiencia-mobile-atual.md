@@ -38,9 +38,10 @@ discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para complet
 3. **Conferência objetiva.** Para cada questão objetiva, as letras na ordem impressa
    daquela versão (`printedOrder`). O professor toca na letra marcada a caneta; a tela
    mostra se acertou e a nota objetiva no rodapé. Só avança quando cada questão tem uma
-   alternativa ou foi aceita como em branco na leitura do cartão, porque a alternativa
-   escolhida (`selectedAlternativeId`) é o que vai para a fila. O botão "Ler cartão" abre
-   a leitura descrita abaixo; o toque continua funcionando sem ela.
+   alternativa ou foi decidida como em branco, porque a alternativa escolhida
+   (`selectedAlternativeId`) é o que vai para a fila. Questão com alternativa marcada ou
+   com leitura divergente mostra o botão "Em branco". O botão "Ler cartão" abre a leitura
+   descrita abaixo; o toque continua funcionando sem ela.
 4. **Notas discursivas.** Para cada questão discursiva: número impresso, enunciado (do
    banco de questões, pelo `questionId`), máximo e campo de nota. A nota aceita vírgula
    ou ponto e até duas casas decimais, não pode ser negativa nem passar do `maxScore` do
@@ -57,15 +58,25 @@ confirmação ficam desabilitadas e explicadas.
 
 Fluxo: `ConferenciaObjetiva` → **Ler cartão** → `LeituraCartao` → revisão questão a
 questão → **Aplicar e voltar à correção** → `ConferenciaObjetiva` → `NotasDiscursivas` →
-confirmação normal. **Voltar sem aplicar** não altera nenhuma marcação.
+confirmação normal. Sair sem aplicar não confirma a nova leitura e preserva as decisões
+do professor, mas uma divergência com a leitura anterior continua pendente.
 
 A leitura usa o núcleo local e provisório de `src/viabilidade/` (marcadores, perspectiva
 e bolhas), sem rede. As regras ficam em `src/lib/leitura-do-cartao.ts`:
 
 - **A leitura nunca confirma a correção.** Ela só produz sugestões. O aceite do professor
   preenche a conferência, e a confirmação continua sendo a da tela de notas.
-- **A decisão do professor tem prioridade.** O toque na revisão vence a marcação atual, e
-  a marcação atual vence a sugestão da leitura.
+- **A decisão manual do professor tem prioridade.** O toque em uma alternativa, a escolha
+  de "Em branco" na conferência e a escolha feita na revisão não são sobrescritos por
+  nenhuma leitura.
+- **Sugestão anterior da leitura não é decisão manual.** A conferência guarda quais
+  valores vieram de uma leitura aceita. Uma nova leitura segura com o mesmo valor mantém a
+  sugestão, inclusive quando as duas veem a questão em branco.
+- **Nova leitura divergente exige nova revisão.** Dupla marcação, leitura ambígua, bolha
+  não localizada ou outro valor seguro tiram a sugestão anterior da conferência. A
+  questão fica pendente mesmo que o professor saia sem aplicar, e "Continuar" só libera
+  depois que ele escolher uma letra ou deixar em branco. Outra leitura não resolve essa
+  pendência.
 - **Dupla marcação, leitura ambígua e bolha não localizada exigem decisão manual.** A
   questão vai para revisão, nenhuma alternativa é escolhida automaticamente e "Aplicar"
   fica desabilitado até o professor escolher uma letra ou deixar em branco.
@@ -81,12 +92,9 @@ bloqueada"**, em vez de simular um resultado.
 
 #### O que foi verificado
 
-- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`): 20 de 20
-  passando, incluindo a leitura com o núcleo real sobre uma imagem sintética.
-- Typecheck, lint, Prettier e `git diff --check` passando nesta etapa.
-- Fluxo percorrido no navegador com `react-native-web` e um cartão sintético injetado só
-  no ambiente de teste: marcação manual mantida, dupla marcação em revisão, questão em
-  branco, voltar sem aplicar, aplicar e leitura bloqueada.
+- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 69
+  de 69 testes passaram, incluindo a segunda leitura, a saída com divergência, a decisão manual
+  em branco e a leitura com o núcleo real sobre uma imagem sintética.
 
 #### O que ainda não foi verificado ou integrado
 
@@ -156,8 +164,7 @@ cópia local do gabarito e a fila local.
   o React Native não aceita; o aplicativo usa a fonte do sistema. Ver a limitação
   registrada no design system mobile.
 - **O CI não roda o typecheck do mobile.** Ele só roda commitlint, format e lint. O
-  comando `npm run typecheck --workspace @sgp/mobile` passou na etapa atual da #98, mas
-  precisa ser executado localmente.
+  comando `npm run typecheck --workspace @sgp/mobile` precisa ser executado localmente.
 
 ## Como rodar
 

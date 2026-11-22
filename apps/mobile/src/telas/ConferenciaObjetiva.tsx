@@ -8,7 +8,13 @@ import {
   obterProvaParaCorrigir,
   type RespostasObjetivas,
 } from '../lib/estado-de-correcoes';
-import { aplicarNaConferencia } from '../lib/leitura-do-cartao';
+import {
+  aplicarNaConferencia,
+  marcarDivergencias,
+  registrarBranco,
+  registrarToque,
+  type MarcacoesDaConferencia,
+} from '../lib/leitura-do-cartao';
 import type { PropsDaTela } from '../navegacao';
 
 /**
@@ -21,27 +27,37 @@ import type { PropsDaTela } from '../navegacao';
  * toque na letra ocupa o lugar da leitura do cartao-resposta.
  */
 export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'ConferenciaObjetiva'>) {
-  const { examVersionId, studentId, nomeDoAluno, aplicacaoDaLeitura } = route.params;
+  const { examVersionId, studentId, nomeDoAluno, aplicacaoDaLeitura, divergenciasDaLeitura } =
+    route.params;
   const prova = useMemo(() => obterProvaParaCorrigir(examVersionId), [examVersionId]);
-  const [marcadas, setMarcadas] = useState<Record<string, string>>({});
-  // Em branco so nasce do aceite de uma leitura; a questao segue sem resposta e vale zero.
-  const [emBranco, setEmBranco] = useState<string[]>([]);
+  // Questao em branco segue sem resposta e vale zero.
+  const [marcacoes, setMarcacoes] = useState<MarcacoesDaConferencia>({
+    marcadas: {},
+    emBranco: [],
+    sugeridasPelaLeitura: [],
+    divergentes: {},
+  });
+  const { marcadas, emBranco, sugeridasPelaLeitura, divergentes } = marcacoes;
   const ultimaLeituraAplicada = useRef<string>();
+  const ultimaDivergenciaRegistrada = useRef<string>();
 
   useEffect(() => {
     if (!prova || !aplicacaoDaLeitura) return;
     if (ultimaLeituraAplicada.current === aplicacaoDaLeitura.id) return;
     ultimaLeituraAplicada.current = aplicacaoDaLeitura.id;
 
-    const novas = aplicarNaConferencia(
-      { marcadas, emBranco },
-      aplicacaoDaLeitura,
-      prova.objetivas,
-      examVersionId,
+    setMarcacoes((atuais) =>
+      aplicarNaConferencia(atuais, aplicacaoDaLeitura, prova.objetivas, examVersionId),
     );
-    setMarcadas(novas.marcadas);
-    setEmBranco(novas.emBranco);
-  }, [aplicacaoDaLeitura, emBranco, examVersionId, marcadas, prova]);
+  }, [aplicacaoDaLeitura, examVersionId, prova]);
+
+  useEffect(() => {
+    if (!divergenciasDaLeitura) return;
+    if (ultimaDivergenciaRegistrada.current === divergenciasDaLeitura.id) return;
+    ultimaDivergenciaRegistrada.current = divergenciasDaLeitura.id;
+
+    setMarcacoes((atuais) => marcarDivergencias(atuais, divergenciasDaLeitura, examVersionId));
+  }, [divergenciasDaLeitura, examVersionId]);
 
   // RF08: sem copia local do gabarito, nao se corrige. Explica em vez de esconder.
   if (!prova) {
@@ -91,6 +107,8 @@ export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'Conferen
                 nomeDoAluno,
                 marcadasAtuais: marcadas,
                 emBrancoAtuais: emBranco,
+                sugeridasAtuais: sugeridasPelaLeitura,
+                divergentesAtuais: divergentes,
               })
             }
           />
@@ -114,6 +132,12 @@ export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'Conferen
         const marcada = marcadas[questao.questionId];
         const letraMarcada = questao.alternativas.find((item) => item.id === marcada)?.letra;
         const acertou = marcada === questao.correctAlternativeId;
+        const sugestaoAnterior = divergentes[questao.questionId];
+        const divergente = sugestaoAnterior !== undefined;
+        const letraAnterior =
+          sugestaoAnterior === null
+            ? 'em branco'
+            : questao.alternativas.find((item) => item.id === sugestaoAnterior)?.letra;
 
         return (
           <Cartao
@@ -129,16 +153,35 @@ export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'Conferen
                   rotuloAcessivel={`Questão ${questao.numero}, alternativa ${alternativa.letra}`}
                   variante={marcada === alternativa.id ? 'padrao' : 'outline'}
                   selecionado={marcada === alternativa.id}
-                  onPress={() => {
-                    setMarcadas((atual) => ({ ...atual, [questao.questionId]: alternativa.id }));
-                    setEmBranco((atual) => atual.filter((id) => id !== questao.questionId));
-                  }}
+                  onPress={() =>
+                    setMarcacoes((atuais) =>
+                      registrarToque(atuais, questao.questionId, alternativa.id),
+                    )
+                  }
                 />
               ))}
+              {/* Sem isso, um toque errado obrigaria a manter uma letra em questão sem resposta. */}
+              {divergente || marcada !== undefined ? (
+                <Botao
+                  titulo="Em branco"
+                  rotuloAcessivel={`Questão ${questao.numero}, deixar em branco`}
+                  variante="outline"
+                  onPress={() =>
+                    setMarcacoes((atuais) => registrarBranco(atuais, questao.questionId))
+                  }
+                />
+              ) : null}
             </View>
 
             {/* A selecao nao fica so na cor do botao: o resultado tambem e escrito. */}
-            {letraMarcada ? (
+            {divergente ? (
+              <>
+                <Badge texto="Revisar: leituras divergentes" variante="destructive" />
+                <Text style={estilos.pendencia}>
+                  A leitura anterior sugeriu {letraAnterior}. Confira na folha e decida.
+                </Text>
+              </>
+            ) : letraMarcada ? (
               <Badge
                 texto={
                   acertou ? `Marcou ${letraMarcada}: correta` : `Marcou ${letraMarcada}: errada`

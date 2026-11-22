@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { cores, tipografia } from '@sgp/design-tokens';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RespostasObjetivas } from '../lib/estado-de-correcoes';
-import type { AplicacaoDaLeitura } from '../lib/leitura-do-cartao';
+import type { AplicacaoDaLeitura, DivergenciasDaLeitura } from '../lib/leitura-do-cartao';
 import { AplicacoesParaCorrigir } from '../telas/AplicacoesParaCorrigir';
 import { Ambiente } from '../telas/Ambiente';
 import { ConferenciaObjetiva } from '../telas/ConferenciaObjetiva';
@@ -34,10 +34,16 @@ export type RotasDoAplicativo = {
   AplicacoesParaCorrigir: { correcaoSalva?: { id: string; resumo: string } } | undefined;
   SelecionarProva: { applicationId: string; tituloDaProva: string };
   /** `aplicacaoDaLeitura` chega da leitura do cartao, somente com o aceite do professor. */
-  ConferenciaObjetiva: ProvaEscolhida & { aplicacaoDaLeitura?: AplicacaoDaLeitura };
+  ConferenciaObjetiva: ProvaEscolhida & {
+    aplicacaoDaLeitura?: AplicacaoDaLeitura;
+    /** Registrada quando a leitura termina, para valer em qualquer forma de sair dela. */
+    divergenciasDaLeitura?: DivergenciasDaLeitura;
+  };
   LeituraCartao: ProvaEscolhida & {
     marcadasAtuais: Record<string, string>;
     emBrancoAtuais: string[];
+    sugeridasAtuais: string[];
+    divergentesAtuais: Record<string, string | null>;
   };
   NotasDiscursivas: ProvaEscolhida & { respostas: RespostasObjetivas };
   Ambiente: undefined;

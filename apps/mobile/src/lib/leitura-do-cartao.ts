@@ -152,6 +152,21 @@ export async function executarLeitura(
 export interface MarcacoesDaConferencia {
   marcadas: Record<string, string>;
   emBranco: string[];
+  /** Questoes cujo valor atual veio de uma leitura aceita, sem toque do professor. */
+  sugeridasPelaLeitura: string[];
+  /**
+   * Questoes em que uma nova leitura divergiu da sugestao anterior, com o valor sugerido
+   * antes. Ficam sem resposta ate o professor decidir por toque.
+   */
+  divergentes: Record<string, string | null>;
+}
+
+/** Divergencias de uma leitura concluida, registradas na conferencia ao fim da leitura. */
+export interface DivergenciasDaLeitura {
+  /** Identifica esta leitura, para o registro nao ser repetido. */
+  id: string;
+  examVersionId: string;
+  valoresAnteriores: Record<string, string | null>;
 }
 
 /** Escolha feita na revisao: id da alternativa, ou `null` para deixar em branco. */
@@ -163,15 +178,33 @@ export interface ResolucaoDaQuestao {
   origem: OrigemDaDecisao;
   /** Id da alternativa, `null` para em branco, ausente enquanto estiver pendente. */
   valor?: string | null;
+  /** Sugestao de uma leitura anterior que esta leitura nao confirmou. */
+  valorAnterior?: string | null;
 }
 
 export function exigeRevisao({ estado }: SugestaoDaQuestao): boolean {
   return estado === 'multipla' || estado === 'revisar';
 }
 
+function valorNaConferencia(
+  atuais: MarcacoesDaConferencia,
+  questionId: string,
+): string | null | undefined {
+  const marcada = atuais.marcadas[questionId];
+  if (marcada !== undefined) return marcada;
+  return atuais.emBranco.includes(questionId) ? null : undefined;
+}
+
+/** Valor que a leitura decide sozinha, ou `undefined` quando ela exige revisao. */
+function valorSeguroDaLeitura(sugestao: SugestaoDaQuestao): string | null | undefined {
+  if (sugestao.estado === 'em_branco') return null;
+  return sugestao.estado === 'respondida' ? sugestao.alternativaSugeridaId : undefined;
+}
+
 /**
- * Decide o valor de uma questao. A ordem e a regra: o toque na revisao vence a marcacao
- * atual, a marcacao atual vence a camera, e a camera so decide quando a leitura e segura.
+ * Decide o valor de uma questao. O toque do professor vence qualquer leitura. Uma sugestao
+ * aplicada antes nao e decisao dele: so se mantem quando a nova leitura segura a confirma,
+ * e qualquer divergencia volta para revisao, sem trocar nem manter o valor em silencio.
  */
 export function resolverQuestao(
   sugestao: SugestaoDaQuestao,
@@ -182,12 +215,65 @@ export function resolverQuestao(
   const revisao = revisoes[questionId];
   if (revisao !== undefined) return { origem: 'revisao', valor: revisao };
 
-  const marcada = atuais.marcadas[questionId];
-  if (marcada !== undefined) return { origem: 'atual', valor: marcada };
-  if (atuais.emBranco.includes(questionId)) return { origem: 'atual', valor: null };
+  // Divergencia ja registrada so se resolve por decisao do professor, nunca por outra leitura.
+  const divergencia = atuais.divergentes[questionId];
+  if (divergencia !== undefined) return { origem: 'pendente', valorAnterior: divergencia };
 
-  if (exigeRevisao(sugestao)) return { origem: 'pendente' };
-  return { origem: 'leitura', valor: sugestao.alternativaSugeridaId ?? null };
+  const valorAtual = valorNaConferencia(atuais, questionId);
+  const valorLido = valorSeguroDaLeitura(sugestao);
+  if (valorAtual === undefined) {
+    return valorLido === undefined
+      ? { origem: 'pendente' }
+      : { origem: 'leitura', valor: valorLido };
+  }
+
+  if (!atuais.sugeridasPelaLeitura.includes(questionId) || valorLido === valorAtual) {
+    return { origem: 'atual', valor: valorAtual };
+  }
+  return { origem: 'pendente', valorAnterior: valorAtual };
+}
+
+/** A leitura atual repete a sugestao anterior, mas a divergencia registrada segue pendente. */
+export function leituraConfirmaSugestaoAnterior(
+  sugestao: SugestaoDaQuestao,
+  { origem, valorAnterior }: ResolucaoDaQuestao,
+): boolean {
+  return (
+    origem === 'pendente' &&
+    valorAnterior !== undefined &&
+    valorSeguroDaLeitura(sugestao) === valorAnterior
+  );
+}
+
+/**
+ * Rotulo de uma questao pendente cuja leitura atual e segura. Sem leitura segura devolve
+ * `undefined`, e a tela usa o rotulo do proprio estado (dupla marcacao ou leitura incerta).
+ */
+export function rotuloDaPendencia(
+  sugestao: SugestaoDaQuestao,
+  resolucao: ResolucaoDaQuestao,
+): string | undefined {
+  if (resolucao.origem !== 'pendente' || exigeRevisao(sugestao)) return undefined;
+  return leituraConfirmaSugestaoAnterior(sugestao, resolucao)
+    ? 'Revisar: decisão pendente'
+    : 'Revisar: difere da leitura anterior';
+}
+
+/**
+ * Rotulo da decisao do professor quando ela difere da leitura atual, para o selo mostrar o
+ * que esta valendo. Quando os dois coincidem, ou nao ha decisao, devolve `undefined`.
+ */
+export function rotuloDaDecisaoManual(
+  sugestao: SugestaoDaQuestao,
+  { origem, valor }: ResolucaoDaQuestao,
+  valorDescrito: string,
+): string | undefined {
+  if (origem !== 'atual' && origem !== 'revisao') return undefined;
+  return valor === valorSeguroDaLeitura(sugestao) ? undefined : `Decisão manual: ${valorDescrito}`;
+}
+
+export function mensagemDeSugestaoRepetida(valor: string): string {
+  return `Esta leitura voltou a sugerir ${valor}, mas uma leitura anterior divergiu. Escolha a resposta ou deixe em branco.`;
 }
 
 export function contarPendentes(
@@ -198,6 +284,47 @@ export function contarPendentes(
   return sugestoes.filter(
     (sugestao) => resolverQuestao(sugestao, atuais, revisoes).origem === 'pendente',
   ).length;
+}
+
+/** Questoes cuja sugestao anterior nao foi confirmada por esta leitura. */
+export function listarDivergencias(
+  sugestoes: SugestaoDaQuestao[],
+  atuais: MarcacoesDaConferencia,
+): Record<string, string | null> {
+  const valores: Record<string, string | null> = {};
+  for (const sugestao of sugestoes) {
+    const { origem, valorAnterior } = resolverQuestao(sugestao, atuais, {});
+    if (origem === 'pendente' && valorAnterior !== undefined) {
+      valores[sugestao.questionId] = valorAnterior;
+    }
+  }
+  return valores;
+}
+
+/**
+ * Tira da conferencia as sugestoes que a nova leitura nao confirmou, para a divergencia
+ * continuar pendente mesmo que o professor saia sem aplicar. Decisao manual nao e afetada.
+ */
+export function marcarDivergencias(
+  atuais: MarcacoesDaConferencia,
+  { examVersionId, valoresAnteriores }: DivergenciasDaLeitura,
+  examVersionIdDaConferencia: string,
+): MarcacoesDaConferencia {
+  if (examVersionId !== examVersionIdDaConferencia) return atuais;
+
+  const marcadas = { ...atuais.marcadas };
+  const emBranco = new Set(atuais.emBranco);
+  const sugeridas = new Set(atuais.sugeridasPelaLeitura);
+  const divergentes = { ...atuais.divergentes };
+
+  for (const [questionId, valorAnterior] of Object.entries(valoresAnteriores)) {
+    if (divergentes[questionId] !== undefined || !sugeridas.has(questionId)) continue;
+    delete marcadas[questionId];
+    emBranco.delete(questionId);
+    sugeridas.delete(questionId);
+    divergentes[questionId] = valorAnterior;
+  }
+  return { marcadas, emBranco: [...emBranco], sugeridasPelaLeitura: [...sugeridas], divergentes };
 }
 
 /** Aceite do professor, levado de volta a conferencia pelos parametros da rota. */
@@ -240,20 +367,62 @@ export function aplicarNaConferencia(
 
   const marcadas = { ...atuais.marcadas };
   const emBranco = new Set(atuais.emBranco);
+  const sugeridas = new Set(atuais.sugeridasPelaLeitura);
+  const divergentes = { ...atuais.divergentes };
 
   for (const { questionId, valor, origem } of aplicacao.decisoes) {
     const questao = questoes.find((item) => item.questionId === questionId);
     if (!questao) continue;
-    if (origem === 'leitura' && (marcadas[questionId] !== undefined || emBranco.has(questionId))) {
-      continue;
-    }
+    const jaDecidida =
+      marcadas[questionId] !== undefined ||
+      emBranco.has(questionId) ||
+      divergentes[questionId] !== undefined;
+    if (origem === 'leitura' && jaDecidida) continue;
     if (valor === null) {
       delete marcadas[questionId];
       emBranco.add(questionId);
     } else if (questao.alternativas.some((alternativa) => alternativa.id === valor)) {
       marcadas[questionId] = valor;
       emBranco.delete(questionId);
+    } else {
+      continue;
     }
+    if (origem === 'leitura') sugeridas.add(questionId);
+    else sugeridas.delete(questionId);
+    delete divergentes[questionId];
   }
-  return { marcadas, emBranco: [...emBranco] };
+  return { marcadas, emBranco: [...emBranco], sugeridasPelaLeitura: [...sugeridas], divergentes };
+}
+
+/** Toque na conferencia: vira decisao do professor, mesmo sobre uma sugestao da leitura. */
+export function registrarToque(
+  atuais: MarcacoesDaConferencia,
+  questionId: string,
+  alternativaId: string,
+): MarcacoesDaConferencia {
+  const divergentes = { ...atuais.divergentes };
+  delete divergentes[questionId];
+  return {
+    marcadas: { ...atuais.marcadas, [questionId]: alternativaId },
+    emBranco: atuais.emBranco.filter((id) => id !== questionId),
+    sugeridasPelaLeitura: atuais.sugeridasPelaLeitura.filter((id) => id !== questionId),
+    divergentes,
+  };
+}
+
+/** Decisao manual de deixar a questao em branco, que nenhuma leitura futura sobrescreve. */
+export function registrarBranco(
+  atuais: MarcacoesDaConferencia,
+  questionId: string,
+): MarcacoesDaConferencia {
+  const marcadas = { ...atuais.marcadas };
+  const divergentes = { ...atuais.divergentes };
+  delete marcadas[questionId];
+  delete divergentes[questionId];
+  return {
+    marcadas,
+    emBranco: [...atuais.emBranco.filter((id) => id !== questionId), questionId],
+    sugeridasPelaLeitura: atuais.sugeridasPelaLeitura.filter((id) => id !== questionId),
+    divergentes,
+  };
 }

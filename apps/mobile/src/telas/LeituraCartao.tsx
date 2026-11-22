@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
 import { cores, espacamento, tipografia } from '@sgp/design-tokens';
 import { Badge, Botao, Cartao, Tela } from '../components/ui';
 import type { VarianteDoBadge } from '../components/ui/Badge';
@@ -8,9 +9,14 @@ import type { QuestaoObjetivaParaConferir } from '../lib/estado-de-correcoes';
 import {
   contarPendentes,
   executarLeitura,
+  leituraConfirmaSugestaoAnterior,
+  listarDivergencias,
+  mensagemDeSugestaoRepetida,
   MENSAGENS_DE_BLOQUEIO,
   montarAplicacao,
   resolverQuestao,
+  rotuloDaDecisaoManual,
+  rotuloDaPendencia,
 } from '../lib/leitura-do-cartao';
 import type {
   EstadoDaSugestao,
@@ -50,10 +56,20 @@ function descreverDecisao(
 ) {
   const valor = descreverValor(questao, resolucao.valor);
   if (resolucao.origem === 'pendente') {
+    if (leituraConfirmaSugestaoAnterior(sugestao, resolucao)) {
+      return mensagemDeSugestaoRepetida(descreverValor(questao, resolucao.valorAnterior));
+    }
+    const anterior =
+      resolucao.valorAnterior !== undefined
+        ? `A leitura anterior sugeriu ${descreverValor(questao, resolucao.valorAnterior)}. `
+        : '';
     const vistas = sugestao.alternativasDetectadasIds.map((id) => letraDe(questao, id));
-    return vistas.length > 0
-      ? `A leitura viu: ${vistas.join(', ')}. Escolha a resposta ou deixe em branco.`
-      : 'Confira na folha e escolha a resposta ou deixe em branco.';
+    if (vistas.length > 0) {
+      return `${anterior}A leitura viu: ${vistas.join(', ')}. Escolha a resposta ou deixe em branco.`;
+    }
+    return sugestao.estado === 'em_branco'
+      ? `${anterior}Esta leitura não viu marcação. Escolha a resposta ou deixe em branco.`
+      : `${anterior}Confira na folha e escolha a resposta ou deixe em branco.`;
   }
   if (resolucao.origem === 'revisao') return `Sua revisão: ${valor}.`;
   if (resolucao.origem === 'leitura') return `Sugestão da leitura: ${valor}.`;
@@ -74,9 +90,25 @@ function descreverDecisao(
  * precisa conferir se o cartao e mesmo o daquela prova.
  */
 export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'>) {
-  const { examVersionId, studentId, nomeDoAluno, marcadasAtuais, emBrancoAtuais } = route.params;
+  const {
+    examVersionId,
+    studentId,
+    nomeDoAluno,
+    marcadasAtuais,
+    emBrancoAtuais,
+    sugeridasAtuais,
+    divergentesAtuais,
+  } = route.params;
   const prova = useMemo(() => obterProvaParaCorrigir(examVersionId), [examVersionId]);
-  const atuais: MarcacoesDaConferencia = { marcadas: marcadasAtuais, emBranco: emBrancoAtuais };
+  const atuais: MarcacoesDaConferencia = useMemo(
+    () => ({
+      marcadas: marcadasAtuais,
+      emBranco: emBrancoAtuais,
+      sugeridasPelaLeitura: sugeridasAtuais,
+      divergentes: divergentesAtuais,
+    }),
+    [marcadasAtuais, emBrancoAtuais, sugeridasAtuais, divergentesAtuais],
+  );
 
   const [fase, setFase] = useState<Fase>({ tipo: 'lendo' });
   const [revisoes, setRevisoes] = useState<RevisoesDaLeitura>({});
@@ -108,6 +140,24 @@ export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'
       ativa = false;
     };
   }, [prova, tentativa]);
+
+  // Registra a divergencia ao concluir, e nao ao sair: botao, seta e gesto ficam cobertos.
+  useEffect(() => {
+    if (fase.tipo !== 'concluida') return;
+    const valoresAnteriores = listarDivergencias(fase.sugestoes, atuais);
+    if (Object.keys(valoresAnteriores).length === 0) return;
+
+    const conferencia = navigation
+      .getState()
+      .routes.find((rota) => rota.name === 'ConferenciaObjetiva');
+    if (!conferencia) return;
+    navigation.dispatch({
+      ...CommonActions.setParams({
+        divergenciasDaLeitura: { id: route.key, examVersionId, valoresAnteriores },
+      }),
+      source: conferencia.key,
+    });
+  }, [atuais, examVersionId, fase, navigation, route.key]);
 
   const voltarSemAplicar = (
     <Botao
@@ -209,7 +259,17 @@ export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'
       {prova.objetivas.map((questao, indice) => {
         const sugestao = sugestoes[indice];
         const resolucao = resolverQuestao(sugestao, atuais, revisoes);
-        const rotulo = ROTULO_DO_ESTADO[sugestao.estado];
+        const textoDaDecisao = rotuloDaDecisaoManual(
+          sugestao,
+          resolucao,
+          descreverValor(questao, resolucao.valor),
+        );
+        const textoDaPendencia = rotuloDaPendencia(sugestao, resolucao);
+        const rotulo: { texto: string; variante: VarianteDoBadge } = textoDaDecisao
+          ? { texto: textoDaDecisao, variante: 'secondary' }
+          : textoDaPendencia
+            ? { texto: textoDaPendencia, variante: 'destructive' }
+            : ROTULO_DO_ESTADO[sugestao.estado];
 
         return (
           <Cartao key={questao.questionId} titulo={`Questão ${questao.numero}`}>

@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --test --experimental-strip-types --no-warnings \"src/**/*.test.mjs\""
+    "test": "node --import tsx --test src/lib/leitura-do-cartao.test.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
@@ -34,6 +34,7 @@
     "eslint": "^9.39.5",
     "eslint-config-expo": "^57.0.1",
     "eslint-config-prettier": "^10.1.8",
+    "tsx": "^4.23.15",
     "typescript": "^5.6.3"
   }
 }
