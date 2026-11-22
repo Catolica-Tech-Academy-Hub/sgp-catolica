@@ -15,7 +15,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "O SGP Católica usa a câmera para ler o QR Code das provas impressas.",
+          "cameraPermission": "O SGP Católica usa a câmera para ler o QR Code e o cartão-resposta das provas impressas.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }

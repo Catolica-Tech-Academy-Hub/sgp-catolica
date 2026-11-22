@@ -25,6 +25,8 @@ export interface SugestaoDaQuestao {
   alternativaSugeridaId?: string;
   /** Alternativas vistas como marcadas. Na dupla marcacao, nenhuma delas e escolhida. */
   alternativasDetectadasIds: string[];
+  /** Ha marca em uma bolha alem das alternativas desta questao: exige revisao manual. */
+  marcaExcedente?: boolean;
 }
 
 export type MotivoDoBloqueio =
@@ -36,8 +38,7 @@ export type MotivoDoBloqueio =
   | 'falha_inesperada';
 
 export const MENSAGENS_DE_BLOQUEIO: Record<MotivoDoBloqueio, string> = {
-  sem_fonte_de_imagem:
-    'A captura pela câmera ainda não está disponível neste aplicativo. Continue a conferência pelo toque.',
+  sem_fonte_de_imagem: 'Nenhuma foto do cartão foi recebida. Tente de novo ou use o toque.',
   captura_falhou: 'Não foi possível obter a imagem do cartão. Tente de novo ou use o toque.',
   prova_incompativel:
     'O cartão provisório não comporta as questões desta prova. Continue a conferência pelo toque.',
@@ -48,10 +49,19 @@ export const MENSAGENS_DE_BLOQUEIO: Record<MotivoDoBloqueio, string> = {
     'A leitura falhou. Nenhuma marcação foi alterada. Tente de novo ou use o toque.',
 };
 
-export type ResultadoDaLeitura =
-  { ok: true; sugestoes: SugestaoDaQuestao[] } | { ok: false; motivo: MotivoDoBloqueio };
+/** Area entre os centros dos 4 marcadores, em pixels da imagem lida. */
+export interface AreaDetectada {
+  largura: number;
+  altura: number;
+  /** Sentido horario, a partir do canto superior esquerdo da folha. */
+  cantos: [Ponto, Ponto, Ponto, Ponto];
+}
 
-/** Entrada de imagem. A camera real entra aqui, sem mudar a tela nem as regras. */
+export type ResultadoDaLeitura =
+  | { ok: true; sugestoes: SugestaoDaQuestao[]; areaDetectada: AreaDetectada }
+  | { ok: false; motivo: MotivoDoBloqueio };
+
+/** Entrada de imagem da leitura: a foto capturada pela camera. */
 export type FonteDeImagem = () => Promise<ImagemRgba>;
 
 /** Etapas do processamento, recebidas por parametro para o layout seguir provisorio. */
@@ -75,6 +85,12 @@ function interpretarQuestao(questao: QuestaoLida, leitura: LeituraDaQuestao): Su
     .filter((bolha) => bolha.estado === 'marcada')
     .flatMap((bolha) => idDaOpcao(bolha.indiceDaOpcao) ?? []);
   const base = { questionId: questao.questionId, alternativasDetectadasIds };
+
+  // Vem antes dos demais estados: B + E numa questao de 4 alternativas nunca vira resposta B.
+  const marcaExcedente = leitura.bolhas.some(
+    (bolha) => bolha.estado === 'marcada' && bolha.indiceDaOpcao >= questao.alternativas.length,
+  );
+  if (marcaExcedente) return { ...base, estado: 'revisar', marcaExcedente };
 
   if (leitura.estado === 'em_branco') return { ...base, estado: 'em_branco' };
   if (leitura.estado === 'multipla') return { ...base, estado: 'multipla' };
@@ -123,7 +139,24 @@ export function lerCartao(
       layout,
     );
     const sugestoes = interpretarLeitura(questoes, leituras);
-    return sugestoes ? { ok: true, sugestoes } : { ok: false, motivo: 'prova_incompativel' };
+    if (!sugestoes) return { ok: false, motivo: 'prova_incompativel' };
+
+    const { superiorEsquerdo, superiorDireito, inferiorDireito, inferiorEsquerdo } =
+      deteccao.marcadores;
+    return {
+      ok: true,
+      sugestoes,
+      areaDetectada: {
+        largura: imagem.largura,
+        altura: imagem.altura,
+        cantos: [
+          superiorEsquerdo.centro,
+          superiorDireito.centro,
+          inferiorDireito.centro,
+          inferiorEsquerdo.centro,
+        ],
+      },
+    };
   } catch {
     return { ok: false, motivo: 'falha_inesperada' };
   }

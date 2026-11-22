@@ -1,8 +1,8 @@
 import type { LayoutDeBolhas } from './bolhas';
 
 /**
- * Viabilidade da issue #98: posicao provisoria das bolhas no A4, ate o layout definitivo
- * do cartao ser combinado na issue #92. Comporta 20 questoes de ate 5 alternativas.
+ * Posicao provisoria das bolhas no A4 (issue #98), ate o layout definitivo do cartao ser
+ * combinado na issue #92. Comporta 20 questoes de ate 5 alternativas.
  */
 const RAIO_DA_BOLHA_MM = 3;
 const COLUNAS_MM = [35, 120];
@@ -12,7 +12,11 @@ const PASSO_DA_OPCAO_MM = 10;
 const QUESTOES_POR_COLUNA = 10;
 const MAXIMO_DE_OPCOES = 5;
 
-/** Devolve `undefined` quando a prova nao cabe no cartao provisorio. */
+/**
+ * Devolve `undefined` quando a prova nao cabe no cartao provisorio. Sempre inclui as 5
+ * posicoes da linha, mesmo em questao com menos alternativas: uma marca na posicao excedente
+ * precisa ser vista, ou uma dupla marcacao pareceria uma resposta valida.
+ */
 export function criarLayoutProvisorioDeBolhas(
   opcoesPorQuestao: number[],
 ): LayoutDeBolhas | undefined {
@@ -26,12 +30,12 @@ export function criarLayoutProvisorioDeBolhas(
 
   return {
     raioDaBolhaMm: RAIO_DA_BOLHA_MM,
-    questoes: opcoesPorQuestao.map((opcoes, indiceDaQuestao) => {
+    questoes: opcoesPorQuestao.map((_, indiceDaQuestao) => {
       const coluna = COLUNAS_MM[Math.floor(indiceDaQuestao / QUESTOES_POR_COLUNA)];
       const y = PRIMEIRA_LINHA_MM + (indiceDaQuestao % QUESTOES_POR_COLUNA) * PASSO_DA_LINHA_MM;
       return {
         indiceDaQuestao,
-        bolhas: Array.from({ length: opcoes }, (_, indiceDaOpcao) => ({
+        bolhas: Array.from({ length: MAXIMO_DE_OPCOES }, (__, indiceDaOpcao) => ({
           indiceDaOpcao,
           centroMm: { x: coluna + indiceDaOpcao * PASSO_DA_OPCAO_MM, y },
         })),

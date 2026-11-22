@@ -1,12 +1,12 @@
 import type { LayoutDeMarcadores, MarcadoresDaFolha, Ponto } from './marcadores';
 
 /**
- * Viabilidade da issue #98: relaciona milimetros da folha com pixels da foto a partir dos
- * 4 marcadores, corrigindo rotacao, inclinacao e perspectiva.
+ * Relaciona milimetros da folha com pixels da foto a partir dos 4 marcadores, corrigindo
+ * rotacao, inclinacao e perspectiva (issue #98).
  *
- * Codigo temporario, fora do fluxo de correcao. As medidas vem do layout recebido, porque
- * o layout definitivo do cartao ainda sera combinado na issue #92. A homografia modela um
- * plano: papel curvado e distorcao de lente nao sao corrigidos.
+ * As medidas vem do layout recebido, porque o layout definitivo do cartao ainda sera
+ * combinado na issue #92. A homografia modela um plano: papel curvado e distorcao de lente
+ * nao sao corrigidos.
  */
 
 export type MatrizHomografia = readonly [

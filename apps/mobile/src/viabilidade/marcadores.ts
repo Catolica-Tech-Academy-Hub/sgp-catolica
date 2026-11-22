@@ -1,9 +1,9 @@
 /**
- * Viabilidade da issue #98: localiza os 4 marcadores de referencia do cartao-resposta e
- * descobre a orientacao da folha na imagem.
+ * Localiza os 4 marcadores de referencia do cartao-resposta e descobre a orientacao da
+ * folha na imagem (issue #98).
  *
- * Codigo temporario, fora do fluxo de correcao. As medidas abaixo sao provisorias ate o
- * layout do cartao ser combinado na issue #92, por isso entram como parametro.
+ * As medidas abaixo sao provisorias ate o layout do cartao ser combinado na issue #92, por
+ * isso entram como parametro.
  */
 
 export interface ImagemRgba {
