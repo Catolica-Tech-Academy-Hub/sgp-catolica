@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { cores, espacamento, tipografia } from '@sgp/design-tokens';
 import { Badge, Botao, Cartao, Tela } from '../components/ui';
@@ -8,6 +8,7 @@ import {
   obterProvaParaCorrigir,
   type RespostasObjetivas,
 } from '../lib/estado-de-correcoes';
+import { aplicarNaConferencia } from '../lib/leitura-do-cartao';
 import type { PropsDaTela } from '../navegacao';
 
 /**
@@ -20,9 +21,27 @@ import type { PropsDaTela } from '../navegacao';
  * toque na letra ocupa o lugar da leitura do cartao-resposta.
  */
 export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'ConferenciaObjetiva'>) {
-  const { examVersionId, studentId, nomeDoAluno } = route.params;
-  const prova = obterProvaParaCorrigir(examVersionId);
+  const { examVersionId, studentId, nomeDoAluno, aplicacaoDaLeitura } = route.params;
+  const prova = useMemo(() => obterProvaParaCorrigir(examVersionId), [examVersionId]);
   const [marcadas, setMarcadas] = useState<Record<string, string>>({});
+  // Em branco so nasce do aceite de uma leitura; a questao segue sem resposta e vale zero.
+  const [emBranco, setEmBranco] = useState<string[]>([]);
+  const ultimaLeituraAplicada = useRef<string>();
+
+  useEffect(() => {
+    if (!prova || !aplicacaoDaLeitura) return;
+    if (ultimaLeituraAplicada.current === aplicacaoDaLeitura.id) return;
+    ultimaLeituraAplicada.current = aplicacaoDaLeitura.id;
+
+    const novas = aplicarNaConferencia(
+      { marcadas, emBranco },
+      aplicacaoDaLeitura,
+      prova.objetivas,
+      examVersionId,
+    );
+    setMarcadas(novas.marcadas);
+    setEmBranco(novas.emBranco);
+  }, [aplicacaoDaLeitura, emBranco, examVersionId, marcadas, prova]);
 
   // RF08: sem copia local do gabarito, nao se corrige. Explica em vez de esconder.
   if (!prova) {
@@ -45,7 +64,7 @@ export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'Conferen
     ([questionId, selectedAlternativeId]) => ({ questionId, selectedAlternativeId }),
   );
   const notaObjetiva = calcularNotaObjetiva(prova, respostas);
-  const faltam = prova.objetivas.length - respostas.length;
+  const faltam = prova.objetivas.length - respostas.length - emBranco.length;
 
   return (
     <Tela
@@ -61,6 +80,20 @@ export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'Conferen
               Falta marcar {faltam} {faltam === 1 ? 'questão' : 'questões'}.
             </Text>
           ) : null}
+          <Botao
+            titulo="Ler cartão"
+            variante="outline"
+            largura="total"
+            onPress={() =>
+              navigation.navigate('LeituraCartao', {
+                examVersionId,
+                studentId,
+                nomeDoAluno,
+                marcadasAtuais: marcadas,
+                emBrancoAtuais: emBranco,
+              })
+            }
+          />
           <Botao
             titulo="Continuar para discursivas"
             largura="total"
@@ -96,9 +129,10 @@ export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'Conferen
                   rotuloAcessivel={`Questão ${questao.numero}, alternativa ${alternativa.letra}`}
                   variante={marcada === alternativa.id ? 'padrao' : 'outline'}
                   selecionado={marcada === alternativa.id}
-                  onPress={() =>
-                    setMarcadas((atual) => ({ ...atual, [questao.questionId]: alternativa.id }))
-                  }
+                  onPress={() => {
+                    setMarcadas((atual) => ({ ...atual, [questao.questionId]: alternativa.id }));
+                    setEmBranco((atual) => atual.filter((id) => id !== questao.questionId));
+                  }}
                 />
               ))}
             </View>
@@ -111,6 +145,8 @@ export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'Conferen
                 }
                 variante={acertou ? 'padrao' : 'destructive'}
               />
+            ) : emBranco.includes(questao.questionId) ? (
+              <Badge texto="Em branco: vale zero" variante="outline" />
             ) : (
               <Badge texto="Sem marcação" variante="outline" />
             )}
