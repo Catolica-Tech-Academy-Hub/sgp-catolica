@@ -29,6 +29,7 @@ Classificação usada:
 | `/relatorios`        | Implementado na N1     | Relatório por aplicação e consolidado, com filtros e exportação desabilitada.       |
 | `/suporte`           | Implementado na N1     | Perguntas frequentes com busca e contato; envio depende de backend.                 |
 | `/estudante`         | Implementado na N1     | Histórico de notas com filtros, evolução e detalhamento por questão (RF11).         |
+| `/entrar/:codigo`    | Implementado na N1     | Entrada do estudante na turma pelo link de convite (RF03), em tela cheia.           |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
 As seções de domínio aparecem nas abas para tornar a arquitetura do produto visível sem
@@ -153,7 +154,9 @@ comparados por coluna (nome, e-mail, matrícula, data de matrícula) — não li
 cartões. Cada linha tem uma ação **Remover** que tira o aluno da turma sem apagar seu
 histórico de notas; a remoção é reversível por toast com **Desfazer**. Sem alunos, o
 estado vazio explica que a entrada acontece pelo código de convite, sem oferecer ação
-de matricular — esse fluxo depende de autenticação real de estudante, fora da N1 web.
+de matricular. O estudante entra pelo link `/entrar/:codigo` (ver
+[Entrada pelo convite](#entrada-pelo-convite)); a matrícula criada assim aparece aqui
+com origem "código de convite".
 
 ## Editor de prova
 
@@ -427,6 +430,28 @@ ação.
 `src/lib/estado-de-correcoes.ts` segue o formato dos demais `estado-*`: reativo, semeado
 por `correcoesMock`, gravado em `localStorage` e ponto único de integração quando o
 backend existir.
+
+## Entrada pelo convite
+
+`/entrar/:codigo` é o link que o professor compartilha (RF03, issue #88). Fica fora da
+casca (`meta.telaCheia`), como o login, porque quem chega por ele ainda não está dentro
+do produto. O código é comparado sem diferenciar maiúsculas.
+
+- Código válido: um `Card` mostra turma, disciplina, período e professor, quem vai entrar
+  e **Entrar na turma**. Confirmar matricula com origem "código de convite", confirma
+  por toast e leva ao histórico (`/estudante`).
+- Já matriculado: a tela diz isso e oferece **Ver minhas notas**; usar o mesmo código de
+  novo não duplica a matrícula.
+- Turma arquivada: a tela explica que ela não aceita novas matrículas, sem ação.
+- Código inexistente ou regenerado: `Alert` de erro pedindo o link atual ao professor.
+- Matrícula removida pelo professor: a entrada é recusada com o motivo, porque a
+  remoção foi decisão dele.
+
+Na demonstração, quem entra é o estudante do histórico (`estudanteLogadoMock`), pelo
+`src/lib/estado-de-convites.ts`, que usa o acervo de `estado-de-turmas.ts`. Com a API
+ligada, a turma do código vem de `GET /convites/:codigo`, mas a entrada é recusada com
+uma explicação: ela precisa da sessão do estudante, que depende do login (#81, #84). O
+cadastro de conta nova pelo convite também chega com o login.
 
 ## Relatórios
 
