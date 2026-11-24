@@ -311,7 +311,7 @@ A prévia não gera PDF nem cria uma aplicação.
 ### Com a API ligada
 
 Com `VITE_API_URL` definida (`apps/web/.env.example`), **turmas, matrículas, estudantes,
-o banco de questões e as provas** vêm da API (`apps/api`, ver [docs/api](../api/README.md)), e não
+o banco de questões, as provas e as correções** vêm da API (`apps/api`, ver [docs/api](../api/README.md)), e não
 de mocks ou do `localStorage`:
 
 - `main.ts` carrega esses dados antes de montar a aplicação, porque as telas leem o
@@ -329,8 +329,9 @@ de mocks ou do `localStorage`:
   envia o que estiver pendente;
 - se a API estiver fora do ar, um toast avisa e as telas abrem vazias.
 
-Cabeçalhos, aplicações e correções continuam locais, como descrito abaixo, até ganharem
-endpoints.
+Cabeçalhos e aplicações continuam locais, como descrito abaixo, até ganharem endpoints.
+A tela de correções ainda resolve versão e aluno pelos mocks, cujos ids são os mesmos do
+seed da API.
 
 ### Sem a API
 
@@ -424,9 +425,12 @@ ação.
 
 ### Estado
 
-`src/lib/estado-de-correcoes.ts` segue o formato dos demais `estado-*`: reativo, semeado
-por `correcoesMock`, gravado em `localStorage` e ponto único de integração quando o
-backend existir.
+`src/lib/estado-de-correcoes.ts` segue o formato dos demais `estado-*`: reativo e ponto
+único de acesso às correções. Com a API ligada, as correções vêm de `GET /correcoes`, e
+atribuir e desfazer são gravados por `POST /correcoes/:id/atribuir` e
+`POST /correcoes/:id/desfazer-atribuicao` (issue #100). A regra de duplicidade continua
+conferida na tela antes do envio, para explicar o impedimento na hora, e o servidor a
+confere de novo. Sem a API, é semeado por `correcoesMock` e gravado em `localStorage`.
 
 ## Relatórios
 
