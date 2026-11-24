@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Questao } from '@sgp/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import { incluirAlternativas, paraQuestao } from './mapeadores';
 import type { SalvarQuestaoDto } from './questoes.dto';
 import { validarQuestao } from './regras';
@@ -14,9 +13,9 @@ export class QuestoesService {
    * Por padrao, so o acervo ativo. `incluirExcluidas` existe porque uma prova que ja
    * referencia uma questao excluida precisa continuar renderizando o enunciado.
    */
-  async listar(incluirExcluidas: boolean): Promise<Questao[]> {
+  async listar(professorId: string, incluirExcluidas: boolean): Promise<Questao[]> {
     const questoes = await this.prisma.questao.findMany({
-      where: { teacherId: PROFESSOR_ATUAL_ID, ...(incluirExcluidas ? {} : { deletedAt: null }) },
+      where: { teacherId: professorId, ...(incluirExcluidas ? {} : { deletedAt: null }) },
       include: incluirAlternativas,
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
     });
@@ -24,9 +23,9 @@ export class QuestoesService {
   }
 
   /** Encontra inclusive a excluida, pelo mesmo motivo de `listar`. */
-  async obter(id: string): Promise<Questao> {
+  async obter(professorId: string, id: string): Promise<Questao> {
     const questao = await this.prisma.questao.findFirst({
-      where: { id, teacherId: PROFESSOR_ATUAL_ID },
+      where: { id, teacherId: professorId },
       include: incluirAlternativas,
     });
     if (!questao) throw new NotFoundException('Questao nao encontrada.');
@@ -37,7 +36,7 @@ export class QuestoesService {
    * Cria ou atualiza pelo id, que vem do editor no navegador. Salvar uma questao a
    * devolve ao acervo ativo, como faz "Salvar no banco" no editor de prova.
    */
-  async salvar(id: string, dados: SalvarQuestaoDto): Promise<Questao> {
+  async salvar(professorId: string, id: string, dados: SalvarQuestaoDto): Promise<Questao> {
     const problemas = validarQuestao(dados);
     if (problemas.length) throw new BadRequestException(problemas);
 
@@ -46,7 +45,7 @@ export class QuestoesService {
       select: { teacherId: true },
     });
     // A questao de outro professor nao e revelada nem sobrescrita.
-    if (existente && existente.teacherId !== PROFESSOR_ATUAL_ID) {
+    if (existente && existente.teacherId !== professorId) {
       throw new NotFoundException('Questao nao encontrada.');
     }
 
@@ -75,7 +74,7 @@ export class QuestoesService {
       return tx.questao.create({
         data: {
           id,
-          teacherId: PROFESSOR_ATUAL_ID,
+          teacherId: professorId,
           ...campos,
           alternativas: { create: alternativas },
         },
@@ -87,8 +86,8 @@ export class QuestoesService {
   }
 
   /** Exclusao logica; `restaurar` desfaz. */
-  async alterarExclusao(id: string, excluida: boolean): Promise<Questao> {
-    await this.obter(id);
+  async alterarExclusao(professorId: string, id: string, excluida: boolean): Promise<Questao> {
+    await this.obter(professorId, id);
     const questao = await this.prisma.questao.update({
       where: { id },
       data: { deletedAt: excluida ? new Date() : null },

@@ -38,6 +38,7 @@ Sem `VITE_API_URL`, a web continua no modo de demonstração local (mocks e
 | `db:deploy`                     | Aplica as migrações pendentes                              |
 | `db:seed`                       | Apaga os dados e repopula com `@sgp/mocks`                 |
 | `db:reset`                      | Apaga o banco inteiro, reaplica as migrações e roda o seed |
+| `test`                          | Testes da API (`node:test`), sem precisar de banco         |
 
 ## Produção
 
@@ -83,23 +84,35 @@ variáveis dos serviços.
 
 ## Organização
 
-| Onde                     | Papel                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------ |
-| `prisma/schema.prisma`   | Modelo físico, derivado do [dicionário de entidades](../modelo-dados/dicionario-de-entidades.md) |
-| `prisma/migrations/`     | Migrações versionadas                                                                            |
-| `prisma/seed.ts`         | Seed a partir de `@sgp/mocks`                                                                    |
-| `src/<assunto>/`         | Um módulo Nest por assunto: controller, service, DTOs e mapeadores                               |
-| `src/prisma/`            | Conexão com o MySQL (adaptador `mariadb`, compatível com MySQL)                                  |
-| `src/professor-atual.ts` | Professor fixo (`prof-1`) até existir autenticação                                               |
+| Onde                   | Papel                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| `prisma/schema.prisma` | Modelo físico, derivado do [dicionário de entidades](../modelo-dados/dicionario-de-entidades.md) |
+| `prisma/migrations/`   | Migrações versionadas                                                                            |
+| `prisma/seed.ts`       | Seed a partir de `@sgp/mocks`                                                                    |
+| `src/<assunto>/`       | Um módulo Nest por assunto: controller, service, DTOs e mapeadores                               |
+| `src/prisma/`          | Conexão com o MySQL (adaptador `mariadb`, compatível com MySQL)                                  |
+| `src/autenticacao/`    | Quem faz a requisição: guard e decorator do professor, identificação provisória até a #81        |
 
 Os modelos e campos do Prisma seguem os nomes de `@sgp/shared-types`, e as respostas
 têm exatamente esse formato: as telas consomem a API sem tradução campo a campo.
 
 ## Endpoints
 
-Todos atuam sobre os dados do professor atual. Erros seguem o formato do Nest
+Todos atuam sobre os dados do professor da requisição. Erros seguem o formato do Nest
 (`{ statusCode, message, error }`), com `message` em lista quando a validação encontra
 mais de um problema.
+
+### Isolamento por professor (RNF04)
+
+- Cada professor só vê e altera o que é dele: turmas, matrículas dessas turmas,
+  estudantes que passaram por elas, questões e provas.
+- Recurso de outro professor responde `404`, igual a um id que não existe, para não
+  revelar que ele existe. Vale também para criar ou salvar com o id de outro professor.
+- Rotas de professor respondem `401` sem usuário identificado e `403` para estudante.
+- Enquanto o login não existe (issue #81), toda requisição é identificada como o
+  professor de demonstração `prof-1`, em `src/autenticacao/identificacao-provisoria.ts`,
+  único ponto a trocar pela validação do token. O seed cria também `prof-2`, com turma,
+  matrícula e questão próprias, que `prof-1` não enxerga.
 
 ### Saúde
 
@@ -124,7 +137,8 @@ mais de um problema.
 - O código de convite é gerado no servidor, que garante a unicidade; regenerar invalida
   o anterior no mesmo instante.
 - O `id` da turma pode vir do cliente: a web cria a turma e navega ao detalhe sem
-  esperar a resposta. Um `id` já existente responde `409`.
+  esperar a resposta. Um `id` já usado pelo mesmo professor responde `409`; por outro,
+  `404`.
 - `GET /matriculas` traz ativas e removidas; remover só muda a situação, as notas ficam.
 - `GET /estudantes` traz só quem passou por alguma turma do professor (RNF05).
 
@@ -163,8 +177,8 @@ mais de um problema.
 
 ## Ainda não coberto
 
-- Autenticação, JWT e refresh token (RNF04): o professor é fixo em
-  `src/professor-atual.ts`, ponto único a trocar.
+- Autenticação, JWT e refresh token (RF01, issue #81): a identificação do professor é
+  provisória, ver [Isolamento por professor](#isolamento-por-professor-rnf04).
 - Aplicações, correções e relatórios: as tabelas já existem e o seed as preenche, mas
   não há endpoints. Exclusão de prova também não, porque a tela não oferece a ação.
 - Sincronização da fila do aplicativo (RF08).

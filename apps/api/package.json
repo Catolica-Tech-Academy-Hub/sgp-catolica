@@ -10,6 +10,7 @@
     "start": "node dist/apps/api/src/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "test": "tsx --test \"src/**/*.spec.ts\"",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",

@@ -8,9 +8,13 @@ import {
   filaCorrecoesMock,
   matriculasMock,
   notasDoEstudanteMock,
+  matriculasDoOutroProfessorMock,
+  outroProfessorMock,
   professorMock,
   provasMock,
+  questoesDoOutroProfessorMock,
   questoesMock,
+  turmasDoOutroProfessorMock,
   turmasMock,
   versoesMock,
 } from './index';
@@ -85,8 +89,27 @@ export function auditarMocks(): ResultadoAuditoria {
     conferir(!codigos.has(turma.inviteCode), `${turma.id}: codigo de convite unico`);
     codigos.add(turma.inviteCode);
   }
+  // Segundo professor (isolamento por dono, RNF04): o codigo de convite e unico no sistema.
+  for (const turma of turmasDoOutroProfessorMock) {
+    conferir(turma.teacherId === outroProfessorMock.id, `${turma.id}: pertence ao outro professor`);
+    conferir(!codigos.has(turma.inviteCode), `${turma.id}: codigo de convite unico`);
+    codigos.add(turma.inviteCode);
+  }
+  for (const questao of questoesDoOutroProfessorMock) {
+    conferir(
+      questao.teacherId === outroProfessorMock.id,
+      `${questao.id}: pertence ao outro professor`,
+    );
+  }
+  for (const matricula of matriculasDoOutroProfessorMock) {
+    conferir(estudantes.has(matricula.studentId), `${matricula.id}: estudante existe`);
+    conferir(
+      turmasDoOutroProfessorMock.some((turma) => turma.id === matricula.classId),
+      `${matricula.id}: turma do outro professor existe`,
+    );
+  }
   const emails = new Set<string>();
-  for (const usuario of [professorMock, ...estudantesMock]) {
+  for (const usuario of [professorMock, outroProfessorMock, ...estudantesMock]) {
     conferir(!emails.has(usuario.email), `${usuario.id}: e-mail unico no sistema`);
     emails.add(usuario.email);
   }

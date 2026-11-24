@@ -12,3 +12,4 @@ export * from './provas';
 export * from './correcoes';
 export * from './fila';
 export * from './relatorios';
+export * from './outro-professor';
