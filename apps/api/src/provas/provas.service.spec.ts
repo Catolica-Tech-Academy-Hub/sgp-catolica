@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import { ProvasService } from './provas.service';
@@ -16,8 +15,6 @@ function criarServico(statusInicial: 'draft' | 'ready' | 'closed') {
     blocos: null,
     questoes: [],
   };
-  const turma = { id: 'turma-1', teacherId: PROFESSOR_ATUAL_ID };
-  const aplicacoes: Array<Record<string, unknown>> = [];
   const banco = {
     prova: {
       findFirst: async () => ({ ...prova }),
@@ -41,52 +38,13 @@ function criarServico(statusInicial: 'draft' | 'ready' | 'closed') {
     },
     questao: { findMany: async () => [] },
     questaoDaProva: { deleteMany: async () => ({ count: 0 }) },
-    turma: {
-      findFirst: async () => turma,
-    },
-    aplicacao: {
-      create: async ({ data }: { data: Record<string, string> }) => {
-        const aplicacao = {
-          ...data,
-          id: `aplicacao-${aplicacoes.length + 1}`,
-          status: 'draft',
-          pdfUrl: null,
-          createdAt: new Date('2026-01-02T00:00:00.000Z'),
-        };
-        aplicacoes.push(aplicacao);
-        return aplicacao;
-      },
-    },
     $transaction: async <T>(executar: (tx: object) => Promise<T>) => executar(banco),
   };
 
-  return {
-    service: new ProvasService(banco as unknown as PrismaService),
-    prova,
-    aplicacoes,
-  };
+  return { service: new ProvasService(banco as unknown as PrismaService), prova };
 }
 
 describe('ciclo de vida da prova', () => {
-  it('muda de draft para ready ao criar a primeira aplicacao', async () => {
-    const { service, prova, aplicacoes } = criarServico('draft');
-
-    const aplicacao = await service.criarAplicacao('prova-1', 'turma-1');
-
-    assert.equal(prova.status, 'ready');
-    assert.equal(aplicacao.status, 'draft');
-    assert.equal(aplicacoes.length, 1);
-  });
-
-  it('nao permite criar aplicacao para prova encerrada', async () => {
-    const { service, prova, aplicacoes } = criarServico('closed');
-
-    await assert.rejects(service.criarAplicacao('prova-1', 'turma-1'), ConflictException);
-
-    assert.equal(prova.status, 'closed');
-    assert.equal(aplicacoes.length, 0);
-  });
-
   it('encerra a prova e mantém o estado ao repetir a operação', async () => {
     const { service, prova } = criarServico('draft');
 

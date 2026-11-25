@@ -1,5 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { Aplicacao } from '@sgp/shared-types';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PROFESSOR_ATUAL_ID } from '../professor-atual';
@@ -58,48 +57,6 @@ export class ProvasService {
     });
 
     return paraProva(prova);
-  }
-
-  async criarAplicacao(examId: string, classId: string): Promise<Aplicacao> {
-    return this.prisma.$transaction(async (tx) => {
-      const prova = await tx.prova.findFirst({
-        where: { id: examId, teacherId: PROFESSOR_ATUAL_ID },
-        select: { id: true, status: true },
-      });
-      if (!prova) throw new NotFoundException('Prova nao encontrada.');
-      if (prova.status === 'closed') {
-        throw new ConflictException('Prova encerrada nao aceita novas aplicacoes.');
-      }
-
-      const turma = await tx.turma.findFirst({
-        where: { id: classId, teacherId: PROFESSOR_ATUAL_ID },
-        select: { id: true },
-      });
-      if (!turma) throw new NotFoundException('Turma nao encontrada.');
-
-      // Atualizacao condicional e inclusa na transacao para que encerrar e aplicar
-      // concorrentes sejam serializados pela linha da prova.
-      const atualizada = await tx.prova.updateMany({
-        where: { id: examId, teacherId: PROFESSOR_ATUAL_ID, status: { not: 'closed' } },
-        data: { status: 'ready' },
-      });
-      if (atualizada.count !== 1) {
-        throw new ConflictException('Prova encerrada nao aceita novas aplicacoes.');
-      }
-
-      const aplicacao = await tx.aplicacao.create({
-        data: { examId, classId, teacherId: PROFESSOR_ATUAL_ID },
-      });
-      return {
-        id: aplicacao.id,
-        examId: aplicacao.examId,
-        classId: aplicacao.classId,
-        teacherId: aplicacao.teacherId,
-        status: aplicacao.status,
-        createdAt: aplicacao.createdAt.toISOString(),
-        ...(aplicacao.pdfUrl !== null ? { pdfUrl: aplicacao.pdfUrl } : {}),
-      };
-    });
   }
 
   async encerrar(id: string): Promise<ProvaComBlocos> {

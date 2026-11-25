@@ -181,12 +181,14 @@ Da esquerda para a direita:
 
 `/aplicacoes` usa o padrão de seção com painel esquerdo, busca, recortes por situação e
 lista de cartões. Cada cartão mostra prova, turma, situação, versões e data, e abre um
-`Dialog` somente leitura com as versões já presentes nos mocks: número, embaralhamento,
-publicação do gabarito e código público.
+`Dialog` somente leitura. Com a API ligada, a lista e o detalhe da aplicação vêm do
+servidor; sem ela, os dados locais continuam sendo usados. As versões exibidas ainda são
+as dos mocks, pois geração de versões e PDF pertencem ao RF06.
 
-Aplicações criadas ficam em `draft` e são preservadas no navegador; quando a API está
-ligada, a criação também é gravada no servidor. A listagem e o detalhe ainda usam os
-dados locais e não são sincronizados. O detalhe mantém
+Aplicações criadas nascem em `draft` e ficam independentes, inclusive quando a prova é
+reaplicada à mesma turma. Com `VITE_API_URL`, a listagem e o detalhe são carregados pela
+API e a criação é persistida nela. Sem a API, o estado continua preservado no navegador.
+O detalhe mantém
 **Gerar PDF** desabilitado com a explicação de que a geração pertence ao RF06; nenhuma
 ação desta tela cria versão, QR Code ou atribuição.
 
@@ -335,9 +337,8 @@ de mocks ou do `localStorage`:
   envia o que estiver pendente;
 - se a API estiver fora do ar, um toast avisa e as telas abrem vazias.
 
-Cabeçalhos, listagem/detalhe de aplicações e correções continuam locais. A criação de
-aplicação e o encerramento da prova são enviados à API; operações completas de RF05
-continuam pendentes.
+Cabeçalhos e correções continuam locais. Aplicações são listadas, consultadas e criadas
+pela API; versões e PDFs ainda não são gerados (RF06).
 
 ### Sem a API
 

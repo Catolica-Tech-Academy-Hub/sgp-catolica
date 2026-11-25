@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue';
 import { CircleDashed, ClipboardCheck, Search } from '@lucide/vue';
 import { versoesMock } from '@sgp/mocks';
 import type { Aplicacao, StatusAplicacao, Turma } from '@sgp/shared-types';
+import { toast } from 'vue-sonner';
 import PainelDaSecao from '@/components/casca/PainelDaSecao.vue';
 import ItemDeRecorte from '@/components/casca/ItemDeRecorte.vue';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +26,7 @@ import {
   statusDaAplicacao,
   varianteDoStatusDaAplicacao,
 } from '@/lib/dominio';
-import { listarAplicacoes } from '@/lib/estado-de-aplicacoes';
+import { listarAplicacoes, obterAplicacao } from '@/lib/estado-de-aplicacoes';
 import { encontrarTurma } from '@/lib/estado-de-turmas';
 import { listarProvas } from '@/lib/estado-de-provas';
 
@@ -85,9 +86,19 @@ onMounted(() => {
   }, 350);
 });
 
-function abrirDetalhe(item: AplicacaoNaTela): void {
+async function abrirDetalhe(item: AplicacaoNaTela): Promise<void> {
   aplicacaoSelecionada.value = item;
   detalheAberto.value = true;
+  try {
+    const aplicacao = await obterAplicacao(item.aplicacao.id);
+    if (aplicacaoSelecionada.value?.aplicacao.id === aplicacao.id) {
+      aplicacaoSelecionada.value = { ...item, aplicacao };
+    }
+  } catch (erro) {
+    toast.error('Não foi possível carregar a aplicação', {
+      description: erro instanceof Error ? erro.message : undefined,
+    });
+  }
 }
 
 function limparFiltros(): void {
