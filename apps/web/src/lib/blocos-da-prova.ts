@@ -7,9 +7,9 @@
  * mais livre de montar a prova (com texto de apoio, imagem e espaço para resposta)
  * antes de a equipe e a professora decidirem se isso entra no produto.
  *
- * Ao final, os blocos do tipo "questao" colapsam para o mesmo `QuestaoDaProva[]`
- * que `Prova.questions` já usa hoje (ver `questoesParaProva`) — a geração de PDF
- * (RF06), que ainda não existe, não precisa saber que essa camada de blocos existe.
+ * Os blocos do tipo "questao" colapsam para o mesmo `QuestaoDaProva[]` que
+ * `Prova.questions` usa (ver `questoesParaProva`). Na impressão, a API também lê os
+ * blocos persistidos para posicionar conteúdo de apoio e aplicar a ordem materializada.
  *
  * ## Limite entre conteúdo e configuração de impressão
  *
@@ -22,8 +22,9 @@
  *   PDF pertence à aplicação, não à prova". A substituta é a paginação A4 automática,
  *   com a regra de não partir uma questão entre páginas (pendência #14).
  *
- * Nenhum dos dois tinha função real nesta fase, porque não há geração de PDF: um
- * desenhava uma linha tracejada e o outro guardava uma chave que nada lia.
+ * Os dois conceitos antigos foram removidos: um desenhava uma linha tracejada e o outro
+ * guardava uma chave que nada lia. A configuração efetiva é aplicada na geração da
+ * aplicação; a paginação mantém a regra de não partir blocos entre folhas.
  */
 import type { Prova, Questao, QuestaoDaProva } from '@sgp/shared-types';
 

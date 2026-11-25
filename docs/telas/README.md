@@ -47,6 +47,7 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 | Tela                                | Rota          | Print                                                    |
 | ----------------------------------- | ------------- | -------------------------------------------------------- |
 | Lista de aplicações                 | `/aplicacoes` | [aplicacoes.png](aplicacoes.png)                         |
+| Aplicações: opções de geração de PDF | `/aplicacoes` | [aplicacoes-geracao.png](aplicacoes-geracao.png)         |
 | Listagem de turmas                  | `/turmas`     | [turmas.png](turmas.png)                                 |
 | Detalhe da turma                    | `/turmas/:id` | [turmas-detalhe.png](turmas-detalhe.png)                 |
 | Fila de correções                   | `/correcoes`  | [correcoes.png](correcoes.png)                           |
@@ -58,3 +59,7 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 | Entrada, com escolha de papel       | `/login`      | [login.png](login.png)                                   |
 | Estudante: histórico de notas       | `/estudante`  | [estudante-historico.png](estudante-historico.png)       |
 | Estudante: detalhamento de uma nota | `/estudante`  | [estudante-nota.png](estudante-nota.png)                 |
+
+O exemplo fictício do arquivo consolidado está em
+[aplicacoes-geracao.pdf](aplicacoes-geracao.pdf). O layout do cartão-resposta é provisório
+e ainda requer validação com folhas impressas e fotos reais.

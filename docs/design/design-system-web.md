@@ -233,8 +233,9 @@ miniatura completa do papel.
   portanto o ajuste não altera paginação, margens nem a saída futura para impressão.
 - O editor mede cabeçalho e blocos na largura real do papel e cria novas folhas
   automaticamente quando o conteúdo excede a área útil.
-- A quebra ocorre entre blocos para preservar a leitura de cada questão. Um bloco maior
-  que toda a área útil permanece como caso limite a ser tratado na futura geração de PDF.
+- A quebra ocorre entre blocos para preservar a leitura de cada questão. A geração do
+  PDF também mantém cada bloco inteiro e recusa, com erro explícito, um bloco maior que
+  toda a área útil A4.
 - Cabeçalho completo aparece na primeira folha; todas as folhas exibem número discreto na
   margem inferior.
 - Editor e pré-visualização recebem os mesmos grupos de páginas; nunca manter dois

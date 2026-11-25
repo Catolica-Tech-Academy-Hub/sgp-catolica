@@ -15,7 +15,7 @@
  *
  * Cada folha usa 210 × 297 mm e espaços de resposta em medidas físicas. Um
  * ResizeObserver mede os blocos e recalcula as páginas sem partir questões. A geração
- * de PDF continua futura; aqui a paginação é a referência visual de autoria e preview.
+ * do arquivo acontece na aplicação; aqui a paginação orienta autoria e pré-visualização.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';

@@ -1,4 +1,15 @@
-import { IsBoolean, IsInt, IsString, Max, MaxLength, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class CriarAplicacaoDto {
   @IsString()
@@ -24,4 +35,51 @@ export class GerarVersoesDto {
 
   @IsBoolean()
   withStudentIdentification!: boolean;
+}
+
+export class CamposCabecalhoPdfDto {
+  @IsBoolean()
+  nome!: boolean;
+
+  @IsBoolean()
+  matricula!: boolean;
+
+  @IsBoolean()
+  turma!: boolean;
+
+  @IsBoolean()
+  data!: boolean;
+
+  @IsBoolean()
+  nota!: boolean;
+}
+
+export class CabecalhoPdfDto {
+  @IsString()
+  @MaxLength(160)
+  instituicao!: string;
+
+  @IsString()
+  @MaxLength(240)
+  linhaComplementar!: string;
+
+  @IsString()
+  @MaxLength(160)
+  professor!: string;
+
+  @IsString()
+  @MaxLength(2000)
+  instrucoes!: string;
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CamposCabecalhoPdfDto)
+  campos!: CamposCabecalhoPdfDto;
+}
+
+export class GerarPdfDto extends GerarVersoesDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CabecalhoPdfDto)
+  cabecalho?: CabecalhoPdfDto;
 }

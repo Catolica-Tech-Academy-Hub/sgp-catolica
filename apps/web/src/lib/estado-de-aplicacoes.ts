@@ -5,10 +5,23 @@
 import { reactive, watch } from 'vue';
 import { aplicacoesMock } from '@sgp/mocks';
 import type { Aplicacao } from '@sgp/shared-types';
-import { apiLigada, requisitar } from './api';
+import { apiLigada, requisitar, requisitarArquivo } from './api';
 import { encontrarProva } from './estado-de-provas';
+import type { CabecalhoDaProva } from './cabecalhos-da-prova';
 
 const CHAVE = 'sgp:estado-de-aplicacoes:v1';
+
+export interface OpcoesGerarPdf {
+  quantity: number;
+  shuffleQuestions: boolean;
+  shuffleAlternatives: boolean;
+  withStudentIdentification: boolean;
+  cabecalho: CabecalhoDaProva;
+}
+
+interface RespostaGerarPdf {
+  application: Aplicacao;
+}
 
 function ler(): Aplicacao[] {
   try {
@@ -82,4 +95,27 @@ export async function criarAplicacao(dados: {
       };
   aplicacoesNoNavegador.unshift(aplicacao);
   return aplicacao;
+}
+
+export async function gerarPdfDaAplicacao(id: string, dados: OpcoesGerarPdf): Promise<Blob> {
+  if (!apiLigada) {
+    throw new Error('Configure VITE_API_URL para gerar e baixar o PDF.');
+  }
+
+  const resultado = await requisitar<RespostaGerarPdf>(`/aplicacoes/${id}/gerar-pdf`, {
+    method: 'POST',
+    body: JSON.stringify(dados),
+  });
+  const indice = aplicacoesNoNavegador.findIndex((item) => item.id === id);
+  if (indice >= 0) aplicacoesNoNavegador[indice] = resultado.application;
+  else aplicacoesNoNavegador.unshift(resultado.application);
+
+  return requisitarArquivo(`/aplicacoes/${id}/pdf`);
+}
+
+export function baixarPdfDaAplicacao(id: string): Promise<Blob> {
+  if (!apiLigada) {
+    throw new Error('Configure VITE_API_URL para baixar o PDF.');
+  }
+  return requisitarArquivo(`/aplicacoes/${id}/pdf`);
 }

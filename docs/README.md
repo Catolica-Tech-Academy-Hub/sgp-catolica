@@ -19,6 +19,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | [Design system mobile](design/design-system-mobile.md)             | Padroes de UI do aplicativo do professor                          |
 | [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                         |
 | [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui         |
+| [Geração de PDF](telas/aplicacoes-geracao.pdf)                     | Exemplo ficticio do PDF consolidado; [dialogo de opcoes](telas/aplicacoes-geracao.png) |
 | [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um        |
 | [Modelo de dados (DER)](modelo-dados/der.md)                       | Diagrama entidade-relacionamento do MySQL e decisoes de modelagem |
 | [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis            |

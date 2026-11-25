@@ -69,14 +69,14 @@ tempo parado leva cerca de um minuto para carregar.
 | Turmas e detalhe da turma (RF03) | MySQL: criar, editar, arquivar, convite, alunos |
 | Banco de questões (RF02)         | MySQL: criar, editar, excluir e restaurar       |
 | Provas e editor de prova (RF04)  | MySQL: criar, editar título, questões e blocos  |
-| Aplicações (RF05/RF06 parcial)   | MySQL: listar, consultar, criar e gerar versões |
+| Aplicações (RF05/RF06)            | MySQL: listar, criar, gerar versões e PDF consolidado |
 | Correções, relatórios, aluno     | Ainda em dados de demonstração (próxima etapa)  |
 
 O banco começa com os dados de demonstração de [`packages/mocks`](packages/mocks),
 carregados pelo seed, para a apresentação ter conteúdo desde o primeiro acesso. O
-modelo completo já existe no banco, inclusive as tabelas das próximas telas; geração de
-PDF, correções e relatórios ainda aguardam seus endpoints. Divergências e definições em
-aberto continuam em [`docs/pendencias.md`](docs/pendencias.md).
+modelo completo já existe no banco, inclusive as tabelas das próximas telas; correções e
+relatórios ainda aguardam seus endpoints. Divergências e definições em aberto continuam em
+[`docs/pendencias.md`](docs/pendencias.md).
 
 ## Produto e requisitos
 
