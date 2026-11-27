@@ -121,7 +121,10 @@ function criarBlocosImprimiveis(
   const questoesOrdenadas = ordem.map((id) => {
     const questao = questoesPorId.get(id);
     if (!questao) throw erroDeConteudo('A ordem da versão referencia uma questão indisponível.');
-    const idsImpressos = alternativasPorQuestao.get(id) ?? [];
+    // Versao sem ordem registrada para a questao (alternativas nao embaralhadas, como nos
+    // dados de demonstracao do seed): imprime na ordem original da questao.
+    const idsImpressos =
+      alternativasPorQuestao.get(id) ?? questao.alternatives.map((item) => item.id);
     const alternativas = idsImpressos.map((alternativeId) => {
       const alternativa = questao.alternatives.find((item) => item.id === alternativeId);
       if (!alternativa) {

@@ -218,94 +218,7 @@ export class AplicacoesService {
     return this.prisma.$transaction(
       async (tx) => {
         const geracao = await this.gerarVersoesEmTransacao(tx, professorId, id, dados, false);
-        const aplicacao = await tx.aplicacao.findFirst({
-          where: { id, teacherId: professorId },
-          select: { id: true, examId: true, classId: true },
-        });
-        if (!aplicacao) throw new NotFoundException('Aplicacao nao encontrada.');
-
-        const prova = await tx.prova.findFirst({
-          where: { id: aplicacao.examId, teacherId: professorId },
-          select: {
-            title: true,
-            description: true,
-            blocos: true,
-            questoes: {
-              orderBy: [{ order: 'asc' }, { questionId: 'asc' }],
-              select: {
-                questionId: true,
-                score: true,
-                questao: {
-                  select: {
-                    id: true,
-                    type: true,
-                    statement: true,
-                    alternativas: {
-                      orderBy: [{ position: 'asc' }, { id: 'asc' }],
-                      select: { id: true, text: true },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        });
-        if (!prova) throw new NotFoundException('Prova nao encontrada.');
-
-        const turma = await tx.turma.findFirst({
-          where: { id: aplicacao.classId, teacherId: professorId },
-          select: { name: true, subject: true },
-        });
-        if (!turma) throw new NotFoundException('Turma nao encontrada.');
-
-        const professor = await tx.usuario.findFirst({
-          where: { id: professorId, role: 'professor' },
-          select: { fullName: true },
-        });
-        if (!professor) throw new NotFoundException('Professor nao encontrado.');
-
-        const versoesDoBanco = await tx.versaoProva.findMany({
-          where: { applicationId: id },
-          orderBy: { versionNumber: 'asc' },
-          include: {
-            atribuicoes: {
-              orderBy: { studentId: 'asc' },
-              include: {
-                estudante: { select: { id: true, fullName: true, registration: true } },
-              },
-            },
-          },
-        });
-        const cabecalho = dados.cabecalho
-          ? copiarCabecalho(dados.cabecalho)
-          : cabecalhoPadrao(professor.fullName);
-        const pdf = await gerarPdfConsolidado({
-          title: prova.title,
-          description: prova.description,
-          totalScore: prova.questoes.reduce((total, questao) => total + Number(questao.score), 0),
-          blocks: blocosParaPdf(prova.blocos),
-          questions: prova.questoes.map(({ questao, score }) => ({
-            id: questao.id,
-            type: questao.type,
-            statement: questao.statement,
-            score: score.toString(),
-            alternatives: questao.alternativas,
-          })),
-          className: turma.name,
-          subject: turma.subject,
-          header: cabecalho,
-          versions: versoesDoBanco.map((versao) => ({
-            versionNumber: versao.versionNumber,
-            qrCodePayload: versao.qrCodePayload,
-            layout: lerLayoutVersao(versao.layout),
-            assignments: versao.atribuicoes.map((atribuicao) => ({
-              studentId: atribuicao.estudante.id,
-              fullName: atribuicao.estudante.fullName,
-              registration: atribuicao.estudante.registration,
-              qrCodePayload: atribuicao.qrCodePayload,
-            })),
-          })),
-        });
+        const pdf = await this.renderizarPdf(tx, professorId, id, dados.cabecalho);
         const pdfUrl = `/aplicacoes/${id}/pdf`;
         const atualizada = await tx.aplicacao.update({
           where: { id },
@@ -321,14 +234,127 @@ export class AplicacoesService {
     );
   }
 
+  /** Monta o PDF consolidado a partir das versoes que a aplicacao ja tem no banco. */
+  private async renderizarPdf(
+    tx: Prisma.TransactionClient,
+    professorId: string,
+    id: string,
+    cabecalhoDto: CabecalhoPdfDto | undefined,
+  ): Promise<Buffer> {
+    const aplicacao = await tx.aplicacao.findFirst({
+      where: { id, teacherId: professorId },
+      select: { id: true, examId: true, classId: true },
+    });
+    if (!aplicacao) throw new NotFoundException('Aplicacao nao encontrada.');
+
+    const prova = await tx.prova.findFirst({
+      where: { id: aplicacao.examId, teacherId: professorId },
+      select: {
+        title: true,
+        description: true,
+        blocos: true,
+        questoes: {
+          orderBy: [{ order: 'asc' }, { questionId: 'asc' }],
+          select: {
+            questionId: true,
+            score: true,
+            questao: {
+              select: {
+                id: true,
+                type: true,
+                statement: true,
+                alternativas: {
+                  orderBy: [{ position: 'asc' }, { id: 'asc' }],
+                  select: { id: true, text: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!prova) throw new NotFoundException('Prova nao encontrada.');
+
+    const turma = await tx.turma.findFirst({
+      where: { id: aplicacao.classId, teacherId: professorId },
+      select: { name: true, subject: true },
+    });
+    if (!turma) throw new NotFoundException('Turma nao encontrada.');
+
+    const professor = await tx.usuario.findFirst({
+      where: { id: professorId, role: 'professor' },
+      select: { fullName: true },
+    });
+    if (!professor) throw new NotFoundException('Professor nao encontrado.');
+
+    const versoesDoBanco = await tx.versaoProva.findMany({
+      where: { applicationId: id },
+      orderBy: { versionNumber: 'asc' },
+      include: {
+        atribuicoes: {
+          orderBy: { studentId: 'asc' },
+          include: {
+            estudante: { select: { id: true, fullName: true, registration: true } },
+          },
+        },
+      },
+    });
+    const cabecalho = cabecalhoDto
+      ? copiarCabecalho(cabecalhoDto)
+      : cabecalhoPadrao(professor.fullName);
+    const pdf = await gerarPdfConsolidado({
+      title: prova.title,
+      description: prova.description,
+      totalScore: prova.questoes.reduce((total, questao) => total + Number(questao.score), 0),
+      blocks: blocosParaPdf(prova.blocos),
+      questions: prova.questoes.map(({ questao, score }) => ({
+        id: questao.id,
+        type: questao.type,
+        statement: questao.statement,
+        score: score.toString(),
+        alternatives: questao.alternativas,
+      })),
+      className: turma.name,
+      subject: turma.subject,
+      header: cabecalho,
+      versions: versoesDoBanco.map((versao) => ({
+        versionNumber: versao.versionNumber,
+        qrCodePayload: versao.qrCodePayload,
+        layout: lerLayoutVersao(versao.layout),
+        assignments: versao.atribuicoes.map((atribuicao) => ({
+          studentId: atribuicao.estudante.id,
+          fullName: atribuicao.estudante.fullName,
+          registration: atribuicao.estudante.registration,
+          qrCodePayload: atribuicao.qrCodePayload,
+        })),
+      })),
+    });
+    return pdf;
+  }
+
   async obterPdf(professorId: string, id: string): Promise<Buffer> {
     const aplicacao = await this.prisma.aplicacao.findFirst({
       where: { id, teacherId: professorId },
       select: { pdfContent: true },
     });
     if (!aplicacao) throw new NotFoundException('Aplicacao nao encontrada.');
-    if (!aplicacao.pdfContent) throw new NotFoundException('PDF ainda nao foi gerado.');
-    return Buffer.from(aplicacao.pdfContent);
+    if (aplicacao.pdfContent) return Buffer.from(aplicacao.pdfContent);
+
+    // Aplicacao gerada antes de o PDF ser gravado (ex.: dados de demonstracao do seed): monta
+    // o arquivo das versoes existentes, sem regerar nada, e guarda para os proximos downloads.
+    return this.prisma.$transaction(
+      async (tx) => {
+        const versoes = await tx.versaoProva.count({ where: { applicationId: id } });
+        if (versoes === 0) throw new NotFoundException('PDF ainda nao foi gerado.');
+        const pdf = await this.renderizarPdf(tx, professorId, id, undefined);
+        await tx.aplicacao.update({
+          where: { id },
+          data: { pdfUrl: `/aplicacoes/${id}/pdf`, pdfContent: Uint8Array.from(pdf) },
+        });
+        return pdf;
+      },
+      { timeout: 60_000 },
+    );
   }
 
   private async gerarVersoesEmTransacao(
