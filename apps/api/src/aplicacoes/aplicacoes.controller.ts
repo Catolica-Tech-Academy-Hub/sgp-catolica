@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import type { Aplicacao, Correcao, GabaritoVersaoSnapshot } from '@sgp/shared-types';
 import { ApenasProfessorGuard, ProfessorAtual } from '../autenticacao/professor';
 import { AtribuicaoService } from '../correcoes/atribuicao.service';
-import { CriarAplicacaoDto, GerarVersoesDto } from './aplicacoes.dto';
+import { CriarAplicacaoDto, GerarPdfDto, GerarVersoesDto } from './aplicacoes.dto';
 import { type AplicacaoParaCorrigir, AplicacoesService } from './aplicacoes.service';
 
 /** Aplicações do professor atual (RF05). */
@@ -62,5 +63,33 @@ export class AplicacoesController {
     @Body() dados: GerarVersoesDto,
   ): ReturnType<AplicacoesService['gerarVersoes']> {
     return this.aplicacoes.gerarVersoes(professorId, id, dados);
+  }
+
+  @Post(':id/gerar-pdf')
+  gerarPdf(
+    @ProfessorAtual() professorId: string,
+    @Param('id') id: string,
+    @Body() dados: GerarPdfDto,
+  ): ReturnType<AplicacoesService['gerarPdf']> {
+    return this.aplicacoes.gerarPdf(professorId, id, dados);
+  }
+
+  @Get(':id/pdf')
+  async baixarPdf(
+    @ProfessorAtual() professorId: string,
+    @Param('id') id: string,
+    @Res() resposta: Response,
+  ): Promise<void> {
+    const pdf = await this.aplicacoes.obterPdf(professorId, id);
+    const nomeSeguro = id.replace(/[^a-zA-Z0-9_-]/g, '') || 'aplicacao';
+    resposta
+      .status(200)
+      .set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="prova-${nomeSeguro}.pdf"`,
+        'Content-Length': String(pdf.length),
+        'Cache-Control': 'private, no-store',
+      })
+      .send(pdf);
   }
 }

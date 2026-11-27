@@ -318,14 +318,16 @@ mais de um problema.
 - `POST` aceita reaplicações da mesma prova à mesma turma; cada chamada cria uma
   aplicação independente em `draft`. A criação e a transição da prova para `ready`
   acontecem na mesma transação.
-- Provas `closed` recusam a criação com `409`. A geração de versões/PDF não faz parte
-  destes endpoints (RF06).
+- Provas `closed` recusam a criação com `409`. A geração de versões e PDF fica nos
+  endpoints RF06 abaixo.
 
-### Geração de versões (RF06)
+### Geração de versões e PDF (RF06)
 
-| Método | Caminho                 | Corpo                                                                            | Resposta                                                       |
-| ------ | ----------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| POST   | `/aplicacoes/:id/gerar` | `{ quantity, shuffleQuestions, shuffleAlternatives, withStudentIdentification }` | `{ versions: VersaoProva[], assignments: AtribuicaoVersao[] }` |
+| Método | Caminho                     | Corpo                                                                            | Resposta                                                       |
+| ------ | --------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| POST   | `/aplicacoes/:id/gerar`     | `{ quantity, shuffleQuestions, shuffleAlternatives, withStudentIdentification }` | `{ versions: VersaoProva[], assignments: AtribuicaoVersao[] }` |
+| POST   | `/aplicacoes/:id/gerar-pdf` | Opções acima + `cabecalho?`                                                      | `{ application, versions, assignments }`                       |
+| GET    | `/aplicacoes/:id/pdf`       | —                                                                                | `application/pdf` (download)                                   |
 
 - `quantity` aceita de 1 a 20 versões. Cada versão embaralha questões e alternativas
   independentemente quando a respectiva opção está ativa.
@@ -336,12 +338,26 @@ mais de um problema.
   Sem identificação, não são criadas atribuições.
 - Payloads de QR seguem `sgp:v1:version:<versionId>` para uma versão anônima ou
   `sgp:v1:version:<versionId>:student:<studentId>` para uma atribuição identificada.
-  São distintos de `publicCode`; a API persiste o conteúdo, mas não gera a imagem do QR.
+  São distintos de `publicCode`.
 - Regenerar substitui versões e atribuições anteriores. Se já houver correção confirmada,
-  responde `409`; se substituir uma geração anterior sem correções, volta a aplicação para
-  `draft` e limpa o PDF anterior para não disponibilizar um arquivo com QR invalido.
-- A aplicação só passa a `generated` quando o PDF for gerado (T13/RF06); este endpoint
-  apenas prepara e persiste as versões e atribuições.
+  responde `409`.
+- `POST /gerar` prepara somente versões e atribuições. Se substituir uma geração anterior
+  sem correções, volta a aplicação para `draft` e limpa o PDF associado.
+- `POST /gerar-pdf` materializa as versões e atribuições, renderiza um único PDF consolidado
+  e grava os bytes em `aplicacoes.pdfContent` (`LONGBLOB`) na mesma transação. Só depois de
+  renderizar com sucesso a aplicação passa a `generated`; uma falha não publica PDF parcial.
+  Uma regeneração bem-sucedida sobrescreve o arquivo anterior.
+- Com identificação, cada matrícula ativa recebe uma cópia com nome e QR único; sem
+  identificação, é gerada uma cópia por versão com QR que identifica apenas a versão. O QR
+  aparece na primeira folha da prova e no cartão-resposta para que a folha lida mantenha a
+  identificação da cópia.
+- Blocos de prova são mantidos inteiros entre páginas. Um bloco que excede a área útil A4
+  interrompe a geração com `400`. Questões de rascunho não salvas no banco também impedem a
+  geração; imagens aceitas no PDF são PNG e JPEG.
+- O cartão-resposta segue o layout provisório de leitura mobile: folha A4 separada, quatro
+  marcadores de canto e até 20 questões objetivas, com 2 a 5 alternativas. A validação
+  física com folhas impressas e fotos reais continua pendente; não usar como garantia de
+  leitura operacional antes dessa verificação.
 
 Os testes de regras da API podem ser executados com `npm run test --workspace @sgp/api`.
 
@@ -417,11 +433,6 @@ Os testes de regras da API podem ser executados com `npm run test --workspace @s
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em
   `src/professor-atual.ts`, ponto único a trocar.
-- Geração de PDF e demais operações de aplicações, correções e relatórios: as tabelas já
-  existem e o seed as preenche, mas esses fluxos ainda não estão cobertos por endpoints.
-  Exclusão de prova também não, porque a tela não oferece a ação.
+- Demais operações de relatórios e exclusão de prova (a tela não oferece a ação).
 - Autenticação, JWT e refresh token (RF01, issue #81): a identificação do professor é
   provisória, ver [Isolamento por professor](#isolamento-por-professor-rnf04).
-- Criação e geração de aplicações (#90, #91) e relatórios: as tabelas já existem e o
-  seed as preenche, mas não há endpoints. Exclusão de prova também não, porque a tela
-  não oferece a ação.

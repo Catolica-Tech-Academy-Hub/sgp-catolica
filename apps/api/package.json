@@ -26,6 +26,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^16.4.7",
+    "pdfkit": "^0.21.0",
+    "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
@@ -33,6 +35,8 @@
     "@nestjs/cli": "^12.0.8",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
+    "@types/pdfkit": "^0.17.7",
+    "@types/qrcode": "^1.5.6",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
     "prisma": "^7.10.1",

@@ -99,6 +99,7 @@ erDiagram
         varchar teacherId FK
         enum status "draft | generated | closed"
         varchar pdfUrl
+        longblob pdfContent "PDF consolidado"
         datetime createdAt
     }
     versoes_prova {
@@ -174,5 +175,5 @@ erDiagram
 | `turmas`, `matriculas`, `usuarios` (estudantes)     | Sim, pelas telas de turmas (API `/turmas`)                    |
 | `questoes`, `alternativas`                          | Sim, pelo banco de questões e pelo editor                     |
 | `provas`, `questoes_da_prova`                       | Sim, pela lista de provas e pelo editor                       |
-| `aplicacoes`, `versoes_prova`, `atribuicoes_versao` | Lidas pelo aplicativo (lista e gabaritos); criadas pelo seed  |
+| `aplicacoes`, `versoes_prova`, `atribuicoes_versao` | Lidas pelo aplicativo; geradas pela API (versões e PDF)       |
 | `correcoes`                                         | Gravadas pela sincronização do aplicativo (`/correcoes/lote`) |

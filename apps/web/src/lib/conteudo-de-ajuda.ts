@@ -146,6 +146,16 @@ export const perguntasFrequentes: PerguntaFrequente[] = [
     ],
   },
   {
+    id: 'gerar-pdf',
+    assunto: 'Aplicações',
+    pergunta: 'Como gerar e baixar o PDF da prova?',
+    resposta: [
+      'Abra uma aplicação e escolha Gerar PDF. Você pode definir quantas versões quer, embaralhar questões ou alternativas e identificar os estudantes. Com identificação, cada estudante ativo recebe uma cópia com nome e QR Code próprios; sem ela, há uma cópia anônima por versão.',
+      'A geração e o download exigem a API configurada. O PDF fica salvo na aplicação e pode ser baixado novamente. Se ainda não houver correção confirmada, gerar de novo substitui o arquivo e as versões.',
+      'O cartão-resposta para questões objetivas usa um layout provisório que ainda precisa ser validado com folhas impressas e fotos reais antes de uso operacional.',
+    ],
+  },
+  {
     id: 'fila-de-correcoes',
     assunto: 'Correção e notas',
     pergunta: 'Por que uma nota aparece em Correções sem aluno?',

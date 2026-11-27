@@ -196,17 +196,31 @@ Da esquerda para a direita:
 ## Aplicações
 
 `/aplicacoes` usa o padrão de seção com painel esquerdo, busca, recortes por situação e
-lista de cartões. Cada cartão mostra prova, turma, situação, versões e data, e abre um
+lista de cartões. Cada cartão mostra prova, turma, situação e data, e abre um
 `Dialog` somente leitura. Com a API ligada, a lista e o detalhe da aplicação vêm do
-servidor; sem ela, os dados locais continuam sendo usados. As versões exibidas ainda são
-as dos mocks, pois geração de versões e PDF pertencem ao RF06.
+servidor; sem ela, os dados locais continuam sendo usados. No modo de demonstração, as
+versões mostradas vêm dos mocks.
 
 Aplicações criadas nascem em `draft` e ficam independentes, inclusive quando a prova é
 reaplicada à mesma turma. Com `VITE_API_URL`, a listagem e o detalhe são carregados pela
 API e a criação é persistida nela. Sem a API, o estado continua preservado no navegador.
-O detalhe mantém
-**Gerar PDF** desabilitado com a explicação de que a geração pertence ao RF06; nenhuma
-ação desta tela cria versão, QR Code ou atribuição.
+O detalhe permite configurar a quantidade de versões (1–20), embaralhamento de questões
+e alternativas e identificação dos estudantes. **Gerar PDF** cria as versões e atribuições,
+renderiza um único arquivo consolidado e inicia o download. Com identificação, cada estudante
+ativo recebe uma cópia com seu nome e QR próprio; sem identificação, há uma cópia por versão.
+O cabeçalho local do editor é enviado como configuração da geração.
+
+Quando a API não está configurada, o diálogo de opções continua navegável para demonstração,
+mas explica que a geração e o download exigem `VITE_API_URL`. Com o arquivo já gerado, o
+detalhe permite baixá-lo novamente. Regenerar substitui o PDF e as versões anteriores;
+correção confirmada impede a regeneração.
+
+O PDF guarda o cabeçalho e os blocos sem dividir um bloco entre páginas. Um bloco maior que
+a área útil A4, uma imagem que não seja PNG/JPEG ou uma questão de rascunho ainda não salva
+impede a geração com erro explícito. Para questões objetivas, o arquivo inclui uma folha A4
+de cartão-resposta separada, dimensionada para o layout provisório do leitor mobile (até 20
+questões, cinco alternativas). A leitura física ainda precisa ser validada com impressões e
+fotos reais; o layout não está aprovado para uso operacional.
 
 ### Três zonas
 
@@ -308,9 +322,9 @@ Selecionar o cabeçalho abre suas propriedades:
 - campos opcionais Nome, Matrícula, Turma, Data e Nota;
 - seleção e criação de modelos reutilizáveis.
 
-O marcador de QR é padrão e sempre aparece. Não há configuração para escondê-lo. Ele é
-apenas uma reserva visual; o QR válido com dados de aplicação só existe quando RF06 for
-implementado.
+O marcador de QR do editor é padrão e sempre aparece, sem configuração para escondê-lo.
+Ele continua sendo apenas uma reserva visual; a aplicação gera os QRs válidos por versão
+e estudante no PDF.
 
 Modelos de cabeçalho são salvos localmente e podem ser aplicados a outras provas no mesmo
 navegador.
@@ -353,8 +367,9 @@ de mocks ou do `localStorage`:
   envia o que estiver pendente;
 - se a API estiver fora do ar, um toast avisa e as telas abrem vazias.
 
-Cabeçalhos continuam locais. Aplicações são listadas, consultadas e criadas pela API; versões
-e PDFs ainda não são gerados (RF06). A tela de correções resolve versão e aluno pelos mocks,
+Cabeçalhos continuam locais. Aplicações são listadas, consultadas e criadas pela API; a
+geração de versões, atribuições e PDF também passa pela API (RF06), e o cabeçalho local é
+enviado junto às opções de geração. A tela de correções resolve versão e aluno pelos mocks,
 cujos ids são os mesmos do seed da API.
 
 ### Sem a API
@@ -506,9 +521,9 @@ para Correções.
 
 ### Exportação
 
-CSV, Excel e PDF são requisito do RF10, mas dependem de backend: os três botões ficam
-desabilitados com Tooltip explicando o limite, no mesmo padrão de Integrações e da
-geração de PDF. Nenhum arquivo é gerado.
+CSV, Excel e PDF de relatórios são requisito do RF10, mas ainda dependem do respectivo
+fluxo de exportação: os três botões ficam desabilitados com Tooltip explicando o limite.
+Nenhum relatório é gerado.
 
 ## Perspectiva do estudante
 
@@ -619,10 +634,9 @@ aplicativo. A tela de ajuda é o lugar mais barato de ser honesto sobre a fase.
 - importar lista de alunos por planilha em Turmas depende de um pedido do cliente
   ainda não incorporado como critério de aceite — ver
   [pendências](../pendencias.md), item 12;
-- geração de versões, QR válido e PDF dependem de RF06; a aplicação local de uma prova
-  em uma turma já está disponível como fluxo N1 de RF05;
-- blocos excepcionalmente maiores que uma área útil de A4 ainda precisam de tratamento
-  específico na futura geração de PDF;
+- validação física do cartão-resposta, com impressões e fotos reais, ainda está pendente;
+- blocos excepcionalmente maiores que uma área útil A4 são recusados durante a geração,
+  sem serem partidos ou truncados;
 - o modelo de blocos precisa de decisão da
   [issue #12](https://github.com/LeoAnders/sgp-catolica/issues/12) antes de migrar para
   `@sgp/shared-types` e para o dicionário de entidades;

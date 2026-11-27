@@ -26,9 +26,18 @@ import {
   statusDaAplicacao,
   varianteDoStatusDaAplicacao,
 } from '@/lib/dominio';
-import { listarAplicacoes, obterAplicacao } from '@/lib/estado-de-aplicacoes';
+import {
+  listarAplicacoes,
+  obterAplicacao,
+  baixarPdfDaAplicacao,
+  gerarPdfDaAplicacao,
+} from '@/lib/estado-de-aplicacoes';
+import { apiLigada } from '@/lib/api';
 import { encontrarTurma } from '@/lib/estado-de-turmas';
 import { listarProvas } from '@/lib/estado-de-provas';
+import { obterCabecalhoDaProva } from '@/lib/cabecalhos-da-prova';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 interface AplicacaoNaTela {
   aplicacao: Aplicacao;
@@ -42,13 +51,26 @@ const busca = ref('');
 const recorte = ref<StatusAplicacao | 'todas'>('todas');
 const detalheAberto = ref(false);
 const aplicacaoSelecionada = ref<AplicacaoNaTela | null>(null);
+const geracaoAberta = ref(false);
+const quantidadeDeVersoes = ref(1);
+const embaralharQuestoes = ref(false);
+const embaralharAlternativas = ref(false);
+const identificarEstudantes = ref(true);
+const gerandoPdf = ref(false);
+const baixandoPdf = ref(false);
+const quantidadeDeVersoesValida = computed(
+  () =>
+    Number.isInteger(quantidadeDeVersoes.value) &&
+    quantidadeDeVersoes.value >= 1 &&
+    quantidadeDeVersoes.value <= 20,
+);
 
 const aplicacoes = computed<AplicacaoNaTela[]>(() =>
   listarAplicacoes().map((aplicacao) => ({
     aplicacao,
     prova: listarProvas().find((prova) => prova.id === aplicacao.examId),
     turma: encontrarTurma(aplicacao.classId),
-    versoes: versoesMock.filter((versao) => versao.applicationId === aplicacao.id),
+    versoes: apiLigada ? [] : versoesMock.filter((versao) => versao.applicationId === aplicacao.id),
   })),
 );
 
@@ -109,6 +131,92 @@ function limparFiltros(): void {
 function nomeDaProva(item: AplicacaoNaTela): string {
   return item.prova?.title || 'Prova indisponível';
 }
+
+function resumoDaGeracao(item: AplicacaoNaTela): string {
+  if (apiLigada) return item.aplicacao.status === 'generated' ? 'PDF pronto' : 'PDF pendente';
+  return `${item.versoes.length} ${item.versoes.length === 1 ? 'versão' : 'versões'}`;
+}
+
+function abrirGeracao(): void {
+  quantidadeDeVersoes.value = 1;
+  embaralharQuestoes.value = false;
+  embaralharAlternativas.value = false;
+  identificarEstudantes.value = true;
+  geracaoAberta.value = true;
+}
+
+function baixarArquivo(blob: Blob, aplicacao: AplicacaoNaTela): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const nome = `${nomeDaProva(aplicacao)}-${aplicacao.turma?.name ?? 'turma'}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+  link.href = url;
+  link.download = `${nome || 'prova'}.pdf`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function gerarEbaixarPdf(): Promise<void> {
+  const item = aplicacaoSelecionada.value;
+  if (!item || !apiLigada) return;
+  if (!quantidadeDeVersoesValida.value) return;
+
+  gerandoPdf.value = true;
+  try {
+    const blob = await gerarPdfDaAplicacao(item.aplicacao.id, {
+      quantity: quantidadeDeVersoes.value,
+      shuffleQuestions: embaralharQuestoes.value,
+      shuffleAlternatives: embaralharAlternativas.value,
+      withStudentIdentification: identificarEstudantes.value,
+      cabecalho: obterCabecalhoDaProva(item.aplicacao.examId),
+    });
+    const aplicacao = await obterAplicacao(item.aplicacao.id);
+    aplicacaoSelecionada.value = { ...item, aplicacao, versoes: [] };
+    geracaoAberta.value = false;
+    baixarArquivo(blob, aplicacaoSelecionada.value);
+    toast.success('PDF gerado e baixado', {
+      description: 'O arquivo consolidado foi salvo na aplicação e pode ser baixado novamente.',
+    });
+  } catch (erro) {
+    try {
+      const aplicacao = await obterAplicacao(item.aplicacao.id);
+      if (aplicacaoSelecionada.value?.aplicacao.id === aplicacao.id) {
+        aplicacaoSelecionada.value = { ...item, aplicacao, versoes: [] };
+      }
+    } catch (erroDeAtualizacao) {
+      toast.error('Não foi possível atualizar o estado da aplicação', {
+        description: erroDeAtualizacao instanceof Error ? erroDeAtualizacao.message : undefined,
+      });
+    }
+    toast.error('Não foi possível gerar o PDF', {
+      description: erro instanceof Error ? erro.message : undefined,
+    });
+  } finally {
+    gerandoPdf.value = false;
+  }
+}
+
+async function baixarPdfExistente(): Promise<void> {
+  const item = aplicacaoSelecionada.value;
+  if (!item) return;
+  baixandoPdf.value = true;
+  try {
+    const blob = await baixarPdfDaAplicacao(item.aplicacao.id);
+    baixarArquivo(blob, item);
+  } catch (erro) {
+    toast.error('Não foi possível baixar o PDF', {
+      description: erro instanceof Error ? erro.message : undefined,
+    });
+  } finally {
+    baixandoPdf.value = false;
+  }
+}
 </script>
 
 <template>
@@ -157,7 +265,7 @@ function nomeDaProva(item: AplicacaoNaTela): string {
       <div class="px-5 pb-6 pt-7 sm:px-8 sm:pt-8">
         <h1 class="text-[1.375rem] font-medium leading-tight">Aplicações</h1>
         <p class="mt-1 text-sm text-muted-foreground">
-          Provas combinadas com turmas. A geração de PDF acontece em uma etapa futura.
+          Provas combinadas com turmas e arquivos consolidados para impressão.
         </p>
       </div>
 
@@ -216,7 +324,7 @@ function nomeDaProva(item: AplicacaoNaTela): string {
               </span>
             </span>
             <span class="hidden text-right text-sm text-muted-foreground sm:block">
-              {{ item.versoes.length }} {{ item.versoes.length === 1 ? 'versão' : 'versões' }}
+              {{ resumoDaGeracao(item) }}
             </span>
             <Badge :variant="varianteDoStatusDaAplicacao(item.aplicacao.status)">
               {{ statusDaAplicacao[item.aplicacao.status].rotulo }}
@@ -236,7 +344,8 @@ function nomeDaProva(item: AplicacaoNaTela): string {
             aplicacaoSelecionada ? nomeDaProva(aplicacaoSelecionada) : ''
           }}</DialogTitle>
           <DialogDescription>
-            {{ aplicacaoSelecionada?.turma?.name ?? 'Turma indisponível' }} · versões existentes
+            {{ aplicacaoSelecionada?.turma?.name ?? 'Turma indisponível' }} ·
+            {{ apiLigada ? 'arquivo da aplicação' : 'versões existentes' }}
           </DialogDescription>
         </DialogHeader>
 
@@ -249,7 +358,16 @@ function nomeDaProva(item: AplicacaoNaTela): string {
               {{ statusDaAplicacao[aplicacaoSelecionada.aplicacao.status].rotulo }}
             </Badge>
           </div>
-          <div v-if="aplicacaoSelecionada.versoes.length" class="space-y-2">
+          <div
+            v-if="apiLigada && aplicacaoSelecionada.aplicacao.status === 'generated'"
+            class="rounded-lg border px-3 py-3 text-sm"
+          >
+            <p class="font-medium">PDF consolidado pronto</p>
+            <p class="mt-1 text-muted-foreground">
+              O arquivo foi salvo nesta aplicação e pode ser baixado novamente.
+            </p>
+          </div>
+          <div v-else-if="aplicacaoSelecionada.versoes.length" class="space-y-2">
             <div
               v-for="versao in aplicacaoSelecionada.versoes"
               :key="versao.id"
@@ -275,14 +393,101 @@ function nomeDaProva(item: AplicacaoNaTela): string {
         </div>
 
         <DialogFooter>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <span tabindex="-1">
-                <Button type="button" disabled>Gerar PDF</Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>A geração de PDF pertence à próxima fase (RF06).</TooltipContent>
-          </Tooltip>
+          <div class="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              v-if="apiLigada && aplicacaoSelecionada?.aplicacao.pdfUrl"
+              type="button"
+              variant="outline"
+              :disabled="baixandoPdf"
+              @click="baixarPdfExistente"
+            >
+              {{ baixandoPdf ? 'Baixando…' : 'Baixar PDF' }}
+            </Button>
+            <Tooltip v-if="aplicacaoSelecionada?.aplicacao.status === 'closed'">
+              <TooltipTrigger as-child>
+                <span tabindex="-1">
+                  <Button type="button" disabled>Gerar PDF</Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Esta aplicação está encerrada.</TooltipContent>
+            </Tooltip>
+            <Button v-else type="button" @click="abrirGeracao">Gerar PDF</Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="geracaoAberta">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Gerar PDF consolidado</DialogTitle>
+          <DialogDescription>
+            Configure as versões e a identificação antes de criar o arquivo para impressão.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-5 py-2">
+          <div class="space-y-2">
+            <Label for="quantidade-versoes">Quantidade de versões</Label>
+            <Input
+              id="quantidade-versoes"
+              :model-value="quantidadeDeVersoes"
+              type="number"
+              min="1"
+              max="20"
+              step="1"
+              :aria-invalid="!quantidadeDeVersoesValida"
+              @update:model-value="quantidadeDeVersoes = Number($event)"
+            />
+            <p class="text-xs text-muted-foreground">De 1 a 20 versões inteiras por aplicação.</p>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-4">
+              <Label for="embaralhar-questoes" class="font-normal">Embaralhar questões</Label>
+              <Switch
+                id="embaralhar-questoes"
+                :model-value="embaralharQuestoes"
+                @update:model-value="embaralharQuestoes = $event"
+              />
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <Label for="embaralhar-alternativas" class="font-normal">
+                Embaralhar alternativas
+              </Label>
+              <Switch
+                id="embaralhar-alternativas"
+                :model-value="embaralharAlternativas"
+                @update:model-value="embaralharAlternativas = $event"
+              />
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <Label for="identificar-estudantes" class="font-normal">
+                Identificar estudantes
+              </Label>
+              <Switch
+                id="identificar-estudantes"
+                :model-value="identificarEstudantes"
+                @update:model-value="identificarEstudantes = $event"
+              />
+            </div>
+          </div>
+
+          <p v-if="!apiLigada" class="rounded-lg border border-dashed px-3 py-3 text-sm">
+            Configure <code>VITE_API_URL</code> para gerar e salvar o PDF. As opções podem ser
+            revisadas no modo de demonstração.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="geracaoAberta = false">Cancelar</Button>
+          <Button
+            type="button"
+            :disabled="!apiLigada || gerandoPdf || !quantidadeDeVersoesValida"
+            @click="gerarEbaixarPdf"
+          >
+            {{ gerandoPdf ? 'Gerando PDF…' : 'Gerar e baixar' }}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
