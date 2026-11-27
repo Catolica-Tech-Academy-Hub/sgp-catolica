@@ -123,7 +123,7 @@ erDiagram
     }
     correcoes {
         varchar id PK
-        varchar examVersionId FK
+        varchar examVersionId FK "UK com studentId"
         varchar studentId FK "nulo na prova sem identificação"
         varchar reportedStudentName
         varchar reportedStudentRegistration
@@ -136,6 +136,8 @@ erDiagram
         boolean isAutomaticallyAssigned
         varchar clientCorrectionId UK "idempotência da fila"
         enum syncStatus "pending | synced | error"
+        json answerKeySnapshot "gabarito usado pelo aplicativo"
+        enum reviewReason "answer_key_changed | duplicate_submission"
     }
 ```
 
@@ -160,12 +162,17 @@ erDiagram
   auxiliar.
 - **Idempotência da sincronização.** `clientCorrectionId` é único: o aplicativo reenvia
   a mesma correção da fila sem duplicá-la (RF08).
+- **Uma correção por estudante e versão.** `examVersionId` e `studentId` são únicos
+  juntos: a segunda correção do mesmo aluno é recusada, e a primeira recebe
+  `reviewReason` para o professor revisar, em vez de ser sobrescrita (RF08). A nota é
+  calculada pelo `answerKeySnapshot` guardado com a correção.
 
 ## Estado da integração (N2)
 
-| Tabela                                                           | Lida e gravada pela aplicação                      |
-| ---------------------------------------------------------------- | -------------------------------------------------- |
-| `turmas`, `matriculas`, `usuarios` (estudantes)                  | Sim, pelas telas de turmas (API `/turmas`)         |
-| `questoes`, `alternativas`                                       | Sim, pelo banco de questões e pelo editor          |
-| `provas`, `questoes_da_prova`                                    | Sim, pela lista de provas e pelo editor            |
-| `aplicacoes`, `versoes_prova`, `atribuicoes_versao`, `correcoes` | Criadas e populadas pelo seed; ainda sem endpoints |
+| Tabela                                              | Lida e gravada pela aplicação                                 |
+| --------------------------------------------------- | ------------------------------------------------------------- |
+| `turmas`, `matriculas`, `usuarios` (estudantes)     | Sim, pelas telas de turmas (API `/turmas`)                    |
+| `questoes`, `alternativas`                          | Sim, pelo banco de questões e pelo editor                     |
+| `provas`, `questoes_da_prova`                       | Sim, pela lista de provas e pelo editor                       |
+| `aplicacoes`, `versoes_prova`, `atribuicoes_versao` | Lidas pelo aplicativo (lista e gabaritos); criadas pelo seed  |
+| `correcoes`                                         | Gravadas pela sincronização do aplicativo (`/correcoes/lote`) |

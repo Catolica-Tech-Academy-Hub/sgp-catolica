@@ -345,6 +345,35 @@ mais de um problema.
 
 Os testes de regras da API podem ser executados com `npm run test --workspace @sgp/api`.
 
+### Correção pelo aplicativo (RF08)
+
+| Método | Caminho                     | Corpo                           | Resposta                                     |
+| ------ | --------------------------- | ------------------------------- | -------------------------------------------- |
+| GET    | `/aplicacoes/para-corrigir` | —                               | `AplicacaoParaCorrigir[]`                    |
+| GET    | `/aplicacoes/:id/gabaritos` | —                               | `GabaritoVersaoSnapshot[]`                   |
+| POST   | `/correcoes/lote`           | `{ itens: ItemFilaCorrecao[] }` | `{ resultados: ResultadoDaSincronizacao[] }` |
+
+- `para-corrigir` traz as aplicações geradas do professor com título da prova, turma e,
+  por versão, quantas provas foram atribuídas e quantas já têm correção. Prova sem
+  identificação não tem atribuição, então o total impresso dela é desconhecido.
+- `gabaritos` devolve o gabarito oficial de todas as versões, para o aplicativo corrigir
+  sem sinal. Segue a folha impressa (`layout` da versão) e a pontuação da questão na
+  prova; `capturedAt` é o momento da resposta. Se a prova perdeu uma questão impressa
+  depois da geração, responde `409`.
+- `lote` aceita de 1 a 200 itens e responde `200` com um resultado por item, na mesma
+  ordem: `syncStatus` `synced` (com `correctionId` e `totalScore`) ou `error` (com
+  `syncError`). Um item malformado vira erro só dele.
+- Reenviar um `clientCorrectionId` já registrado devolve o mesmo `correctionId`, sem
+  criar outro registro.
+- A nota é sempre calculada pelo `answerKeySnapshot` do item, nunca pelo gabarito atual.
+  Se o gabarito oficial mudou desde a correção, a correção entra com
+  `reviewReason: 'answer_key_changed'`.
+- Segunda correção para o mesmo estudante e versão volta como `error`; a primeira é
+  mantida e recebe `reviewReason: 'duplicate_submission'`.
+- Versão com identificação exige o `studentId` de quem recebeu aquela versão. Versão sem
+  identificação não aceita `studentId`: grava sem estudante, com nome e matrícula lidos
+  na folha, para o lançamento manual (RF09).
+
 ## Ainda não coberto
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em
@@ -354,6 +383,6 @@ Os testes de regras da API podem ser executados com `npm run test --workspace @s
   Exclusão de prova também não, porque a tela não oferece a ação.
 - Autenticação, JWT e refresh token (RF01, issue #81): a identificação do professor é
   provisória, ver [Isolamento por professor](#isolamento-por-professor-rnf04).
-- Aplicações, correções e relatórios: as tabelas já existem e o seed as preenche, mas
-  não há endpoints. Exclusão de prova também não, porque a tela não oferece a ação.
-- Sincronização da fila do aplicativo (RF08).
+- Criação e geração de aplicações (#90, #91), lançamento manual de nota (#100) e
+  relatórios: as tabelas já existem e o seed as preenche, mas não há endpoints. Exclusão
+  de prova também não, porque a tela não oferece a ação.
