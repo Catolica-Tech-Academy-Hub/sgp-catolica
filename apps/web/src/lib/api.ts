@@ -16,6 +16,20 @@ const urlDaApi = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ?? '';
 
 export const apiLigada = urlDaApi !== '';
 
+/**
+ * Recusa da API. Guarda o status HTTP para a tela distinguir os casos (404, 409…) e
+ * escrever a própria mensagem, em vez de repetir o texto técnico do servidor.
+ */
+export class ErroDaApi extends Error {
+  constructor(
+    mensagem: string,
+    readonly status: number,
+  ) {
+    super(mensagem);
+    this.name = 'ErroDaApi';
+  }
+}
+
 export async function requisitar<T>(caminho: string, opcoes: RequestInit = {}): Promise<T> {
   const resposta = await fetch(`${urlDaApi}${caminho}`, {
     ...opcoes,
@@ -25,7 +39,10 @@ export async function requisitar<T>(caminho: string, opcoes: RequestInit = {}): 
   if (!resposta.ok) {
     const corpo = (await resposta.json().catch(() => null)) as { message?: unknown } | null;
     const mensagem = Array.isArray(corpo?.message) ? corpo.message.join(' ') : corpo?.message;
-    throw new Error(typeof mensagem === 'string' ? mensagem : `Erro ${resposta.status}`);
+    throw new ErroDaApi(
+      typeof mensagem === 'string' ? mensagem : `Erro ${resposta.status}`,
+      resposta.status,
+    );
   }
 
   return (await resposta.json()) as T;

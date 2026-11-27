@@ -13,7 +13,16 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowLeft, Archive, KeyRound, Pencil, RefreshCw, UserMinus, Users } from '@lucide/vue';
+import {
+  ArrowLeft,
+  Archive,
+  KeyRound,
+  Pencil,
+  RefreshCw,
+  UserMinus,
+  UserPlus,
+  Users,
+} from '@lucide/vue';
 import { toast } from 'vue-sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,6 +55,7 @@ import {
   encontrarEstudante,
   encontrarTurma,
   listarMatriculasDaTurma,
+  matricularPorEmail,
   regenerarCodigoDeConvite,
   removerMatricula,
   restaurarMatricula,
@@ -134,6 +144,44 @@ async function regenerarCodigo(): Promise<void> {
       description: 'O código atual continua valendo.',
     });
   }
+}
+
+// --- Matrícula por e-mail (RF03) ------------------------------------------------
+
+const matriculaAberta = ref(false);
+const campoEmail = ref('');
+const erroDeMatricula = ref('');
+const matriculando = ref(false);
+
+function abrirMatricula(): void {
+  campoEmail.value = '';
+  erroDeMatricula.value = '';
+  matriculaAberta.value = true;
+}
+
+async function confirmarMatricula(): Promise<void> {
+  if (!turma.value || matriculando.value) return;
+  if (!campoEmail.value.trim()) {
+    erroDeMatricula.value = 'Informe o e-mail do aluno.';
+    return;
+  }
+
+  matriculando.value = true;
+  const resultado = await matricularPorEmail(turma.value.id, campoEmail.value);
+  matriculando.value = false;
+
+  if (!resultado.ok) {
+    // O diálogo fica aberto com o e-mail digitado, para o professor só corrigir.
+    erroDeMatricula.value = resultado.erro;
+    return;
+  }
+
+  matriculaAberta.value = false;
+  toast.success(`${resultado.estudante.fullName} matriculado na turma`, {
+    description: resultado.reativada
+      ? 'A matrícula anterior deste aluno foi reativada.'
+      : undefined,
+  });
 }
 
 // --- Remoção de matrícula, reversível por toast ------------------------------------
@@ -237,14 +285,25 @@ function removerAluno(matriculaId: string, nomeDoAluno: string): void {
         </Card>
 
         <div>
-          <div class="mb-3 flex items-center gap-2">
-            <Users class="size-4 text-muted-foreground" aria-hidden="true" />
-            <h2 class="text-sm font-medium">
-              Alunos matriculados
-              <span class="tabular-nums text-muted-foreground"
-                >({{ alunosMatriculados.length }})</span
-              >
-            </h2>
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <Users class="size-4 text-muted-foreground" aria-hidden="true" />
+              <h2 class="text-sm font-medium">
+                Alunos matriculados
+                <span class="tabular-nums text-muted-foreground"
+                  >({{ alunosMatriculados.length }})</span
+                >
+              </h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="turma.status === 'archived'"
+              @click="abrirMatricula"
+            >
+              <UserPlus aria-hidden="true" />
+              Matricular por e-mail
+            </Button>
           </div>
 
           <Card class="min-w-0 overflow-hidden py-0">
@@ -265,7 +324,7 @@ function removerAluno(matriculaId: string, nomeDoAluno: string): void {
                   <div class="text-center">
                     <p class="font-medium">Nenhum aluno matriculado</p>
                     <p class="mt-1 text-sm text-muted-foreground">
-                      Alunos entram usando o código de convite acima.
+                      Alunos entram pelo código de convite acima ou por matrícula por e-mail.
                     </p>
                   </div>
                 </TableEmpty>
@@ -353,6 +412,53 @@ function removerAluno(matriculaId: string, nomeDoAluno: string): void {
                 Cancelar
               </Button>
               <Button type="submit">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog v-model:open="matriculaAberta">
+        <DialogContent class="sm:max-w-md">
+          <form novalidate @submit.prevent="confirmarMatricula">
+            <DialogHeader>
+              <DialogTitle>Matricular por e-mail</DialogTitle>
+              <DialogDescription>
+                Informe o e-mail de um aluno que já tem conta no SGP.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div class="space-y-2 py-4">
+              <Label for="matricula-email">E-mail do aluno</Label>
+              <Input
+                id="matricula-email"
+                v-model="campoEmail"
+                type="email"
+                name="email"
+                inputmode="email"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="nome@catolicasc.edu.br"
+                :aria-invalid="erroDeMatricula ? true : undefined"
+                aria-describedby="matricula-email-erro"
+                @input="erroDeMatricula = ''"
+              />
+              <p
+                v-if="erroDeMatricula"
+                id="matricula-email-erro"
+                class="text-sm text-destructive"
+                role="alert"
+              >
+                {{ erroDeMatricula }}
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" @click="matriculaAberta = false">
+                Cancelar
+              </Button>
+              <Button type="submit" :disabled="matriculando">
+                {{ matriculando ? 'Matriculando…' : 'Matricular' }}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -152,8 +152,21 @@ A lista de alunos matriculados usa `Table` em `Card`, porque os registros são
 comparados por coluna (nome, e-mail, matrícula, data de matrícula) — não lista de
 cartões. Cada linha tem uma ação **Remover** que tira o aluno da turma sem apagar seu
 histórico de notas; a remoção é reversível por toast com **Desfazer**. Sem alunos, o
-estado vazio explica que a entrada acontece pelo código de convite, sem oferecer ação
-de matricular — esse fluxo depende de autenticação real de estudante, fora da N1 web.
+estado vazio explica que a entrada acontece pelo código de convite ou por matrícula por
+e-mail.
+
+**Matricular por e-mail** (RF03, issue #87) fica ao lado do título da lista e abre um
+`Dialog` de formulário simples, no mesmo padrão de **Editar**, com um único campo de
+e-mail:
+
+- só matricula aluno que já tem conta; a tela confirma depois da resposta do servidor,
+  porque é ele quem sabe se o e-mail existe;
+- a recusa aparece junto do campo, com `aria-invalid`, e o diálogo fica aberto com o
+  e-mail digitado: campo vazio, e-mail sem conta de estudante ou aluno já matriculado;
+- sucesso fecha o diálogo, acrescenta o aluno na tabela e confirma por toast; um aluno
+  removido antes volta na mesma matrícula, e o toast avisa que ela foi reativada;
+- desabilitada em turma arquivada, como **Arquivar**;
+- sem a API (modo de demonstração), aplica as mesmas regras aos estudantes dos mocks.
 
 ## Editor de prova
 

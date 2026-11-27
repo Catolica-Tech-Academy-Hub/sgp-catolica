@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import type { Matricula, Turma } from '@sgp/shared-types';
-import { AtualizarTurmaDto, CriarTurmaDto } from './turmas.dto';
+import type { Estudante, Matricula, Turma } from '@sgp/shared-types';
+import { AtualizarTurmaDto, CriarTurmaDto, MatricularPorEmailDto } from './turmas.dto';
 import { TurmasService } from './turmas.service';
 
 /** RF03: turmas do professor. */
@@ -31,6 +31,15 @@ export class TurmasController {
   @Post(':id/codigo-de-convite')
   regenerarCodigoDeConvite(@Param('id') id: string): Promise<Turma> {
     return this.turmas.regenerarCodigoDeConvite(id);
+  }
+
+  /** RF03: o professor matricula, por e-mail, um estudante ja cadastrado. */
+  @Post(':id/matriculas')
+  matricularPorEmail(
+    @Param('id') id: string,
+    @Body() dados: MatricularPorEmailDto,
+  ): Promise<{ matricula: Matricula; estudante: Estudante }> {
+    return this.turmas.matricularPorEmail(id, dados.email);
   }
 }
 
