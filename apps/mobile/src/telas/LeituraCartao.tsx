@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { cores, espacamento, tipografia } from '@sgp/design-tokens';
 import { Badge, Botao, Cartao, Tela } from '../components/ui';
 import type { VarianteDoBadge } from '../components/ui/Badge';
+import { prepararFoto, type OrientacaoExif } from '../lib/captura-do-cartao';
 import { obterProvaParaCorrigir } from '../lib/estado-de-correcoes';
 import type { QuestaoObjetivaParaConferir } from '../lib/estado-de-correcoes';
 import {
@@ -19,6 +20,7 @@ import {
   rotuloDaPendencia,
 } from '../lib/leitura-do-cartao';
 import type {
+  AreaDetectada,
   EstadoDaSugestao,
   MarcacoesDaConferencia,
   MotivoDoBloqueio,
@@ -27,11 +29,17 @@ import type {
   SugestaoDaQuestao,
 } from '../lib/leitura-do-cartao';
 import type { PropsDaTela } from '../navegacao';
-import { nucleoDeLeitura, obterFonteDeImagem } from '../viabilidade/nucleo-de-leitura';
+import { nucleoDeLeitura } from '../viabilidade/nucleo-de-leitura';
+import { AreaNaFoto, CapturaCartao } from './CapturaCartao';
 
 type Fase =
+  | { tipo: 'capturando' }
   | { tipo: 'lendo' }
-  | { tipo: 'concluida'; sugestoes: SugestaoDaQuestao[] }
+  | {
+      tipo: 'concluida';
+      sugestoes: SugestaoDaQuestao[];
+      foto: { base64: string; area: AreaDetectada; orientacao: OrientacaoExif };
+    }
   | { tipo: 'bloqueada'; motivo: MotivoDoBloqueio };
 
 const ROTULO_DO_ESTADO: Record<EstadoDaSugestao, { texto: string; variante: VarianteDoBadge }> = {
@@ -39,6 +47,11 @@ const ROTULO_DO_ESTADO: Record<EstadoDaSugestao, { texto: string; variante: Vari
   em_branco: { texto: 'Em branco: vale zero', variante: 'outline' },
   multipla: { texto: 'Revisar: mais de uma marcação', variante: 'destructive' },
   revisar: { texto: 'Revisar: leitura incerta', variante: 'destructive' },
+};
+
+const ROTULO_DE_MARCA_EXCEDENTE: { texto: string; variante: VarianteDoBadge } = {
+  texto: 'Revisar: marca fora das alternativas',
+  variante: 'destructive',
 };
 
 function letraDe(questao: QuestaoObjetivaParaConferir, id?: string | null) {
@@ -63,6 +76,9 @@ function descreverDecisao(
       resolucao.valorAnterior !== undefined
         ? `A leitura anterior sugeriu ${descreverValor(questao, resolucao.valorAnterior)}. `
         : '';
+    if (sugestao.marcaExcedente) {
+      return `${anterior}Há uma marca em uma bolha que não existe nesta questão. Confira na folha e escolha a resposta ou deixe em branco.`;
+    }
     const vistas = sugestao.alternativasDetectadasIds.map((id) => letraDe(questao, id));
     if (vistas.length > 0) {
       return `${anterior}A leitura viu: ${vistas.join(', ')}. Escolha a resposta ou deixe em branco.`;
@@ -84,10 +100,10 @@ function descreverDecisao(
 /**
  * Leitura do cartao-resposta (RF08, issue #98).
  *
- * Mostra o que foi lido questao a questao e deixa o professor revisar. Nada sai desta tela
- * sem o aceite dele, e o aceite so preenche a conferencia: a correcao continua sendo
- * confirmada na tela de notas. Sem identificar a folha pelo QR Code (#97), o professor
- * precisa conferir se o cartao e mesmo o daquela prova.
+ * Fotografa o cartao, le a foto no aparelho, mostra a area detectada e o resultado questao
+ * a questao. Nada sai desta tela sem o aceite do professor, e o aceite so preenche a
+ * conferencia: a correcao continua sendo confirmada na tela de notas. A foto nao confere o
+ * QR Code da folha, entao o professor precisa conferir se o cartao e mesmo o daquela prova.
  */
 export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'>) {
   const {
@@ -110,36 +126,46 @@ export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'
     [marcadasAtuais, emBrancoAtuais, sugeridasAtuais, divergentesAtuais],
   );
 
-  const [fase, setFase] = useState<Fase>({ tipo: 'lendo' });
+  const [fase, setFase] = useState<Fase>({ tipo: 'capturando' });
   const [revisoes, setRevisoes] = useState<RevisoesDaLeitura>({});
-  const [tentativa, setTentativa] = useState(0);
+  const [fotoNaoApagada, setFotoNaoApagada] = useState(false);
+  const montada = useRef(false);
 
   useEffect(() => {
-    if (!prova) return;
-    let ativa = true;
-
-    async function ler() {
-      // Devolve o controle para o estado "lendo" aparecer antes do processamento pesado.
-      await new Promise<void>((resolver) => setTimeout(resolver, 50));
-      if (!ativa || !prova) return;
-      const resultado = await executarLeitura(
-        obterFonteDeImagem(),
-        prova.objetivas,
-        nucleoDeLeitura,
-      );
-      if (!ativa) return;
-      setFase(
-        resultado.ok
-          ? { tipo: 'concluida', sugestoes: resultado.sugestoes }
-          : { tipo: 'bloqueada', motivo: resultado.motivo },
-      );
-    }
-
-    void ler();
+    montada.current = true;
     return () => {
-      ativa = false;
+      montada.current = false;
     };
-  }, [prova, tentativa]);
+  }, []);
+
+  async function lerFoto(base64: string) {
+    if (!prova) return;
+    setFase({ tipo: 'lendo' });
+    // Devolve o controle para o estado "lendo" aparecer antes do processamento pesado.
+    await new Promise<void>((resolver) => setTimeout(resolver, 50));
+    if (!montada.current) return;
+
+    let orientacao: OrientacaoExif = 1;
+    const resultado = await executarLeitura(
+      async () => {
+        const foto = prepararFoto(base64);
+        orientacao = foto.orientacao;
+        return foto.imagem;
+      },
+      prova.objetivas,
+      nucleoDeLeitura,
+    );
+    if (!montada.current) return;
+    setFase(
+      resultado.ok
+        ? {
+            tipo: 'concluida',
+            sugestoes: resultado.sugestoes,
+            foto: { base64, area: resultado.areaDetectada, orientacao },
+          }
+        : { tipo: 'bloqueada', motivo: resultado.motivo },
+    );
+  }
 
   // Registra a divergencia ao concluir, e nao ao sair: botao, seta e gesto ficam cobertos.
   useEffect(() => {
@@ -183,8 +209,27 @@ export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'
 
   function tentarDeNovo() {
     setRevisoes({});
-    setFase({ tipo: 'lendo' });
-    setTentativa((atual) => atual + 1);
+    setFase({ tipo: 'capturando' });
+  }
+
+  const avisoDaFoto = fotoNaoApagada ? (
+    <Text accessibilityRole="alert" style={estilos.detalhe}>
+      A foto temporária não pôde ser apagada e pode continuar no cache do aplicativo até o sistema
+      limpá-lo.
+    </Text>
+  ) : null;
+
+  if (fase.tipo === 'capturando') {
+    return (
+      <CapturaCartao
+        titulo={nomeDoAluno}
+        acaoVoltar={voltarSemAplicar}
+        aoCapturar={(base64, descarte) => {
+          if (descarte === 'falhou') setFotoNaoApagada(true);
+          void lerFoto(base64);
+        }}
+      />
+    );
   }
 
   if (fase.tipo === 'lendo') {
@@ -215,12 +260,13 @@ export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'
             {MENSAGENS_DE_BLOQUEIO[fase.motivo]}
           </Text>
           <Text style={estilos.detalhe}>Suas marcações na conferência não foram alteradas.</Text>
+          {avisoDaFoto}
         </Cartao>
       </Tela>
     );
   }
 
-  const { sugestoes } = fase;
+  const { sugestoes, foto } = fase;
   const pendentes = contarPendentes(sugestoes, atuais, revisoes);
 
   function aplicar() {
@@ -256,6 +302,14 @@ export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'
         </>
       }
     >
+      <Cartao
+        titulo="Área detectada"
+        descricao="Confira se a marcação contorna o cartão. Se não, volte e fotografe de novo."
+      >
+        <AreaNaFoto base64={foto.base64} area={foto.area} orientacao={foto.orientacao} />
+        {avisoDaFoto}
+      </Cartao>
+
       {prova.objetivas.map((questao, indice) => {
         const sugestao = sugestoes[indice];
         const resolucao = resolverQuestao(sugestao, atuais, revisoes);
@@ -269,7 +323,9 @@ export function LeituraCartao({ navigation, route }: PropsDaTela<'LeituraCartao'
           ? { texto: textoDaDecisao, variante: 'secondary' }
           : textoDaPendencia
             ? { texto: textoDaPendencia, variante: 'destructive' }
-            : ROTULO_DO_ESTADO[sugestao.estado];
+            : sugestao.marcaExcedente
+              ? ROTULO_DE_MARCA_EXCEDENTE
+              : ROTULO_DO_ESTADO[sugestao.estado];
 
         return (
           <Cartao key={questao.questionId} titulo={`Questão ${questao.numero}`}>

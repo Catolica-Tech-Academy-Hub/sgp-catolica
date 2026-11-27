@@ -1,11 +1,11 @@
 import type { ImagemRgba, Ponto } from './marcadores';
 
 /**
- * Viabilidade da issue #98: mede o preenchimento de cada bolha do cartao-resposta.
+ * Mede o preenchimento de cada bolha do cartao-resposta (issue #98).
  *
- * Codigo temporario, fora do fluxo de correcao. A leitura trabalha so com a posicao da
- * opcao, nunca com a letra: quem chama traduz `indiceDaOpcao` pelo `printedOrder` do
- * gabarito. Os limites sao iniciais e precisam de calibracao com caneta e fotos reais.
+ * A leitura trabalha so com a posicao da opcao, nunca com a letra: quem chama traduz
+ * `indiceDaOpcao` pelo `printedOrder` do gabarito. O resultado e so uma sugestao para a
+ * revisao do professor. Os limites sao iniciais e precisam de calibracao com fotos reais.
  * Na duvida a questao vai para `revisar`; a alternativa mais escura nunca e escolhida.
  */
 

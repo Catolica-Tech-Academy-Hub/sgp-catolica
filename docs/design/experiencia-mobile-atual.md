@@ -22,7 +22,7 @@ Stack simples; o fluxo do professor é linear. Nomes das rotas conforme
 | `SelecionarProva`        | Implementado na N1 (mínimo) | Leitura do QR Code ou escolha na lista como alternativa. Completa: #25.                                 |
 | `LeituraQrCode`          | Parcial (#97)               | Câmera e validação local do QR. Sem teste em aparelho físico; formato final depende da #91.             |
 | `ConferenciaObjetiva`    | Implementado na N1 (mínimo) | Toque na letra marcada; certo/errado contra o gabarito e nota objetiva. Completa: #26.                  |
-| `LeituraCartao`          | Parcial (#98)               | Leitura local com revisão manual. Sem captura de foto, hoje termina em "Leitura bloqueada".             |
+| `LeituraCartao`          | Parcial (#98)               | Foto pela câmera, área detectada e revisão manual. Ainda sem teste em aparelho físico.                  |
 | `NotasDiscursivas`       | Implementado na N1          | Notas discursivas, nota total, identificação auxiliar e "Confirmar correção" (#27).                     |
 | `Ambiente`               | Implementado na N1          | Valida a arquitetura. Continua registrada, mas deixou de ser a rota inicial.                            |
 
@@ -94,9 +94,9 @@ Fluxo: `SelecionarProva` → **Ler QR Code** → `LeituraQrCode` → validação
 
 ### Leitura do cartão-resposta (issue #98, em andamento)
 
-Fluxo: `ConferenciaObjetiva` → **Ler cartão** → `LeituraCartao` → revisão questão a
-questão → **Aplicar e voltar à correção** → `ConferenciaObjetiva` → `NotasDiscursivas` →
-confirmação normal. Sair sem aplicar não confirma a nova leitura e preserva as decisões
+Fluxo: `ConferenciaObjetiva` → **Ler cartão** → `LeituraCartao` → foto pela câmera → área
+detectada → revisão questão a questão → **Aplicar e voltar à correção** →
+`ConferenciaObjetiva` → `NotasDiscursivas` → confirmação normal. Sair sem aplicar não confirma a nova leitura e preserva as decisões
 do professor, mas uma divergência com a leitura anterior continua pendente.
 
 A leitura usa o núcleo local e provisório de `src/viabilidade/` (marcadores, perspectiva
@@ -118,30 +118,48 @@ e bolhas), sem rede. As regras ficam em `src/lib/leitura-do-cartao.ts`:
 - **Dupla marcação, leitura ambígua e bolha não localizada exigem decisão manual.** A
   questão vai para revisão, nenhuma alternativa é escolhida automaticamente e "Aplicar"
   fica desabilitado até o professor escolher uma letra ou deixar em branco.
+- **Marca fora das alternativas exige decisão manual.** A leitura confere as 5 posições da
+  linha mesmo em questão com menos alternativas. Uma marca em posição excedente, sozinha ou
+  junto de uma alternativa válida, nunca vira resposta nem questão em branco.
 - **Questão em branco não entra nas respostas e vale zero.** Ela fica fora de
   `objectiveAnswers`, sem alterar o contrato da fila nem o cálculo da nota.
 - **Falha de leitura bloqueia.** Sem imagem, sem marcadores, com perspectiva inválida ou
   com prova incompatível com o cartão provisório, a tela explica o motivo e não altera as
   marcações.
 
-A entrada de imagem é um ponto de integração (`definirFonteDeImagem`). Nenhuma fonte está
-registrada no aplicativo, por isso **"Ler cartão" hoje sempre termina em "Leitura
-bloqueada"**, em vez de simular um resultado.
+A captura fica em `src/telas/CapturaCartao.tsx` e `src/lib/captura-do-cartao.ts`:
+
+- **A foto é tirada por toque**, com a menor resolução disponível de lado maior a partir de
+  1600 px, e processada no aparelho. Sem permissão, a tela explica e o professor volta para
+  a conferência por toque.
+- **A área detectada aparece sobre a foto**, ligando os 4 marcadores, para o professor
+  conferir o enquadramento antes de revisar. O desenho segue a orientação EXIF da foto.
+- **Foto ilegível, sem os 4 marcadores ou inclinada demais bloqueia a leitura**, sem alterar
+  as marcações, e permite fotografar de novo.
+- **A foto não fica guardada.** O arquivo temporário da câmera é apagado com
+  `expo-file-system` logo após a captura, e a imagem só existe em memória enquanto a tela
+  está aberta. Ela não vai para o AsyncStorage. Se a exclusão falhar, a leitura continua e a
+  tela avisa que a foto pode permanecer no cache do aplicativo.
 
 #### O que foi verificado
 
-- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 184
-  de 184 testes passaram, incluindo os gabaritos locais, a fila persistente, a validação do
-  QR Code, a segunda leitura, a saída com divergência, a decisão manual em branco e a
-  leitura com o núcleo real sobre uma imagem sintética.
+- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 230
+  de 230 testes passaram, incluindo a captura do cartão, a marca fora das alternativas, o
+  descarte da foto temporária com exclusão simulada, os gabaritos locais, a fila
+  persistente, a validação do QR Code, a segunda leitura, a saída com divergência, a decisão
+  manual em branco e a leitura com o núcleo real sobre JPEGs sintéticos.
+- Fluxo percorrido no navegador com `react-native-web`, uma câmera simulada e JPEGs
+  sintéticos: foto sem marcadores, falha ao fotografar, nova tentativa, área detectada,
+  revisão, aplicação e permissão negada.
 
 #### O que ainda não foi verificado ou integrado
 
 - **Cartão impresso e fotos reais: teste não executado**, por falta de acesso a uma
   impressora. Os resultados acima vêm apenas de imagens sintéticas.
 - **A taxa de erro inferior a 1% exigida pelo RF08 ainda não pode ser afirmada.**
-- **A captura do cartão pela câmera não está integrada.** A câmera hoje só lê QR Code, e a
-  leitura do cartão não foi executada em aparelho físico.
+- **A captura ainda não foi executada em aparelho físico.** Câmera real, orientação das
+  fotos, exclusão real do arquivo temporário, tempo de processamento e uso de memória no
+  Hermes continuam sem validação.
 - **O layout definitivo do cartão depende da issue #92.** O layout atual é provisório e
   comporta até 20 questões de até 5 alternativas.
 - **A leitura do cartão não confere o QR Code da folha.** O QR identifica a prova antes da
@@ -272,8 +290,8 @@ identificar, a cópia local do gabarito e a fila local.
   fluxo ainda não foi testado em um aparelho, e o formato final do QR depende da #91. A
   escolha na lista continua como alternativa e produz o mesmo efeito: chegar a uma versão
   e, quando há identificação, a um aluno.
-- **O cartão-resposta ainda não recebe fotos.** O núcleo de leitura de imagem existe (#98),
-  mas a captura pela câmera não está ligada a ele.
+- **Captura do cartão sem validação em aparelho físico.** A foto já alimenta a leitura (#98),
+  mas o fluxo só foi exercitado com câmera simulada e imagens sintéticas.
 - **Sem autenticação real.** Como na web, a entrada valida formato e abre o protótipo.
 - **A fonte Instrument Sans não é carregada.** O pacote da web distribui só `.woff2`, que
   o React Native não aceita; o aplicativo usa a fonte do sistema. Ver a limitação

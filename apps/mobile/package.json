@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --import tsx --test src/lib/leitura-do-cartao.test.mjs src/lib/leitura-do-qr.test.mjs src/lib/fila-persistente.test.mjs src/lib/gabaritos-locais.test.mjs"
+    "test": "node --import tsx --test src/lib/leitura-do-cartao.test.mjs src/lib/leitura-do-qr.test.mjs src/lib/fila-persistente.test.mjs src/lib/gabaritos-locais.test.mjs src/lib/captura-do-cartao.test.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
@@ -22,6 +22,7 @@
     "@sgp/shared-types": "*",
     "expo": "~51.0.0",
     "expo-camera": "~15.0.16",
+    "expo-file-system": "~17.0.1",
     "expo-status-bar": "~1.12.1",
     "jpeg-js": "0.4.4",
     "react": "18.2.0",

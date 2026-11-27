@@ -19,12 +19,12 @@ import type { PropsDaTela } from '../navegacao';
 
 /**
  * Conferencia objetiva minima: o professor toca na letra marcada a caneta em cada
- * questao, e o aplicativo confronta com o gabarito local.
+ * questao ou le o cartao pela camera (#98), e o aplicativo confronta com o gabarito local.
  *
  * Existe para que a correcao discursiva (#27) receba respostas reais — a alternativa
- * marcada (`selectedAlternativeId`) e o que vai para a fila. A tela completa da
- * conferencia, com leitura simulada e ajuste manual, e a issue #26. Sem camera na N1: o
- * toque na letra ocupa o lugar da leitura do cartao-resposta.
+ * marcada (`selectedAlternativeId`) e o que vai para a fila. A leitura do cartao so sugere,
+ * e o toque continua disponivel para corrigir ou substituir a leitura. A tela completa da
+ * conferencia e a issue #26.
  */
 export function ConferenciaObjetiva({ navigation, route }: PropsDaTela<'ConferenciaObjetiva'>) {
   const { examVersionId, studentId, nomeDoAluno, aplicacaoDaLeitura, divergenciasDaLeitura } =

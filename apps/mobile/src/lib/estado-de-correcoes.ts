@@ -136,10 +136,10 @@ export interface AtribuicaoParaCorrigir {
 }
 
 /**
- * O que o professor escolhe na tela de selecao, no lugar de ler o QR Code de verdade.
+ * O que o professor escolhe na lista de selecao, a alternativa a leitura do QR Code (#97).
  *
- * A leitura real de camera pertence a uma fase futura (nao vale na N1), mas o **efeito**
- * da leitura e este: chegar a uma versao e, quando a prova tem identificacao, a um aluno.
+ * As duas tem o mesmo efeito: chegar a uma versao e, quando a prova tem identificacao, a
+ * um aluno.
  */
 export function listarAtribuicoesDaAplicacao(applicationId: string): AtribuicaoParaCorrigir[] {
   const versoes = versoesMock.filter((versao) => versao.applicationId === applicationId);
