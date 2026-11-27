@@ -61,3 +61,4 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 | Mobile: aplicações para corrigir    | `AplicacoesParaCorrigir` | [mobile-lista-aplicacoes.png](mobile-lista-aplicacoes.png)     |
 | Turma: matricular por e-mail        | `/turmas/:id`            | [turmas-detalhe-matricular.png](turmas-detalhe-matricular.png) |
 | Estudante: entrada pelo convite     | `/entrar/:codigo`        | [estudante-entrar.png](estudante-entrar.png)                   |
+| Mobile: fila de correções           | Navegação                | [mobile-fila-correcoes.png](mobile-fila-correcoes.png)         |

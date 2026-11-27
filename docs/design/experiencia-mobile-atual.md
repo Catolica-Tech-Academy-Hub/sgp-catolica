@@ -24,6 +24,7 @@ Stack simples; o fluxo do professor é linear. Nomes das rotas conforme
 | `ConferenciaObjetiva`    | Implementado na N1 (mínimo) | Toque na letra marcada; certo/errado contra o gabarito e nota objetiva. Completa: #26.                  |
 | `LeituraCartao`          | Parcial (#98)               | Foto pela câmera, área detectada e revisão manual. Ainda sem teste em aparelho físico.                  |
 | `NotasDiscursivas`       | Implementado na N1          | Notas discursivas, nota total, identificação auxiliar e "Confirmar correção" (#27).                     |
+| `FilaCorrecoes`          | Implementado na N1          | Itens da sessão, status demonstrativos e nova tentativa simulada. Completa: #28.                        |
 | `Ambiente`               | Implementado na N1          | Valida a arquitetura. Continua registrada, mas deixou de ser a rota inicial.                            |
 
 As três primeiras telas foram feitas no mínimo necessário para o fluxo chegar à correção
@@ -54,7 +55,12 @@ discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para complet
 5. **Confirmar correção.** Valida as notas e chama `enfileirarCorrecao`, que grava o item
    no aparelho. Só depois da gravação a correção conta como confirmada: o item nasce
    `pending`, e o professor volta à lista com o aviso de que ela está salva no aparelho,
-   sem ter sido enviada. A tela da fila é a issue #28.
+   sem ter sido enviada. A ação "Ver fila de correções" abre a tela da fila (issue #28).
+6. **Fila de correções.** Lista os itens mais recentes primeiro e mostra o status e o
+   horário registrado. Os itens com erro permitem uma tentativa manual simulada, que
+   volta o status para `pending` e informa que nenhum dado foi enviado ao servidor.
+   Estados `synced` e `error` dos mocks são exemplos de interface, não sincronizações
+   realizadas por este aplicativo.
 
 Sem cópia local do gabarito, salva no aparelho ou nos mocks (hoje, versões 0 e 4), a
 conferência e a confirmação ficam desabilitadas e explicadas.
