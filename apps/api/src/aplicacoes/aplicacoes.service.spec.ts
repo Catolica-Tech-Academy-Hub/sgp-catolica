@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import { AplicacoesService } from './aplicacoes.service';
+
+const PROFESSOR_ATUAL_ID = 'prof-1';
 
 function criarServico(opcoes?: { professorDaProva?: string; professorDaTurma?: string }) {
   const prova = {
@@ -84,8 +85,14 @@ describe('aplicacoes', () => {
   it('cria aplicacoes independentes em draft, inclusive para a mesma turma', async () => {
     const { service, prova, criadas } = criarServico();
 
-    const primeira = await service.criar({ examId: 'prova-1', classId: 'turma-1' });
-    const segunda = await service.criar({ examId: 'prova-1', classId: 'turma-1' });
+    const primeira = await service.criar(PROFESSOR_ATUAL_ID, {
+      examId: 'prova-1',
+      classId: 'turma-1',
+    });
+    const segunda = await service.criar(PROFESSOR_ATUAL_ID, {
+      examId: 'prova-1',
+      classId: 'turma-1',
+    });
 
     assert.equal(primeira.status, 'draft');
     assert.equal(segunda.status, 'draft');
@@ -98,7 +105,7 @@ describe('aplicacoes', () => {
     const { service, criadas } = criarServico({ professorDaProva: 'professor-2' });
 
     await assert.rejects(
-      service.criar({ examId: 'prova-1', classId: 'turma-1' }),
+      service.criar(PROFESSOR_ATUAL_ID, { examId: 'prova-1', classId: 'turma-1' }),
       NotFoundException,
     );
 
@@ -109,7 +116,7 @@ describe('aplicacoes', () => {
     const { service, criadas } = criarServico({ professorDaTurma: 'professor-2' });
 
     await assert.rejects(
-      service.criar({ examId: 'prova-1', classId: 'turma-1' }),
+      service.criar(PROFESSOR_ATUAL_ID, { examId: 'prova-1', classId: 'turma-1' }),
       NotFoundException,
     );
 
@@ -121,7 +128,7 @@ describe('aplicacoes', () => {
     prova.status = 'closed';
 
     await assert.rejects(
-      service.criar({ examId: 'prova-1', classId: 'turma-1' }),
+      service.criar(PROFESSOR_ATUAL_ID, { examId: 'prova-1', classId: 'turma-1' }),
       ConflictException,
     );
 
@@ -131,7 +138,7 @@ describe('aplicacoes', () => {
   it('lista apenas aplicacoes do professor atual', async () => {
     const { service } = criarServico();
 
-    const aplicacoes = await service.listar();
+    const aplicacoes = await service.listar(PROFESSOR_ATUAL_ID);
 
     assert.equal(aplicacoes.length, 1);
     assert.equal(aplicacoes[0].teacherId, PROFESSOR_ATUAL_ID);
@@ -140,7 +147,7 @@ describe('aplicacoes', () => {
   it('consulta aplicacao do professor atual', async () => {
     const { service } = criarServico();
 
-    const aplicacao = await service.obter('aplicacao-existente');
+    const aplicacao = await service.obter(PROFESSOR_ATUAL_ID, 'aplicacao-existente');
 
     assert.equal(aplicacao.id, 'aplicacao-existente');
     assert.equal(aplicacao.teacherId, PROFESSOR_ATUAL_ID);
@@ -149,6 +156,9 @@ describe('aplicacoes', () => {
   it('nao revela aplicacao que pertence a outro professor', async () => {
     const { service } = criarServico();
 
-    await assert.rejects(service.obter('aplicacao-de-outro-professor'), NotFoundException);
+    await assert.rejects(
+      service.obter(PROFESSOR_ATUAL_ID, 'aplicacao-de-outro-professor'),
+      NotFoundException,
+    );
   });
 });

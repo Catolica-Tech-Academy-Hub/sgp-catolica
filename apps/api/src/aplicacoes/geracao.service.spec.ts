@@ -3,9 +3,10 @@ import { describe, it } from 'node:test';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import type { AtribuicaoVersao, LayoutVersao, VersaoProva } from '@sgp/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import { AplicacoesService } from './aplicacoes.service';
 import { criarLayoutVersao, distribuirEstudantes } from './geracao.util';
+
+const PROFESSOR_ATUAL_ID = 'prof-1';
 
 type VersaoNoBanco = Omit<VersaoProva, 'createdAt' | 'answerKeyPublishedAt'> & {
   createdAt: Date;
@@ -192,7 +193,7 @@ describe('geracao de versoes', () => {
   it('cria versoes com QR distinto do codigo publico e uma atribuicao por aluno', async () => {
     const { service, versoes, atribuicoes, aplicacao } = criarServico();
 
-    const resultado = await service.gerarVersoes('aplic-1', {
+    const resultado = await service.gerarVersoes(PROFESSOR_ATUAL_ID, 'aplic-1', {
       quantity: 2,
       shuffleQuestions: true,
       shuffleAlternatives: true,
@@ -216,7 +217,7 @@ describe('geracao de versoes', () => {
   it('gera versoes anonimas sem atribuicoes e com QR identificando apenas a versao', async () => {
     const { service } = criarServico();
 
-    const resultado = await service.gerarVersoes('aplic-1', {
+    const resultado = await service.gerarVersoes(PROFESSOR_ATUAL_ID, 'aplic-1', {
       quantity: 1,
       shuffleQuestions: false,
       shuffleAlternatives: false,
@@ -235,7 +236,7 @@ describe('geracao de versoes', () => {
     });
 
     await assert.rejects(
-      service.gerarVersoes('aplic-1', {
+      service.gerarVersoes(PROFESSOR_ATUAL_ID, 'aplic-1', {
         quantity: 1,
         shuffleQuestions: false,
         shuffleAlternatives: false,
@@ -254,7 +255,7 @@ describe('geracao de versoes', () => {
       existingVersions: ['versao-antiga'],
     });
 
-    const resultado = await service.gerarVersoes('aplic-1', {
+    const resultado = await service.gerarVersoes(PROFESSOR_ATUAL_ID, 'aplic-1', {
       quantity: 1,
       shuffleQuestions: false,
       shuffleAlternatives: false,
@@ -276,7 +277,7 @@ describe('geracao de versoes', () => {
     const { service, versoes } = criarServico({ students: [] });
 
     await assert.rejects(
-      service.gerarVersoes('aplic-1', {
+      service.gerarVersoes(PROFESSOR_ATUAL_ID, 'aplic-1', {
         quantity: 1,
         shuffleQuestions: false,
         shuffleAlternatives: false,
@@ -292,7 +293,7 @@ describe('geracao de versoes', () => {
     const { service, versoes } = criarServico({ applicationOwner: 'professor-2' });
 
     await assert.rejects(
-      service.gerarVersoes('aplic-1', {
+      service.gerarVersoes(PROFESSOR_ATUAL_ID, 'aplic-1', {
         quantity: 1,
         shuffleQuestions: false,
         shuffleAlternatives: false,

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import { ProvasService } from './provas.service';
+
+const PROFESSOR_ATUAL_ID = 'prof-1';
 
 function criarServico(statusInicial: 'draft' | 'ready' | 'closed') {
   const prova = {
@@ -48,8 +49,8 @@ describe('ciclo de vida da prova', () => {
   it('encerra a prova e mantém o estado ao repetir a operação', async () => {
     const { service, prova } = criarServico('draft');
 
-    const encerrada = await service.encerrar('prova-1');
-    const encerradaNovamente = await service.encerrar('prova-1');
+    const encerrada = await service.encerrar(PROFESSOR_ATUAL_ID, 'prova-1');
+    const encerradaNovamente = await service.encerrar(PROFESSOR_ATUAL_ID, 'prova-1');
 
     assert.equal(prova.status, 'closed');
     assert.equal(encerrada.status, 'closed');
@@ -59,7 +60,7 @@ describe('ciclo de vida da prova', () => {
   it('nao reabre uma prova encerrada ao salvar o conteudo', async () => {
     const { service } = criarServico('closed');
 
-    const salva = await service.salvar('prova-1', {
+    const salva = await service.salvar(PROFESSOR_ATUAL_ID, 'prova-1', {
       title: 'Prova revisada',
       status: 'ready',
       questions: [],

@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import type { AtribuicaoVersao, Aplicacao, LayoutVersao, VersaoProva } from '@sgp/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import type { GerarVersoesDto } from './aplicacoes.dto';
 import { criarLayoutVersao, distribuirEstudantes } from './geracao.util';
 import { paraAplicacao } from './mapeadores';
@@ -21,26 +20,26 @@ export interface ResultadoGeracao {
 export class AplicacoesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listar(): Promise<Aplicacao[]> {
+  async listar(professorId: string): Promise<Aplicacao[]> {
     const aplicacoes = await this.prisma.aplicacao.findMany({
-      where: { teacherId: PROFESSOR_ATUAL_ID },
+      where: { teacherId: professorId },
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
     });
     return aplicacoes.map(paraAplicacao);
   }
 
-  async obter(id: string): Promise<Aplicacao> {
+  async obter(professorId: string, id: string): Promise<Aplicacao> {
     const aplicacao = await this.prisma.aplicacao.findFirst({
-      where: { id, teacherId: PROFESSOR_ATUAL_ID },
+      where: { id, teacherId: professorId },
     });
     if (!aplicacao) throw new NotFoundException('Aplicacao nao encontrada.');
     return paraAplicacao(aplicacao);
   }
 
-  async criar(dados: { examId: string; classId: string }): Promise<Aplicacao> {
+  async criar(professorId: string, dados: { examId: string; classId: string }): Promise<Aplicacao> {
     return this.prisma.$transaction(async (tx) => {
       const prova = await tx.prova.findFirst({
-        where: { id: dados.examId, teacherId: PROFESSOR_ATUAL_ID },
+        where: { id: dados.examId, teacherId: professorId },
         select: { id: true, status: true },
       });
       if (!prova) throw new NotFoundException('Prova nao encontrada.');
@@ -49,7 +48,7 @@ export class AplicacoesService {
       }
 
       const turma = await tx.turma.findFirst({
-        where: { id: dados.classId, teacherId: PROFESSOR_ATUAL_ID },
+        where: { id: dados.classId, teacherId: professorId },
         select: { id: true },
       });
       if (!turma) throw new NotFoundException('Turma nao encontrada.');
@@ -57,7 +56,7 @@ export class AplicacoesService {
       const atualizada = await tx.prova.updateMany({
         where: {
           id: dados.examId,
-          teacherId: PROFESSOR_ATUAL_ID,
+          teacherId: professorId,
           status: { not: 'closed' },
         },
         data: { status: 'ready' },
@@ -70,17 +69,21 @@ export class AplicacoesService {
         data: {
           examId: dados.examId,
           classId: dados.classId,
-          teacherId: PROFESSOR_ATUAL_ID,
+          teacherId: professorId,
         },
       });
       return paraAplicacao(aplicacao);
     });
   }
 
-  async gerarVersoes(id: string, dados: GerarVersoesDto): Promise<ResultadoGeracao> {
+  async gerarVersoes(
+    professorId: string,
+    id: string,
+    dados: GerarVersoesDto,
+  ): Promise<ResultadoGeracao> {
     return this.prisma.$transaction(async (tx) => {
       const aplicacao = await tx.aplicacao.findFirst({
-        where: { id, teacherId: PROFESSOR_ATUAL_ID },
+        where: { id, teacherId: professorId },
         select: { id: true, examId: true, classId: true, status: true },
       });
       if (!aplicacao) throw new NotFoundException('Aplicacao nao encontrada.');
@@ -104,7 +107,7 @@ export class AplicacoesService {
       }
 
       const prova = await tx.prova.findFirst({
-        where: { id: aplicacao.examId, teacherId: PROFESSOR_ATUAL_ID },
+        where: { id: aplicacao.examId, teacherId: professorId },
         select: {
           questoes: {
             orderBy: [{ order: 'asc' }, { questionId: 'asc' }],
