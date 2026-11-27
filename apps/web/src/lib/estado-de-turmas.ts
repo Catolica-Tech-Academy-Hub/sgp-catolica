@@ -16,7 +16,7 @@
 import { reactive, watch } from 'vue';
 import { estudantesMock, matriculasMock, turmasMock } from '@sgp/mocks';
 import type { Estudante, Matricula, Turma } from '@sgp/shared-types';
-import { apiLigada, enfileirar, enviarAoServidor, requisitar } from './api';
+import { apiLigada, enfileirar, enviarAoServidor, ErroDaApi, requisitar } from './api';
 
 const CHAVE = 'sgp:estado-de-turmas:v1';
 
@@ -198,6 +198,89 @@ export function removerMatricula(matriculaId: string): void {
   if (!matricula) return;
   matricula.status = 'removed';
   enviarMatricula(`/matriculas/${matriculaId}`, { method: 'DELETE' });
+}
+
+export type ResultadoDaMatricula =
+  { ok: true; estudante: Estudante; reativada: boolean } | { ok: false; erro: string };
+
+const RECUSAS = {
+  arquivada: 'Turma arquivada não aceita matrícula nova.',
+  semConta: 'Não há conta de estudante com este e-mail. O aluno precisa se cadastrar antes.',
+  jaMatriculado: 'Este aluno já está matriculado na turma.',
+};
+
+/**
+ * RF03: o professor matricula por e-mail um estudante que já tem conta.
+ *
+ * Assíncrona, ao contrário das outras gravações: quem diz se o e-mail tem conta é o
+ * servidor, então a tela só confirma depois da resposta. Um aluno removido antes volta
+ * a ativo na mesma matrícula, sem duplicar.
+ */
+export async function matricularPorEmail(
+  classId: string,
+  email: string,
+): Promise<ResultadoDaMatricula> {
+  const turma = encontrarTurma(classId);
+  if (turma?.status === 'archived') return { ok: false, erro: RECUSAS.arquivada };
+
+  const emailNormalizado = email.trim().toLowerCase();
+
+  if (!apiLigada) return matricularNaDemonstracao(classId, emailNormalizado);
+
+  try {
+    const resposta = await enfileirar(() =>
+      requisitar<{ matricula: Matricula; estudante: Estudante }>(`/turmas/${classId}/matriculas`, {
+        method: 'POST',
+        body: JSON.stringify({ email: emailNormalizado }),
+      }),
+    );
+    const anterior = matriculasNoNavegador.find((item) => item.id === resposta.matricula.id);
+    if (anterior) Object.assign(anterior, resposta.matricula);
+    else matriculasNoNavegador.push(resposta.matricula);
+    // O aluno pode nunca ter passado por uma turma deste professor.
+    if (!encontrarEstudante(resposta.estudante.id)) estudantesNoNavegador.push(resposta.estudante);
+    return { ok: true, estudante: resposta.estudante, reativada: Boolean(anterior) };
+  } catch (erro) {
+    if (erro instanceof ErroDaApi && erro.status === 404)
+      return { ok: false, erro: RECUSAS.semConta };
+    // A turma arquivada já foi barrada acima; o 409 que sobra é aluno já matriculado.
+    if (erro instanceof ErroDaApi && erro.status === 409) {
+      return { ok: false, erro: RECUSAS.jaMatriculado };
+    }
+    if (erro instanceof ErroDaApi && erro.status === 400) {
+      return { ok: false, erro: 'Informe um e-mail válido.' };
+    }
+    return { ok: false, erro: 'Não foi possível falar com o servidor. Tente de novo.' };
+  }
+}
+
+/** Mesmas regras da API, aplicadas aos estudantes de demonstração. */
+function matricularNaDemonstracao(classId: string, email: string): ResultadoDaMatricula {
+  const estudante = estudantesNoNavegador.find(
+    (item) => item.email.toLowerCase() === email && !item.anonymizedAt,
+  );
+  if (!estudante) return { ok: false, erro: RECUSAS.semConta };
+
+  const existente = matriculasNoNavegador.find(
+    (item) => item.classId === classId && item.studentId === estudante.id,
+  );
+  if (existente?.status === 'active') return { ok: false, erro: RECUSAS.jaMatriculado };
+
+  if (existente) {
+    existente.status = 'active';
+    existente.enrolledVia = 'teacher';
+    return { ok: true, estudante, reativada: true };
+  }
+
+  matriculasNoNavegador.push({
+    id: `mat-local-${Date.now()}`,
+    classId,
+    studentId: estudante.id,
+    enrolledAt: new Date().toISOString(),
+    status: 'active',
+    enrolledVia: 'teacher',
+  });
+  return { ok: true, estudante, reativada: false };
 }
 
 /** Desfaz `removerMatricula`, chamada pela ação "Desfazer" do toast. */

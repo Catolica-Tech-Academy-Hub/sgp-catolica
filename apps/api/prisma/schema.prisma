@@ -55,6 +55,14 @@ enum StatusSincronizacao {
   error
 }
 
+/// Por que uma correcao sincronizada precisa da atencao do professor (RF08).
+enum MotivoRevisao {
+  /// O gabarito oficial mudou depois da correcao; a nota foi calculada pelo snapshot.
+  answer_key_changed
+  /// Chegou outra correcao para o mesmo estudante e versao; esta, a primeira, foi mantida.
+  duplicate_submission
+}
+
 /// User: base comum de professor e estudante (RF01).
 model Usuario {
   id           String       @id @default(uuid()) @db.VarChar(64)
@@ -196,14 +204,16 @@ model QuestaoDaProva {
 
 /// Application: uma prova aplicada a uma turma (RF05).
 model Aplicacao {
-  id        String          @id @default(uuid()) @db.VarChar(64)
-  examId    String          @db.VarChar(64)
-  classId   String          @db.VarChar(64)
-  teacherId String          @db.VarChar(64)
-  status    StatusAplicacao @default(draft)
+  id         String          @id @default(uuid()) @db.VarChar(64)
+  examId     String          @db.VarChar(64)
+  classId    String          @db.VarChar(64)
+  teacherId  String          @db.VarChar(64)
+  status     StatusAplicacao @default(draft)
   /// PDF unico consolidado, sobrescrito a cada regeneracao.
-  pdfUrl    String?         @db.VarChar(500)
-  createdAt DateTime        @default(now())
+  pdfUrl     String?         @db.VarChar(500)
+  /// Bytes do PDF consolidado; persistidos no MySQL para sobreviver a reinicios da API.
+  pdfContent Bytes?          @db.LongBlob
+  createdAt  DateTime        @default(now())
 
   prova     Prova         @relation(fields: [examId], references: [id])
   turma     Turma         @relation(fields: [classId], references: [id])
@@ -274,11 +284,17 @@ model Correcao {
   /// Gerado no dispositivo; garante deduplicacao idempotente na sincronizacao.
   clientCorrectionId          String              @unique @db.VarChar(64)
   syncStatus                  StatusSincronizacao @default(synced)
+  /// GabaritoVersaoSnapshot usado pelo aplicativo; a nota e calculada a partir dele.
+  answerKeySnapshot           Json?
+  /// Preenchido quando a sincronizacao encontrou algo que o professor precisa revisar.
+  reviewReason                MotivoRevisao?
 
   versao    VersaoProva @relation(fields: [examVersionId], references: [id])
   estudante Usuario?    @relation("CorrecaoEstudante", fields: [studentId], references: [id])
   autor     Usuario     @relation("CorrecaoAutor", fields: [correctedBy], references: [id])
 
+  /// Uma correcao por estudante e versao; a segunda e recusada, nunca sobrescreve (RF08).
+  @@unique([examVersionId, studentId])
   @@index([examVersionId])
   @@map("correcoes")
 }

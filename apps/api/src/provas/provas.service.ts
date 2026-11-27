@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROFESSOR_ATUAL_ID } from '../professor-atual';
 import { type ProvaComBlocos, incluirQuestoes, paraProva } from './mapeadores';
 import type { SalvarProvaDto } from './provas.dto';
 
@@ -9,9 +8,9 @@ import type { SalvarProvaDto } from './provas.dto';
 export class ProvasService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listar(): Promise<ProvaComBlocos[]> {
+  async listar(professorId: string): Promise<ProvaComBlocos[]> {
     const provas = await this.prisma.prova.findMany({
-      where: { teacherId: PROFESSOR_ATUAL_ID },
+      where: { teacherId: professorId },
       include: incluirQuestoes,
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
     });
@@ -23,21 +22,20 @@ export class ProvasService {
    * resposta. As questoes da prova sao regravadas inteiras: a ordem da folha e a
    * pontuacao mudam juntas no editor.
    */
-  async salvar(id: string, dados: SalvarProvaDto): Promise<ProvaComBlocos> {
+  async salvar(professorId: string, id: string, dados: SalvarProvaDto): Promise<ProvaComBlocos> {
     const existente = await this.prisma.prova.findUnique({
       where: { id },
       select: { teacherId: true },
     });
     // A prova de outro professor nao e revelada nem sobrescrita.
-    if (existente && existente.teacherId !== PROFESSOR_ATUAL_ID) {
+    if (existente && existente.teacherId !== professorId) {
       throw new NotFoundException('Prova nao encontrada.');
     }
 
-    const questoes = await this.questoesGravaveis(dados.questions);
+    const questoes = await this.questoesGravaveis(professorId, dados.questions);
     const campos = {
       title: dados.title,
       description: dados.description ?? null,
-      status: dados.status,
       blocos: dados.blocos ? (dados.blocos as Prisma.InputJsonValue[]) : Prisma.DbNull,
     };
 
@@ -45,12 +43,40 @@ export class ProvasService {
       await tx.questaoDaProva.deleteMany({ where: { examId: id } });
       return tx.prova.upsert({
         where: { id },
-        create: { id, teacherId: PROFESSOR_ATUAL_ID, ...campos, questoes: { create: questoes } },
+        create: {
+          id,
+          teacherId: professorId,
+          ...campos,
+          status: 'draft',
+          questoes: { create: questoes },
+        },
         update: { ...campos, questoes: { create: questoes } },
         include: incluirQuestoes,
       });
     });
 
+    return paraProva(prova);
+  }
+
+  async encerrar(professorId: string, id: string): Promise<ProvaComBlocos> {
+    const resultado = await this.prisma.prova.updateMany({
+      where: { id, teacherId: professorId },
+      data: { status: 'closed' },
+    });
+    if (resultado.count === 0) {
+      const existente = await this.prisma.prova.findFirst({
+        where: { id, teacherId: professorId },
+        include: incluirQuestoes,
+      });
+      if (!existente) throw new NotFoundException('Prova nao encontrada.');
+      return paraProva(existente);
+    }
+
+    const prova = await this.prisma.prova.findFirst({
+      where: { id, teacherId: professorId },
+      include: incluirQuestoes,
+    });
+    if (!prova) throw new NotFoundException('Prova nao encontrada.');
     return paraProva(prova);
   }
 
@@ -60,10 +86,10 @@ export class ProvasService {
    * dentro da prova e ainda nao salva no banco vive apenas nos blocos do editor.
    * Uma questao repetida conta uma vez, na primeira posicao em que aparece.
    */
-  private async questoesGravaveis(questoes: SalvarProvaDto['questions']) {
+  private async questoesGravaveis(professorId: string, questoes: SalvarProvaDto['questions']) {
     const ids = [...new Set(questoes.map((questao) => questao.questionId))];
     const doBanco = await this.prisma.questao.findMany({
-      where: { id: { in: ids }, teacherId: PROFESSOR_ATUAL_ID },
+      where: { id: { in: ids }, teacherId: professorId },
       select: { id: true },
     });
     const existentes = new Set(doBanco.map((questao) => questao.id));

@@ -7,6 +7,10 @@
  *
  * Roda com `npm run db:seed --workspace @sgp/api`. Apaga tudo antes de inserir, entao
  * repetir o seed volta o banco ao estado de demonstracao.
+ *
+ * Ha dois professores: o de demonstracao (`prof-1`), dono do acervo que as telas mostram,
+ * e um segundo (`prof-2`) com turma, matricula e questao proprias, que existe para
+ * demonstrar que um professor nao enxerga os dados do outro (RNF04, issue #83).
  */
 import 'dotenv/config';
 import {
@@ -14,10 +18,14 @@ import {
   atribuicoesMock,
   correcoesMock,
   estudantesMock,
+  matriculasDoOutroProfessorMock,
   matriculasMock,
+  outroProfessorMock,
   professorMock,
   provasMock,
+  questoesDoOutroProfessorMock,
   questoesMock,
+  turmasDoOutroProfessorMock,
   turmasMock,
   versoesMock,
 } from '@sgp/mocks';
@@ -49,7 +57,10 @@ async function semear(): Promise<void> {
 
     await tx.usuario.createMany({
       data: [
-        { ...professorMock, createdAt: new Date(professorMock.createdAt) },
+        ...[professorMock, outroProfessorMock].map((professor) => ({
+          ...professor,
+          createdAt: new Date(professor.createdAt),
+        })),
         ...estudantesMock.map((estudante) => ({
           ...estudante,
           createdAt: new Date(estudante.createdAt),
@@ -58,17 +69,23 @@ async function semear(): Promise<void> {
     });
 
     await tx.turma.createMany({
-      data: turmasMock.map((turma) => ({ ...turma, createdAt: new Date(turma.createdAt) })),
+      data: [...turmasMock, ...turmasDoOutroProfessorMock].map((turma) => ({
+        ...turma,
+        createdAt: new Date(turma.createdAt),
+      })),
     });
 
     await tx.matricula.createMany({
-      data: matriculasMock.map((matricula) => ({
+      data: [...matriculasMock, ...matriculasDoOutroProfessorMock].map((matricula) => ({
         ...matricula,
         enrolledAt: new Date(matricula.enrolledAt),
       })),
     });
 
-    for (const { alternatives, deletedAt, ...questao } of questoesMock) {
+    for (const { alternatives, deletedAt, ...questao } of [
+      ...questoesMock,
+      ...questoesDoOutroProfessorMock,
+    ]) {
       await tx.questao.create({
         data: {
           ...questao,

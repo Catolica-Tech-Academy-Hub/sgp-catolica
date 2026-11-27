@@ -10,7 +10,20 @@ import {
   turmasMock,
   versoesMock,
 } from '@sgp/mocks';
-import type { ItemFilaCorrecao, NotaDiscursiva, StatusSincronizacao } from '@sgp/shared-types';
+import type {
+  GabaritoVersaoSnapshot,
+  ItemFilaCorrecao,
+  NotaDiscursiva,
+  StatusSincronizacao,
+} from '@sgp/shared-types';
+import {
+  criarFilaPersistente,
+  mesclarComMocks,
+  type ArmazenamentoDaFila,
+  type FilaPersistente,
+} from './fila-persistente';
+import { criarGabaritosLocais, gabaritoCompativelComLayout } from './gabaritos-locais';
+import type { EntradaDoQr } from './leitura-do-qr';
 
 /**
  * Estado do fluxo de correcao do aplicativo do professor (RF08).
@@ -19,10 +32,8 @@ import type { ItemFilaCorrecao, NotaDiscursiva, StatusSincronizacao } from '@sgp
  * pelos mocks, que e o ponto de integracao a substituir quando a API existir. Nenhuma
  * tela deve importar `@sgp/mocks` para **alterar** algo — ler dado derivado por aqui.
  *
- * Diferente da web, nao ha `localStorage`: a persistencia real da fila (RF08 exige que
- * ela sobreviva ao fechamento do aplicativo) depende de armazenamento do dispositivo,
- * que e trabalho de uma fase com backend. Aqui a fila vive na memoria da sessao, e a
- * tela de fila diz isso com todas as letras em vez de simular sincronizacao.
+ * As correcoes confirmadas ficam salvas no aparelho (`fila-persistente.ts`) e voltam para
+ * a memoria ao abrir o aplicativo. A sincronizacao com o servidor ainda nao existe (#94).
  */
 
 /** Assinantes das mudancas. Um `useState` por tela, sem biblioteca de estado. */
@@ -61,8 +72,8 @@ export interface AplicacaoParaCorrigir {
   nomeDaTurma: string;
   disciplina: string;
   /** Provas impressas desta aplicacao que ainda nao foram corrigidas. */
-  pendentes: number;
-  totalDeProvas: number;
+  pendentes: number | undefined;
+  totalDeProvas: number | undefined;
   criadaEm: string;
 }
 
@@ -81,6 +92,7 @@ export function listarAplicacoesGeradas(): AplicacaoParaCorrigir[] {
       const prova = provasMock.find((item) => item.id === aplicacao.examId);
       const turma = turmasMock.find((item) => item.id === aplicacao.classId);
       const versoes = versoesMock.filter((versao) => versao.applicationId === aplicacao.id);
+      const possuiVersaoAnonima = versoes.some((versao) => !versao.withStudentIdentification);
 
       const totalDeProvas = versoes.reduce(
         (total, versao) =>
@@ -89,7 +101,10 @@ export function listarAplicacoesGeradas(): AplicacaoParaCorrigir[] {
       );
       const corrigidas = versoes.reduce(
         (total, versao) =>
-          total + correcoesConfirmadas().filter((item) => item.examVersionId === versao.id).length,
+          total +
+          correcoesConfirmadas().filter(
+            (item) => item.examVersionId === versao.id && item.studentId !== undefined,
+          ).length,
         0,
       );
 
@@ -98,8 +113,8 @@ export function listarAplicacoesGeradas(): AplicacaoParaCorrigir[] {
         tituloDaProva: prova?.title ?? 'Prova indisponivel',
         nomeDaTurma: turma?.name ?? 'Turma indisponivel',
         disciplina: turma?.subject ?? '',
-        pendentes: Math.max(0, totalDeProvas - corrigidas),
-        totalDeProvas,
+        pendentes: possuiVersaoAnonima ? undefined : Math.max(0, totalDeProvas - corrigidas),
+        totalDeProvas: possuiVersaoAnonima ? undefined : totalDeProvas,
         criadaEm: aplicacao.createdAt,
       };
     })
@@ -121,10 +136,10 @@ export interface AtribuicaoParaCorrigir {
 }
 
 /**
- * O que o professor escolhe na tela de selecao, no lugar de ler o QR Code de verdade.
+ * O que o professor escolhe na lista de selecao, a alternativa a leitura do QR Code (#97).
  *
- * A leitura real de camera pertence a uma fase futura (nao vale na N1), mas o **efeito**
- * da leitura e este: chegar a uma versao e, quando a prova tem identificacao, a um aluno.
+ * As duas tem o mesmo efeito: chegar a uma versao e, quando a prova tem identificacao, a
+ * um aluno.
  */
 export function listarAtribuicoesDaAplicacao(applicationId: string): AtribuicaoParaCorrigir[] {
   const versoes = versoesMock.filter((versao) => versao.applicationId === applicationId);
@@ -165,17 +180,64 @@ export function listarAtribuicoesDaAplicacao(applicationId: string): AtribuicaoP
   });
 }
 
+/**
+ * Provas que um QR Code pode identificar (RF06): com identificacao, o QR e o da atribuicao
+ * de cada aluno; sem identificacao, e o da versao. O QR da versao identificada nao entra,
+ * porque abriria uma correcao sem dono para uma prova que tem aluno.
+ */
+export function listarEntradasDoQr(): EntradaDoQr[] {
+  return versoesMock.flatMap<EntradaDoQr>((versao) => {
+    const base = {
+      applicationId: versao.applicationId,
+      examVersionId: versao.id,
+      temGabarito: Boolean(obterGabaritoDaVersao(versao.id)),
+    };
+
+    if (!versao.withStudentIdentification) {
+      return [
+        {
+          ...base,
+          qrCodePayload: versao.qrCodePayload,
+          nomeDoAluno: 'Prova sem identificacao',
+          jaCorrigida: false,
+        },
+      ];
+    }
+
+    return atribuicoesMock
+      .filter((atribuicao) => atribuicao.examVersionId === versao.id)
+      .map((atribuicao) => ({
+        ...base,
+        qrCodePayload: atribuicao.qrCodePayload,
+        studentId: atribuicao.studentId,
+        nomeDoAluno:
+          estudantesMock.find((item) => item.id === atribuicao.studentId)?.fullName ??
+          'Aluno indisponivel',
+        jaCorrigida: correcoesConfirmadas().some(
+          (correcao) =>
+            correcao.examVersionId === versao.id && correcao.studentId === atribuicao.studentId,
+        ),
+      }));
+  });
+}
+
 // --- Gabarito local -----------------------------------------------------------------
 
+/** Gabaritos salvos no aparelho, trazidos para a memoria ao abrir o aplicativo. */
+const gabaritosPersistidos = new Map<string, GabaritoVersaoSnapshot>();
+
 /**
- * Copia local do gabarito daquela versao.
+ * Copia local do gabarito daquela versao: primeiro a salva no aparelho e, sem ela, a dos
+ * mocks. A dos mocks nunca e gravada no aparelho.
  *
  * RF08 e categorico: **sem copia local do gabarito, o aplicativo nao permite confirmar a
- * correcao**. Na N1 a copia vem dos mocks, mas a regra e respeitada de verdade — quem
- * nao encontrar gabarito aqui nao consegue avancar na tela de conferencia.
+ * correcao**. Quem nao encontrar gabarito aqui nao consegue avancar na tela de conferencia.
  */
 export function obterGabaritoDaVersao(examVersionId: string) {
-  return filaCorrecoesMock.find((item) => item.examVersionId === examVersionId)?.answerKeySnapshot;
+  return (
+    gabaritosPersistidos.get(examVersionId) ??
+    filaCorrecoesMock.find((item) => item.examVersionId === examVersionId)?.answerKeySnapshot
+  );
 }
 
 // --- Prova a corrigir (conferencia objetiva e notas discursivas) --------------------
@@ -333,11 +395,66 @@ function somar(valores: number[]): number {
 
 // --- Fila local ---------------------------------------------------------------------
 
-/** A fila comeca com os itens de demonstracao e recebe o que for corrigido na sessao. */
+/** A fila comeca com os itens de demonstracao e recebe os salvos no aparelho. */
 const fila: ItemFilaCorrecao[] = filaCorrecoesMock.map((item) => ({ ...item }));
+let filaPersistente: FilaPersistente | undefined;
+let totalDeCorrecoesIlegiveis = 0;
+
+/**
+ * Carrega a fila e os gabaritos salvos no aparelho. Precisa terminar antes de o professor
+ * corrigir, senao uma prova ja corrigida pareceria pendente e um gabarito antigo poderia
+ * ser usado. Rejeita quando o armazenamento falha, sem aplicar uma carga parcial.
+ */
+export async function iniciarFilaPersistente(armazenamento: ArmazenamentoDaFila): Promise<void> {
+  const persistente = criarFilaPersistente(armazenamento);
+  const [{ itens, chavesIlegiveis }, { gabaritos }] = await Promise.all([
+    persistente.carregar(),
+    criarGabaritosLocais(armazenamento).listar(),
+  ]);
+
+  filaPersistente = persistente;
+  totalDeCorrecoesIlegiveis = chavesIlegiveis.length;
+  fila.splice(0, fila.length, ...mesclarComMocks(filaCorrecoesMock, itens));
+  gabaritosPersistidos.clear();
+  for (const gabarito of gabaritos) {
+    // Gabarito que nao bate com a folha impressa nao e usado: a nota sairia errada.
+    const versao = versoesMock.find((item) => item.id === gabarito.examVersionId);
+    if (versao && gabaritoCompativelComLayout(gabarito, versao.layout)) {
+      gabaritosPersistidos.set(gabarito.examVersionId, gabarito);
+    }
+  }
+  notificar();
+}
+
+/** Correcoes gravadas que nao puderam ser lidas: a tela avisa em vez de escondê-las. */
+export function contarCorrecoesIlegiveis(): number {
+  return totalDeCorrecoesIlegiveis;
+}
 
 export function listarFila(): ItemFilaCorrecao[] {
   return [...fila].sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+}
+
+export interface DetalhesDaCorrecaoNaFila {
+  tituloDaProva: string;
+  versao: number | undefined;
+  identificacao: string;
+}
+
+export function obterDetalhesDaCorrecaoNaFila(item: ItemFilaCorrecao): DetalhesDaCorrecaoNaFila {
+  const versao = versoesMock.find((registro) => registro.id === item.examVersionId);
+  const aplicacao = aplicacoesMock.find((registro) => registro.id === versao?.applicationId);
+  const prova = provasMock.find((registro) => registro.id === aplicacao?.examId);
+  const estudante = estudantesMock.find((registro) => registro.id === item.studentId);
+
+  return {
+    tituloDaProva: prova?.title ?? 'Prova indisponível',
+    versao: versao?.versionNumber,
+    identificacao:
+      item.reportedStudentName ??
+      estudante?.fullName ??
+      (item.studentId ? 'Estudante não identificado' : 'Prova sem identificação'),
+  };
 }
 
 export function totalPorStatus(): Record<StatusSincronizacao, number> {
@@ -348,7 +465,21 @@ export function totalPorStatus(): Record<StatusSincronizacao, number> {
   };
 }
 
-/** Correcoes que contam como "ja corrigida": as dos mocks e as confirmadas na sessao. */
+/**
+ * Simula uma nova tentativa manual, deixando o item pendente sem alegar sincronizacao.
+ * So os itens de demonstracao chegam a `error`: o envio real depende das issues #94 e #95.
+ */
+export function tentarNovamente(clientCorrectionId: string): boolean {
+  const item = fila.find((registro) => registro.clientCorrectionId === clientCorrectionId);
+  if (!item || item.syncStatus !== 'error') return false;
+
+  item.syncStatus = 'pending';
+  item.syncError = undefined;
+  notificar();
+  return true;
+}
+
+/** Correcoes que contam como "ja corrigida": as dos mocks e as salvas no aparelho. */
 function correcoesConfirmadas(): { examVersionId: string; studentId?: string }[] {
   return [
     ...correcoesMock.map((item) => ({
@@ -370,24 +501,38 @@ export interface CorrecaoParaConfirmar {
   reportedStudentRegistration?: string;
   objectiveAnswers: { questionId: string; selectedAlternativeId: string }[];
   discursiveScores: NotaDiscursiva[];
+  /** Mantido ao repetir uma confirmacao que falhou, para nao gerar uma segunda correcao. */
+  clientCorrectionId?: string;
 }
 
+export type ResultadoDaConfirmacao =
+  | { ok: true; item: ItemFilaCorrecao }
+  | { ok: false; motivo: 'sem_gabarito' }
+  | { ok: false; motivo: 'falha_ao_salvar'; clientCorrectionId: string };
+
 /**
- * Coloca a correcao na fila local.
+ * Salva a correcao no aparelho e so entao a coloca na fila.
  *
  * RF08 manda salvar **primeiro** no dispositivo, com ou sem internet, e deduplicar por
  * um identificador gerado no proprio aparelho. O `clientCorrectionId` cumpre esse papel;
- * reenviar o mesmo item nao cria um segundo registro.
+ * repetir o mesmo identificador nao cria um segundo registro.
  *
- * Devolve `undefined` quando nao ha copia local do gabarito — a situacao em que RF08
- * proibe confirmar.
+ * Sem copia local do gabarito, RF08 proibe confirmar. Se a gravacao falhar, a correcao nao
+ * conta como confirmada e nada entra na fila.
  */
-export function enfileirarCorrecao(dados: CorrecaoParaConfirmar): ItemFilaCorrecao | undefined {
+export async function enfileirarCorrecao(
+  dados: CorrecaoParaConfirmar,
+): Promise<ResultadoDaConfirmacao> {
   const answerKeySnapshot = obterGabaritoDaVersao(dados.examVersionId);
-  if (!answerKeySnapshot) return undefined;
+  if (!answerKeySnapshot) return { ok: false, motivo: 'sem_gabarito' };
+
+  const clientCorrectionId = dados.clientCorrectionId ?? gerarIdentificadorLocal();
+  const existente = fila.find((item) => item.clientCorrectionId === clientCorrectionId);
+  if (existente) return { ok: true, item: existente };
+  if (!filaPersistente) return { ok: false, motivo: 'falha_ao_salvar', clientCorrectionId };
 
   const item: ItemFilaCorrecao = {
-    clientCorrectionId: gerarIdentificadorLocal(),
+    clientCorrectionId,
     examVersionId: dados.examVersionId,
     studentId: dados.studentId,
     reportedStudentName: dados.reportedStudentName,
@@ -400,9 +545,15 @@ export function enfileirarCorrecao(dados: CorrecaoParaConfirmar): ItemFilaCorrec
     syncStatus: 'pending',
   };
 
+  try {
+    await filaPersistente.salvar(item);
+  } catch {
+    return { ok: false, motivo: 'falha_ao_salvar', clientCorrectionId };
+  }
+
   fila.unshift(item);
   notificar();
-  return item;
+  return { ok: true, item };
 }
 
 /**
@@ -416,7 +567,7 @@ function gerarIdentificadorLocal(): string {
   return `local-${Date.now().toString(36)}-${aleatorio}`;
 }
 
-/** Descarta o que foi corrigido na sessao e volta a fila de demonstracao. */
+/** Volta a memoria para a fila de demonstracao. Nao apaga o que esta salvo no aparelho. */
 export function reiniciarComOsMocks(): void {
   fila.splice(0, fila.length, ...filaCorrecoesMock.map((item) => ({ ...item })));
   notificar();

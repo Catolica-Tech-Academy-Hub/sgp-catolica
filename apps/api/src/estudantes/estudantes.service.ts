@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Estudante } from '@sgp/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROFESSOR_ATUAL_ID } from '../professor-atual';
+import { paraEstudante } from './mapeadores';
 
 @Injectable()
 export class EstudantesService {
@@ -11,23 +11,15 @@ export class EstudantesService {
    * Somente estudantes que ja passaram por alguma turma do professor (RNF05): o
    * professor nao enxerga o cadastro inteiro de estudantes do sistema.
    */
-  async listar(): Promise<Estudante[]> {
+  async listar(professorId: string): Promise<Estudante[]> {
     const estudantes = await this.prisma.usuario.findMany({
       where: {
         role: 'estudante',
-        matriculas: { some: { turma: { teacherId: PROFESSOR_ATUAL_ID } } },
+        matriculas: { some: { turma: { teacherId: professorId } } },
       },
       orderBy: { fullName: 'asc' },
     });
 
-    return estudantes.map((estudante) => ({
-      id: estudante.id,
-      role: 'estudante',
-      fullName: estudante.fullName,
-      email: estudante.email,
-      registration: estudante.registration ?? undefined,
-      createdAt: estudante.createdAt.toISOString(),
-      anonymizedAt: estudante.anonymizedAt?.toISOString(),
-    }));
+    return estudantes.map(paraEstudante);
   }
 }

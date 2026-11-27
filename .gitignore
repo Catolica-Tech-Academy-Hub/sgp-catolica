@@ -21,6 +21,9 @@ web-build/
 *.mobileprovision
 *.orig.*
 
+# Dumps do banco hospedado (docs/api/README.md, Backup do banco): têm dados de estudantes
+backups/
+
 # Ambiente
 .env
 .env.local

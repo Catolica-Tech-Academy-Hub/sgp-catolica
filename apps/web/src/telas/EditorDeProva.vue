@@ -15,11 +15,11 @@
  *
  * Cada folha usa 210 × 297 mm e espaços de resposta em medidas físicas. Um
  * ResizeObserver mede os blocos e recalcula as páginas sem partir questões. A geração
- * de PDF continua futura; aqui a paginação é a referência visual de autoria e preview.
+ * do arquivo acontece na aplicação; aqui a paginação orienta autoria e pré-visualização.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { FilePlus2, Library } from '@lucide/vue';
+import { Archive, FilePlus2, Library } from '@lucide/vue';
 import { toast } from 'vue-sonner';
 import type { Questao } from '@sgp/shared-types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -62,7 +62,10 @@ import {
   encontrarProva,
   obterBlocosDaProva,
   atualizarQuestoesDaProva,
+  carregarProvasDoServidor,
+  encerrarProva,
 } from '@/lib/estado-de-provas';
+import { apiLigada } from '@/lib/api';
 import { criarAplicacao } from '@/lib/estado-de-aplicacoes';
 import { listarTurmas } from '@/lib/estado-de-turmas';
 import {
@@ -137,22 +140,65 @@ const blocoSelecionado = computed(() =>
 const folha = ref<HTMLElement | null>(null);
 const previewAberto = ref(false);
 const aplicacaoAberta = ref(false);
+const encerramentoAberto = ref(false);
+const criandoAplicacao = ref(false);
+const encerrando = ref(false);
 const turmaEscolhida = ref('');
 // Computado, e nao constante: turma criada ou arquivada em `/turmas` muda esta lista.
 const turmasAtivas = computed(() => listarTurmas().filter((turma) => turma.status === 'active'));
 
 function abrirDialogoDeAplicacao(): void {
+  if (prova.value?.status === 'closed') return;
   turmaEscolhida.value = '';
   aplicacaoAberta.value = true;
 }
 
-function criarAplicacaoDaProva(): void {
-  if (!prova.value || !turmaEscolhida.value) return;
-  criarAplicacao({ examId: prova.value.id, classId: turmaEscolhida.value });
-  aplicacaoAberta.value = false;
-  toast.success('Aplicação criada', {
-    description: 'A aplicação está em rascunho e ainda não gera PDF.',
-  });
+async function criarAplicacaoDaProva(): Promise<void> {
+  if (!prova.value || !turmaEscolhida.value || prova.value.status === 'closed') return;
+  criandoAplicacao.value = true;
+  try {
+    await criarAplicacao({ examId: prova.value.id, classId: turmaEscolhida.value });
+    prova.value.status = 'ready';
+    aplicacaoAberta.value = false;
+    toast.success('Aplicação criada', {
+      description: 'A aplicação está em rascunho e ainda não gera PDF.',
+    });
+  } catch (erro) {
+    toast.error('Não foi possível aplicar a prova', {
+      description: erro instanceof Error ? erro.message : undefined,
+    });
+    if (apiLigada) {
+      try {
+        await carregarProvasDoServidor();
+        prova.value = encontrarProva(rota.params.id as string) ?? null;
+        if (prova.value) blocos.value = obterBlocosDaProva(prova.value);
+      } catch (erroDeAtualizacao) {
+        toast.error('Não foi possível atualizar o estado da prova', {
+          description: erroDeAtualizacao instanceof Error ? erroDeAtualizacao.message : undefined,
+        });
+      }
+    }
+  } finally {
+    criandoAplicacao.value = false;
+  }
+}
+
+async function confirmarEncerramento(): Promise<void> {
+  if (!prova.value || prova.value.status === 'closed') return;
+  encerrando.value = true;
+  try {
+    await encerrarProva(prova.value.id);
+    encerramentoAberto.value = false;
+    toast.success('Prova encerrada', {
+      description: 'Ela continua no acervo, mas não aceita novas aplicações.',
+    });
+  } catch (erro) {
+    toast.error('Não foi possível encerrar a prova', {
+      description: erro instanceof Error ? erro.message : undefined,
+    });
+  } finally {
+    encerrando.value = false;
+  }
 }
 
 /**
@@ -426,6 +472,7 @@ function aplicarModelo(modeloId: string): void {
         @update:titulo="prova.title = $event"
         @visualizar="previewAberto = true"
         @aplicar="abrirDialogoDeAplicacao"
+        @encerrar="encerramentoAberto = true"
       />
 
       <Dialog v-model:open="aplicacaoAberta">
@@ -433,8 +480,12 @@ function aplicarModelo(modeloId: string): void {
           <form @submit.prevent="criarAplicacaoDaProva">
             <DialogHeader>
               <DialogTitle>Aplicar a uma turma</DialogTitle>
-              <DialogDescription>
-                Escolha uma turma ativa. A aplicação será criada como rascunho.
+              <DialogDescription v-if="prova.status !== 'closed'">
+                Escolha uma turma ativa. A aplicação será criada como rascunho e a prova passará
+                para pronta.
+              </DialogDescription>
+              <DialogDescription v-else>
+                Esta prova foi encerrada e não pode receber novas aplicações.
               </DialogDescription>
             </DialogHeader>
 
@@ -456,9 +507,39 @@ function aplicarModelo(modeloId: string): void {
               <Button type="button" variant="outline" @click="aplicacaoAberta = false">
                 Cancelar
               </Button>
-              <Button type="submit" :disabled="!turmaEscolhida">Criar aplicação</Button>
+              <Button
+                type="submit"
+                :disabled="!turmaEscolhida || criandoAplicacao || prova.status === 'closed'"
+              >
+                {{ criandoAplicacao ? 'Criando…' : 'Criar aplicação' }}
+              </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog v-model:open="encerramentoAberto">
+        <DialogContent class="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Encerrar prova?</DialogTitle>
+            <DialogDescription>
+              A prova continuará no acervo e poderá ser revisada, mas não aceitará novas aplicações.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              :disabled="encerrando"
+              @click="encerramentoAberto = false"
+            >
+              Cancelar
+            </Button>
+            <Button type="button" :disabled="encerrando" @click="confirmarEncerramento">
+              <Archive aria-hidden="true" />
+              {{ encerrando ? 'Encerrando…' : 'Encerrar prova' }}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

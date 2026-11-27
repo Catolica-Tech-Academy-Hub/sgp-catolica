@@ -29,6 +29,7 @@ Classificação usada:
 | `/relatorios`        | Implementado na N1     | Relatório por aplicação e consolidado, com filtros e exportação desabilitada.       |
 | `/suporte`           | Implementado na N1     | Perguntas frequentes com busca e contato; envio depende de backend.                 |
 | `/estudante`         | Implementado na N1     | Histórico de notas com filtros, evolução e detalhamento por questão (RF11).         |
+| `/entrar/:codigo`    | Implementado na N1     | Entrada do estudante na turma pelo link de convite (RF03), em tela cheia.           |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
 As seções de domínio aparecem nas abas para tornar a arquitetura do produto visível sem
@@ -152,8 +153,23 @@ A lista de alunos matriculados usa `Table` em `Card`, porque os registros são
 comparados por coluna (nome, e-mail, matrícula, data de matrícula) — não lista de
 cartões. Cada linha tem uma ação **Remover** que tira o aluno da turma sem apagar seu
 histórico de notas; a remoção é reversível por toast com **Desfazer**. Sem alunos, o
-estado vazio explica que a entrada acontece pelo código de convite, sem oferecer ação
-de matricular — esse fluxo depende de autenticação real de estudante, fora da N1 web.
+estado vazio explica que a entrada acontece pelo código de convite ou por matrícula por
+e-mail. O estudante entra pelo link `/entrar/:codigo` (ver
+[Entrada pelo convite](#entrada-pelo-convite)); a matrícula criada assim aparece aqui
+com origem "código de convite".
+
+**Matricular por e-mail** (RF03, issue #87) fica ao lado do título da lista e abre um
+`Dialog` de formulário simples, no mesmo padrão de **Editar**, com um único campo de
+e-mail:
+
+- só matricula aluno que já tem conta; a tela confirma depois da resposta do servidor,
+  porque é ele quem sabe se o e-mail existe;
+- a recusa aparece junto do campo, com `aria-invalid`, e o diálogo fica aberto com o
+  e-mail digitado: campo vazio, e-mail sem conta de estudante ou aluno já matriculado;
+- sucesso fecha o diálogo, acrescenta o aluno na tabela e confirma por toast; um aluno
+  removido antes volta na mesma matrícula, e o toast avisa que ela foi reativada;
+- desabilitada em turma arquivada, como **Arquivar**;
+- sem a API (modo de demonstração), aplica as mesmas regras aos estudantes dos mocks.
 
 ## Editor de prova
 
@@ -171,18 +187,40 @@ Da esquerda para a direita:
 - contador de até 20 questões, total de pontos e indicação de salvamento local;
 - **Pré-visualizar**;
 - **Aplicar a uma turma**, que abre um diálogo com as turmas ativas e cria uma aplicação
-  local em `draft`. A mesma prova pode ser aplicada novamente à mesma turma.
+  em `draft`; com a API ligada, a criação é persistida no servidor. A primeira aplicação
+  muda a prova para `ready`;
+- **Encerrar prova**, que pede confirmação e muda a situação para `closed`. Ela continua
+  no acervo e pode ser revisada, mas não aceita novas aplicações. A ação de aplicar fica
+  desabilitada para provas encerradas.
 
 ## Aplicações
 
 `/aplicacoes` usa o padrão de seção com painel esquerdo, busca, recortes por situação e
-lista de cartões. Cada cartão mostra prova, turma, situação, versões e data, e abre um
-`Dialog` somente leitura com as versões já presentes nos mocks: número, embaralhamento,
-publicação do gabarito e código público.
+lista de cartões. Cada cartão mostra prova, turma, situação e data, e abre um
+`Dialog` somente leitura. Com a API ligada, a lista e o detalhe da aplicação vêm do
+servidor; sem ela, os dados locais continuam sendo usados. No modo de demonstração, as
+versões mostradas vêm dos mocks.
 
-Aplicações novas ficam em `draft` e são preservadas no navegador. O detalhe mantém
-**Gerar PDF** desabilitado com a explicação de que a geração pertence ao RF06; nenhuma
-ação desta tela cria versão, QR Code ou atribuição.
+Aplicações criadas nascem em `draft` e ficam independentes, inclusive quando a prova é
+reaplicada à mesma turma. Com `VITE_API_URL`, a listagem e o detalhe são carregados pela
+API e a criação é persistida nela. Sem a API, o estado continua preservado no navegador.
+O detalhe permite configurar a quantidade de versões (1–20), embaralhamento de questões
+e alternativas e identificação dos estudantes. **Gerar PDF** cria as versões e atribuições,
+renderiza um único arquivo consolidado e inicia o download. Com identificação, cada estudante
+ativo recebe uma cópia com seu nome e QR próprio; sem identificação, há uma cópia por versão.
+O cabeçalho local do editor é enviado como configuração da geração.
+
+Quando a API não está configurada, o diálogo de opções continua navegável para demonstração,
+mas explica que a geração e o download exigem `VITE_API_URL`. Com o arquivo já gerado, o
+detalhe permite baixá-lo novamente. Regenerar substitui o PDF e as versões anteriores;
+correção confirmada impede a regeneração.
+
+O PDF guarda o cabeçalho e os blocos sem dividir um bloco entre páginas. Um bloco maior que
+a área útil A4, uma imagem que não seja PNG/JPEG ou uma questão de rascunho ainda não salva
+impede a geração com erro explícito. Para questões objetivas, o arquivo inclui uma folha A4
+de cartão-resposta separada, dimensionada para o layout provisório do leitor mobile (até 20
+questões, cinco alternativas). A leitura física ainda precisa ser validada com impressões e
+fotos reais; o layout não está aprovado para uso operacional.
 
 ### Três zonas
 
@@ -284,9 +322,9 @@ Selecionar o cabeçalho abre suas propriedades:
 - campos opcionais Nome, Matrícula, Turma, Data e Nota;
 - seleção e criação de modelos reutilizáveis.
 
-O marcador de QR é padrão e sempre aparece. Não há configuração para escondê-lo. Ele é
-apenas uma reserva visual; o QR válido com dados de aplicação só existe quando RF06 for
-implementado.
+O marcador de QR do editor é padrão e sempre aparece, sem configuração para escondê-lo.
+Ele continua sendo apenas uma reserva visual; a aplicação gera os QRs válidos por versão
+e estudante no PDF.
 
 Modelos de cabeçalho são salvos localmente e podem ser aplicados a outras provas no mesmo
 navegador.
@@ -311,7 +349,7 @@ A prévia não gera PDF nem cria uma aplicação.
 ### Com a API ligada
 
 Com `VITE_API_URL` definida (`apps/web/.env.example`), **turmas, matrículas, estudantes,
-o banco de questões e as provas** vêm da API (`apps/api`, ver [docs/api](../api/README.md)), e não
+o banco de questões, as provas e as correções** vêm da API (`apps/api`, ver [docs/api](../api/README.md)), e não
 de mocks ou do `localStorage`:
 
 - `main.ts` carrega esses dados antes de montar a aplicação, porque as telas leem o
@@ -329,8 +367,10 @@ de mocks ou do `localStorage`:
   envia o que estiver pendente;
 - se a API estiver fora do ar, um toast avisa e as telas abrem vazias.
 
-Cabeçalhos, aplicações e correções continuam locais, como descrito abaixo, até ganharem
-endpoints.
+Cabeçalhos continuam locais. Aplicações são listadas, consultadas e criadas pela API; a
+geração de versões, atribuições e PDF também passa pela API (RF06), e o cabeçalho local é
+enviado junto às opções de geração. A tela de correções resolve versão e aluno pelos mocks,
+cujos ids são os mesmos do seed da API.
 
 ### Sem a API
 
@@ -424,9 +464,34 @@ ação.
 
 ### Estado
 
-`src/lib/estado-de-correcoes.ts` segue o formato dos demais `estado-*`: reativo, semeado
-por `correcoesMock`, gravado em `localStorage` e ponto único de integração quando o
-backend existir.
+`src/lib/estado-de-correcoes.ts` segue o formato dos demais `estado-*`: reativo e ponto
+único de acesso às correções. Com a API ligada, as correções vêm de `GET /correcoes`, e
+atribuir e desfazer são gravados por `POST /correcoes/:id/atribuir` e
+`POST /correcoes/:id/desfazer-atribuicao` (issue #100). A regra de duplicidade continua
+conferida na tela antes do envio, para explicar o impedimento na hora, e o servidor a
+confere de novo. Sem a API, é semeado por `correcoesMock` e gravado em `localStorage`.
+
+## Entrada pelo convite
+
+`/entrar/:codigo` é o link que o professor compartilha (RF03, issue #88). Fica fora da
+casca (`meta.telaCheia`), como o login, porque quem chega por ele ainda não está dentro
+do produto. O código é comparado sem diferenciar maiúsculas.
+
+- Código válido: um `Card` mostra turma, disciplina, período e professor, quem vai entrar
+  e **Entrar na turma**. Confirmar matricula com origem "código de convite", confirma
+  por toast e leva ao histórico (`/estudante`).
+- Já matriculado: a tela diz isso e oferece **Ver minhas notas**; usar o mesmo código de
+  novo não duplica a matrícula.
+- Turma arquivada: a tela explica que ela não aceita novas matrículas, sem ação.
+- Código inexistente ou regenerado: `Alert` de erro pedindo o link atual ao professor.
+- Matrícula removida pelo professor: a entrada é recusada com o motivo, porque a
+  remoção foi decisão dele.
+
+Na demonstração, quem entra é o estudante do histórico (`estudanteLogadoMock`), pelo
+`src/lib/estado-de-convites.ts`, que usa o acervo de `estado-de-turmas.ts`. Com a API
+ligada, a turma do código vem de `GET /convites/:codigo`, mas a entrada é recusada com
+uma explicação: ela precisa da sessão do estudante, que depende do login (#81, #84). O
+cadastro de conta nova pelo convite também chega com o login.
 
 ## Relatórios
 
@@ -456,9 +521,9 @@ para Correções.
 
 ### Exportação
 
-CSV, Excel e PDF são requisito do RF10, mas dependem de backend: os três botões ficam
-desabilitados com Tooltip explicando o limite, no mesmo padrão de Integrações e da
-geração de PDF. Nenhum arquivo é gerado.
+CSV, Excel e PDF de relatórios são requisito do RF10, mas ainda dependem do respectivo
+fluxo de exportação: os três botões ficam desabilitados com Tooltip explicando o limite.
+Nenhum relatório é gerado.
 
 ## Perspectiva do estudante
 
@@ -569,10 +634,9 @@ aplicativo. A tela de ajuda é o lugar mais barato de ser honesto sobre a fase.
 - importar lista de alunos por planilha em Turmas depende de um pedido do cliente
   ainda não incorporado como critério de aceite — ver
   [pendências](../pendencias.md), item 12;
-- geração de versões, QR válido e PDF dependem de RF06; a aplicação local de uma prova
-  em uma turma já está disponível como fluxo N1 de RF05;
-- blocos excepcionalmente maiores que uma área útil de A4 ainda precisam de tratamento
-  específico na futura geração de PDF;
+- validação física do cartão-resposta, com impressões e fotos reais, ainda está pendente;
+- blocos excepcionalmente maiores que uma área útil A4 são recusados durante a geração,
+  sem serem partidos ou truncados;
 - o modelo de blocos precisa de decisão da
   [issue #12](https://github.com/LeoAnders/sgp-catolica/issues/12) antes de migrar para
   `@sgp/shared-types` e para o dicionário de entidades;

@@ -7,6 +7,19 @@
     "userInterfaceStyle": "light",
     "assetBundlePatterns": ["**/*"],
     "ios": { "supportsTablet": true },
-    "android": { "package": "br.edu.catolicasc.sgp" }
+    "android": {
+      "package": "br.edu.catolicasc.sgp",
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "O SGP Católica usa a câmera para ler o QR Code e o cartão-resposta das provas impressas.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
+    ]
   }
 }

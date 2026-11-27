@@ -49,26 +49,27 @@ Leia antes de escrever código de tela:
 
 ## Regras do RF08 que a arquitetura já cobra
 
-- **Sem cópia local do gabarito, não se confirma correção.** `enfileirarCorrecao` devolve
-  vazio nesse caso; não contorne isso numa tela.
+- **Sem cópia local do gabarito, não se confirma correção.** `enfileirarCorrecao` recusa
+  a confirmação nesse caso; não contorne isso numa tela.
 - **Todo item da fila nasce com identificador gerado no dispositivo** e com status
   `pending`. Não marque nada como `synced` — nada é enviado nesta fase.
-- **A fila não persiste** entre execuções, e a tela precisa dizer isso. Não apresente
-  persistência local como sincronização.
+- **A fila persiste no aparelho** (`src/lib/fila-persistente.ts`), e a correção só é
+  confirmada depois da gravação local. Não apresente persistência local como sincronização.
 
-## Fora de escopo da N1
+## Câmera, QR Code e escopo
 
-Câmera, leitura real de QR Code, processamento de imagem, sincronização real e
-autenticação real. Quando uma tela precisar de um desses, represente o estado com dado
-estático e deixe o ponto de integração explícito no código —
-ver `.claude/rules/00-escopo-n1.md`.
+Câmera, leitura de QR Code e processamento de imagem só entram quando houver issue
+específica. A leitura de QR Code é tratada na #97 e a do cartão-resposta na #98.
+
+Sincronização real continua fora de escopo até existir a implementação correspondente
+(#94, #95 e #99), e autenticação real até a implementação da sua issue.
+Quando uma tela precisar de algo sem issue, represente o estado com dado estático e deixe
+o ponto de integração explícito no código — ver `.claude/rules/00-escopo-n1.md`.
 
 ## Fechamento
 
 - `npm run lint --workspace @sgp/mobile` e `git diff --check`.
-- `npm run typecheck --workspace @sgp/mobile` **falha hoje** por um problema de
-  configuração de tipos anterior a esta arquitetura, tratado em issue própria; não
-  conclua que foi a sua alteração sem antes conferir o mesmo erro na `main`.
+- `npm run typecheck --workspace @sgp/mobile` passa e precisa continuar passando.
 - Atualizar `docs/design/experiencia-mobile-atual.md` quando o comportamento executável
   mudar, e `design-system-mobile.md` quando nascer um padrão novo reutilizável.
 - Não crie commit sem pedido explícito; quando pedirem, siga

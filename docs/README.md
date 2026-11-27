@@ -7,22 +7,26 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 
 ## Documentos disponiveis
 
-| Documento                                                          | Conteudo                                                          |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| [Visao do produto](produto/visao-do-produto.md)                    | Problema que o sistema resolve e publico atendido                 |
-| [Requisitos funcionais](produto/requisitos-funcionais.md)          | Os 12 requisitos com criterios de aceite                          |
-| [Requisitos nao funcionais](produto/requisitos-nao-funcionais.md)  | Os 9 requisitos de qualidade e restricao                          |
-| [Dicionario de entidades](modelo-dados/dicionario-de-entidades.md) | Entidades do dominio e correspondencia com os tipos do codigo     |
-| [Pendencias](pendencias.md)                                        | Divergencias entre fontes e definicoes ainda ausentes             |
-| [Design system web](design/design-system-web.md)                   | Padroes de UI, componentes, temas e paleta                        |
-| [Experiencia web atual](design/experiencia-web-atual.md)           | Mapa de telas, navegacao e fluxos implementados                   |
-| [Design system mobile](design/design-system-mobile.md)             | Padroes de UI do aplicativo do professor                          |
-| [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                         |
-| [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui         |
-| [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um        |
-| [Modelo de dados (DER)](modelo-dados/der.md)                       | Diagrama entidade-relacionamento do MySQL e decisoes de modelagem |
-| [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis            |
-| [Revisao e backlog da N3](produto/n3/revisao-e-backlog-n3.json)    | Requisitos pendentes do MVP e tarefas da N3 (fonte da planilha)   |
+| Documento                                                          | Conteudo                                                                               |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| [Visao do produto](produto/visao-do-produto.md)                    | Problema que o sistema resolve e publico atendido                                      |
+| [Requisitos funcionais](produto/requisitos-funcionais.md)          | Os 12 requisitos com criterios de aceite                                               |
+| [Requisitos nao funcionais](produto/requisitos-nao-funcionais.md)  | Os 9 requisitos de qualidade e restricao                                               |
+| [Dicionario de entidades](modelo-dados/dicionario-de-entidades.md) | Entidades do dominio e correspondencia com os tipos do codigo                          |
+| [Pendencias](pendencias.md)                                        | Divergencias entre fontes e definicoes ainda ausentes                                  |
+| [Design system web](design/design-system-web.md)                   | Padroes de UI, componentes, temas e paleta                                             |
+| [Experiencia web atual](design/experiencia-web-atual.md)           | Mapa de telas, navegacao e fluxos implementados                                        |
+| [Design system mobile](design/design-system-mobile.md)             | Padroes de UI do aplicativo do professor                                               |
+| [Experiencia mobile atual](design/experiencia-mobile-atual.md)     | Mapa de telas e arquitetura do aplicativo                                              |
+| [Prints das telas](telas/README.md)                                | Convencao de nome e captura dos prints referenciados aqui                              |
+| [Geração de PDF](telas/aplicacoes-geracao.pdf)                     | Exemplo ficticio do PDF consolidado; [dialogo de opcoes](telas/aplicacoes-geracao.png) |
+| [Diagramas UML](uml/README.md)                                     | Diagramas UML com o passo a passo da construcao de cada um                             |
+| [Modelo de dados (DER)](modelo-dados/der.md)                       | Diagrama entidade-relacionamento do MySQL e decisoes de modelagem                      |
+| [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis                                 |
+| [Revisao e backlog da N3](produto/n3/revisao-e-backlog-n3.json)    | Requisitos pendentes do MVP e tarefas da N3 (fonte da planilha)                        |
+
+A captura da [lista mobile de aplicações para corrigir](telas/mobile-lista-aplicacoes.png)
+registra o início do fluxo de correção do professor.
 
 ## Por onde comecar
 
@@ -31,6 +35,7 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
   entidades, e os tipos em `packages/shared-types`.
 - Para **projetar ou revisar UI/UX**: design system web, depois experiencia web atual.
   No aplicativo do professor, design system mobile e experiencia mobile atual.
+- Para visualizar a **fila mobile de correções**: [captura da tela](telas/mobile-fila-correcoes.png).
 - Para ver **o modelo em diagramas**: diagramas UML, comecando pelo caso de uso.
 - Para saber **o que ainda nao esta decidido**: pendencias. Nada ali deve ser tratado
   como definido.

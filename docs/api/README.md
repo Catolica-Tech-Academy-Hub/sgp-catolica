@@ -38,6 +38,7 @@ Sem `VITE_API_URL`, a web continua no modo de demonstração local (mocks e
 | `db:deploy`                     | Aplica as migrações pendentes                              |
 | `db:seed`                       | Apaga os dados e repopula com `@sgp/mocks`                 |
 | `db:reset`                      | Apaga o banco inteiro, reaplica as migrações e roda o seed |
+| `test`                          | Testes da API (`node:test`), sem precisar de banco         |
 
 ## Produção
 
@@ -81,25 +82,152 @@ disso leva cerca de um minuto. Antes de uma demonstração, abra `/saude` para a
 Os dois serviços publicam de novo a cada push na `main`. Segredos ficam só nas
 variáveis dos serviços.
 
+### Logs (RNF07)
+
+A API escreve uma linha JSON por evento na saída do processo, que o Render guarda na aba
+**Logs** do serviço (`src/observabilidade/`). Cada requisição gera uma linha quando a
+resposta termina:
+
+```json
+{
+  "momento": "2026-11-13T23:55:09.988Z",
+  "nivel": "log",
+  "tipo": "requisicao",
+  "requisicaoId": "65677040-9977-4d8d-b5b1-4b648046ed52",
+  "metodo": "GET",
+  "rota": "/questoes/:id",
+  "status": 200,
+  "duracaoMs": 13.2
+}
+```
+
+- `rota` é o padrão da rota (`/questoes/:id`), não o caminho com os ids, para as linhas
+  da mesma rota poderem ser agrupadas.
+- `requisicaoId` vem do cabeçalho `X-Request-Id` quando o cliente manda um válido, ou é
+  gerado; volta na resposta no mesmo cabeçalho. Com ele, um erro visto na tela é achado
+  no log pela busca do Render.
+- Status 500 sai com `"nivel":"error"`, e o erro que o causou aparece numa linha
+  própria, com a pilha. Conexão fechada antes da resposta é registrada com status 499.
+- Corpo, query string e cabeçalhos **não** vão para o log: o corpo da matrícula leva o
+  e-mail do estudante, e depois da autenticação os cabeçalhos levam o token (RNF05).
+
+### Monitor de disponibilidade (RNF03)
+
+`GET /saude` consulta o banco: responde `200` com `{"status":"ok","banco":"ok"}` e `500`
+quando o MySQL não responde. É o endereço que o monitor deve vigiar.
+
+Monitor escolhido: **UptimeRobot**, plano Free (50 monitores, intervalo mínimo de 5
+minutos; <https://uptimerobot.com/pricing/>). A configuração é feita no painel do
+UptimeRobot, com uma conta da equipe:
+
+1. **Add New Monitor** → tipo **HTTP(s)**, URL `<URL da API>/saude`, intervalo de 5
+   minutos.
+2. Em **Alert Contacts**, cadastrar o e-mail de cada integrante e marcá-los no monitor.
+   A página de preços não deixa claro quais canais de alerta entram no plano Free;
+   confirmar que o e-mail aparece disponível ao criar o contato.
+3. Opcional: uma página de status pública (o plano Free inclui uma).
+
+O ping a cada 5 minutos também impede o Render de hibernar a API, já que ela só hiberna
+depois de 15 minutos sem tráfego. O custo é de horas: o Render dá **750 horas de
+instância gratuita por mês por workspace** e, quando elas acabam, **suspende todos os
+Web Services gratuitos do workspace até o mês seguinte**
+(<https://render.com/docs/free>). Uma API acordada o mês inteiro usa até 744 horas,
+então isso só cabe se ela for o único Web Service gratuito do workspace. Static Sites,
+como a web, não são Web Services. Se a conta tiver outro Web Service gratuito, use um
+intervalo maior que 15 minutos, que mantém o alerta e deixa a API hibernar.
+
+### Backup do banco (RNF08)
+
+O que a documentação do Aiven garante (<https://aiven.io/docs/platform/concepts/service_backups>):
+
+- todo serviço, exceto Kafka, tem **backup automático e criptografado**;
+- os backups **não podem ser baixados**; para ter uma cópia própria, a documentação
+  indica `mysqldump`;
+- ao religar um serviço desligado, o último backup é restaurado automaticamente.
+
+O que ela **não** diz: a frequência e por quantos dias os backups são guardados. Além
+disso, a página atual de planos (<https://aiven.io/docs/platform/concepts/free-plan>)
+lista o plano Free só para PostgreSQL, Kafka, OpenSearch e Valkey; para MySQL, cita o
+Developer tier. Como a seção acima registra "plano Free", falta conferir no console do
+Aiven, com a conta da equipe:
+
+1. qual é o plano do serviço MySQL e se ele está num período de teste com créditos (sem
+   cartão, serviços são desligados quando o teste ou os créditos acabam);
+2. na aba **Backups** do serviço, as datas dos backups existentes, que mostram a
+   frequência e quantos dias ficam guardados.
+
+Enquanto a retenção de 30 dias de RNF08 não estiver confirmada, a equipe mantém um dump
+manual. Ele roda de uma máquina com Docker, sem instalar o MySQL, e usa o mesmo
+certificado da API:
+
+```bash
+# Na raiz do repositório. ca.pem baixado do console do Aiven; dados da URL do serviço.
+mkdir -p backups
+docker run --rm -e MYSQL_PWD='<senha>' -v "$PWD/backups:/backups" \
+  -v "$PWD/backups/ca.pem:/ca.pem:ro" mysql:8.4 \
+  sh -c 'mysqldump --ssl-mode=VERIFY_CA --ssl-ca=/ca.pem -h <host> -P <porta> -u <usuario> \
+    --single-transaction --no-tablespaces --set-gtid-purged=OFF <banco> \
+    > /backups/sgp-$(date +%F).sql'
+```
+
+No Git Bash do Windows, comece o comando com `MSYS_NO_PATHCONV=1`; sem isso, o caminho
+`/backups` do container é convertido para um caminho do Windows.
+
+Para conferir ou restaurar um dump, use um banco separado: o arquivo apaga e recria as
+tabelas que contém. No MySQL local, do `docker-compose.yml`:
+
+```bash
+docker compose exec -T mysql mysql -usgp -psgp -e "CREATE DATABASE IF NOT EXISTS sgp_restaurado"
+docker compose exec -T mysql mysql -usgp -psgp sgp_restaurado < backups/sgp-AAAA-MM-DD.sql
+```
+
+A pasta `backups/` está no `.gitignore`: um dump tem dados de estudantes e nunca entra
+no repositório (RNF05). Guarde os arquivos num lugar privado da equipe e apague os com
+mais de 30 dias.
+
+### Limites da hospedagem gratuita
+
+Os planos gratuitos não permitem cumprir RNF03 e RNF08 como estão escritos. Trocar de
+plano está fora do escopo da N3 (issue #104).
+
+| Requisito                   | Limite                                                                                                                                                                                                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RNF03 (99,5% de uptime/mês) | A API hiberna depois de 15 minutos sem tráfego e leva cerca de um minuto para acordar (em 13/11/2026, a primeira resposta levou 34 s); o Render pode reiniciar instâncias gratuitas a qualquer momento; o MySQL roda em um único nó. Nenhum dos dois serviços gratuitos promete disponibilidade. |
+| RNF03                       | Se as 750 horas mensais do workspace acabarem, o Render suspende a API até o mês seguinte.                                                                                                                                                                                                       |
+| RNF08 (backup diário, 30 d) | O Aiven faz backup automático, mas não documenta frequência nem retenção, e os backups não podem ser baixados. Até a conferência no console, a retenção de 30 dias depende do dump manual.                                                                                                       |
+| RNF07 (métricas e alertas)  | Há logs estruturados e alerta de indisponibilidade; não há coleta de métricas (latência por rota ao longo do tempo); a duração de cada requisição só fica nos logs.                                                                                                                              |
+
 ## Organização
 
-| Onde                     | Papel                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------ |
-| `prisma/schema.prisma`   | Modelo físico, derivado do [dicionário de entidades](../modelo-dados/dicionario-de-entidades.md) |
-| `prisma/migrations/`     | Migrações versionadas                                                                            |
-| `prisma/seed.ts`         | Seed a partir de `@sgp/mocks`                                                                    |
-| `src/<assunto>/`         | Um módulo Nest por assunto: controller, service, DTOs e mapeadores                               |
-| `src/prisma/`            | Conexão com o MySQL (adaptador `mariadb`, compatível com MySQL)                                  |
-| `src/professor-atual.ts` | Professor fixo (`prof-1`) até existir autenticação                                               |
+| Onde                   | Papel                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| `prisma/schema.prisma` | Modelo físico, derivado do [dicionário de entidades](../modelo-dados/dicionario-de-entidades.md) |
+| `prisma/migrations/`   | Migrações versionadas                                                                            |
+| `prisma/seed.ts`       | Seed a partir de `@sgp/mocks`                                                                    |
+| `src/<assunto>/`       | Um módulo Nest por assunto: controller, service, DTOs e mapeadores                               |
+| `src/prisma/`          | Conexão com o MySQL (adaptador `mariadb`, compatível com MySQL)                                  |
+| `src/autenticacao/`    | Quem faz a requisição: guard e decorator do professor, identificação provisória até a #81        |
 
 Os modelos e campos do Prisma seguem os nomes de `@sgp/shared-types`, e as respostas
 têm exatamente esse formato: as telas consomem a API sem tradução campo a campo.
 
 ## Endpoints
 
-Todos atuam sobre os dados do professor atual. Erros seguem o formato do Nest
+Todos atuam sobre os dados do professor da requisição. Erros seguem o formato do Nest
 (`{ statusCode, message, error }`), com `message` em lista quando a validação encontra
 mais de um problema.
+
+### Isolamento por professor (RNF04)
+
+- Cada professor só vê e altera o que é dele: turmas, matrículas dessas turmas,
+  estudantes que passaram por elas, questões e provas.
+- Recurso de outro professor responde `404`, igual a um id que não existe, para não
+  revelar que ele existe. Vale também para criar ou salvar com o id de outro professor.
+- Rotas de professor respondem `401` sem usuário identificado e `403` para estudante.
+- Enquanto o login não existe (issue #81), toda requisição é identificada como o
+  professor de demonstração `prof-1`, em `src/autenticacao/identificacao-provisoria.ts`,
+  único ponto a trocar pela validação do token. O seed cria também `prof-2`, com turma,
+  matrícula e questão próprias, que `prof-1` não enxerga.
 
 ### Saúde
 
@@ -109,24 +237,34 @@ mais de um problema.
 
 ### Turmas e matrículas (RF03)
 
-| Método | Caminho                         | Corpo                          | Resposta      |
-| ------ | ------------------------------- | ------------------------------ | ------------- |
-| GET    | `/turmas`                       | —                              | `Turma[]`     |
-| POST   | `/turmas`                       | `{ id?, name, subject, term }` | `Turma`       |
-| PATCH  | `/turmas/:id`                   | `{ name, subject, term }`      | `Turma`       |
-| POST   | `/turmas/:id/arquivar`          | —                              | `Turma`       |
-| POST   | `/turmas/:id/codigo-de-convite` | —                              | `Turma`       |
-| GET    | `/matriculas`                   | —                              | `Matricula[]` |
-| DELETE | `/matriculas/:id`               | —                              | `Matricula`   |
-| POST   | `/matriculas/:id/restaurar`     | —                              | `Matricula`   |
-| GET    | `/estudantes`                   | —                              | `Estudante[]` |
+| Método | Caminho                         | Corpo                          | Resposta                   |
+| ------ | ------------------------------- | ------------------------------ | -------------------------- |
+| GET    | `/turmas`                       | —                              | `Turma[]`                  |
+| POST   | `/turmas`                       | `{ id?, name, subject, term }` | `Turma`                    |
+| PATCH  | `/turmas/:id`                   | `{ name, subject, term }`      | `Turma`                    |
+| POST   | `/turmas/:id/arquivar`          | —                              | `Turma`                    |
+| POST   | `/turmas/:id/codigo-de-convite` | —                              | `Turma`                    |
+| POST   | `/turmas/:id/matriculas`        | `{ email }`                    | `{ matricula, estudante }` |
+| GET    | `/matriculas`                   | —                              | `Matricula[]`              |
+| DELETE | `/matriculas/:id`               | —                              | `Matricula`                |
+| POST   | `/matriculas/:id/restaurar`     | —                              | `Matricula`                |
+| GET    | `/estudantes`                   | —                              | `Estudante[]`              |
 
 - O código de convite é gerado no servidor, que garante a unicidade; regenerar invalida
   o anterior no mesmo instante.
 - O `id` da turma pode vir do cliente: a web cria a turma e navega ao detalhe sem
-  esperar a resposta. Um `id` já existente responde `409`.
+  esperar a resposta. Um `id` já usado pelo mesmo professor responde `409`; por outro,
+  `404`.
 - `GET /matriculas` traz ativas e removidas; remover só muda a situação, as notas ficam.
 - `GET /estudantes` traz só quem passou por alguma turma do professor (RNF05).
+- `POST /turmas/:id/matriculas` matricula por e-mail um estudante que já tem conta
+  (RF03, issue #87). O e-mail é comparado sem espaços nas pontas e sem diferenciar
+  maiúsculas. Responde `404` quando não há conta de estudante com o e-mail (inclusive
+  e-mail de professor ou conta anonimizada), `409` quando o aluno já está matriculado
+  ou a turma está arquivada, e `400` para e-mail inválido. Um aluno removido antes
+  volta a ativo na mesma matrícula, sem duplicar. A resposta traz também o estudante,
+  que pode nunca ter passado por uma turma do professor. A regra fica em
+  `src/turmas/regras-de-matricula.ts`, sem banco, para os testes da API (#107).
 
 ### Banco de questões (RF02)
 
@@ -147,24 +285,154 @@ mais de um problema.
 
 ### Provas (RF04)
 
-| Método | Caminho       | Corpo                                                 | Resposta              |
-| ------ | ------------- | ----------------------------------------------------- | --------------------- |
-| GET    | `/provas`     | —                                                     | `(Prova & blocos?)[]` |
-| PUT    | `/provas/:id` | `{ title, description?, status, questions, blocos? }` | `Prova & blocos?`     |
+| Método | Caminho                | Corpo                                                 | Resposta              |
+| ------ | ---------------------- | ----------------------------------------------------- | --------------------- |
+| GET    | `/provas`              | —                                                     | `(Prova & blocos?)[]` |
+| PUT    | `/provas/:id`          | `{ title, description?, status, questions, blocos? }` | `Prova & blocos?`     |
+| POST   | `/provas/:id/encerrar` | —                                                     | `Prova & blocos?`     |
 
 - `PUT` cria ou atualiza pelo id, que nasce no navegador para o editor abrir sem esperar.
   Valida: título até 200 caracteres, no máximo 20 questões, pontuação não negativa.
+  Provas novas sempre começam como `draft`; atualizações de conteúdo não alteram a
+  situação, que é controlada pelo servidor.
 - `questions` vira a tabela `questoes_da_prova`, mas só com questões que já existem no
   banco do professor (inclusive excluídas). A questão criada dentro da prova e ainda não
   salva no banco vive só em `blocos`; uma questão repetida conta uma vez.
 - `blocos` é o layout do editor (texto, imagem, espaço, questões rascunho), protótipo da
   issue #12 guardado como chega, em coluna JSON. Por causa das imagens, o corpo JSON
   aceita até 5 MB.
+- A primeira aplicação move `draft` para `ready` na mesma transação que a cria. Provas
+  `closed` recusam aplicações novas com `409`; `POST /provas/:id/encerrar` arquiva a
+  prova sem removê-la do acervo e pode ser repetido com segurança.
+
+### Aplicações (RF05)
+
+| Método | Caminho           | Corpo                 | Resposta      |
+| ------ | ----------------- | --------------------- | ------------- |
+| GET    | `/aplicacoes`     | —                     | `Aplicacao[]` |
+| GET    | `/aplicacoes/:id` | —                     | `Aplicacao`   |
+| POST   | `/aplicacoes`     | `{ examId, classId }` | `Aplicacao`   |
+
+- Os três endpoints atuam apenas sobre aplicações do professor atual. Aplicação ou
+  referência a prova/turma de outro professor responde `404`.
+- `POST` aceita reaplicações da mesma prova à mesma turma; cada chamada cria uma
+  aplicação independente em `draft`. A criação e a transição da prova para `ready`
+  acontecem na mesma transação.
+- Provas `closed` recusam a criação com `409`. A geração de versões e PDF fica nos
+  endpoints RF06 abaixo.
+
+### Geração de versões e PDF (RF06)
+
+| Método | Caminho                     | Corpo                                                                            | Resposta                                                       |
+| ------ | --------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| POST   | `/aplicacoes/:id/gerar`     | `{ quantity, shuffleQuestions, shuffleAlternatives, withStudentIdentification }` | `{ versions: VersaoProva[], assignments: AtribuicaoVersao[] }` |
+| POST   | `/aplicacoes/:id/gerar-pdf` | Opções acima + `cabecalho?`                                                      | `{ application, versions, assignments }`                       |
+| GET    | `/aplicacoes/:id/pdf`       | —                                                                                | `application/pdf` (download)                                   |
+
+- `quantity` aceita de 1 a 20 versões. Cada versão embaralha questões e alternativas
+  independentemente quando a respectiva opção está ativa.
+- O layout sempre materializa a ordem impressa das questões e das alternativas. Quando
+  uma opção de embaralhamento está desativada, grava a ordem original da prova/questão.
+- Com identificação, cada estudante com matrícula ativa recebe uma atribuição para uma
+  versão; os estudantes são distribuídos aleatória e balanceadamente entre as versões.
+  Sem identificação, não são criadas atribuições.
+- Payloads de QR seguem `sgp:v1:version:<versionId>` para uma versão anônima ou
+  `sgp:v1:version:<versionId>:student:<studentId>` para uma atribuição identificada.
+  São distintos de `publicCode`.
+- Regenerar substitui versões e atribuições anteriores. Se já houver correção confirmada,
+  responde `409`.
+- `POST /gerar` prepara somente versões e atribuições. Se substituir uma geração anterior
+  sem correções, volta a aplicação para `draft` e limpa o PDF associado.
+- `POST /gerar-pdf` materializa as versões e atribuições, renderiza um único PDF consolidado
+  e grava os bytes em `aplicacoes.pdfContent` (`LONGBLOB`) na mesma transação. Só depois de
+  renderizar com sucesso a aplicação passa a `generated`; uma falha não publica PDF parcial.
+  Uma regeneração bem-sucedida sobrescreve o arquivo anterior.
+- Com identificação, cada matrícula ativa recebe uma cópia com nome e QR único; sem
+  identificação, é gerada uma cópia por versão com QR que identifica apenas a versão. O QR
+  aparece na primeira folha da prova e no cartão-resposta para que a folha lida mantenha a
+  identificação da cópia.
+- Blocos de prova são mantidos inteiros entre páginas. Um bloco que excede a área útil A4
+  interrompe a geração com `400`. Questões de rascunho não salvas no banco também impedem a
+  geração; imagens aceitas no PDF são PNG e JPEG.
+- O cartão-resposta segue o layout provisório de leitura mobile: folha A4 separada, quatro
+  marcadores de canto e até 20 questões objetivas, com 2 a 5 alternativas. A validação
+  física com folhas impressas e fotos reais continua pendente; não usar como garantia de
+  leitura operacional antes dessa verificação.
+
+Os testes de regras da API podem ser executados com `npm run test --workspace @sgp/api`.
+
+### Correção pelo aplicativo (RF08)
+
+| Método | Caminho                     | Corpo                           | Resposta                                     |
+| ------ | --------------------------- | ------------------------------- | -------------------------------------------- |
+| GET    | `/aplicacoes/para-corrigir` | —                               | `AplicacaoParaCorrigir[]`                    |
+| GET    | `/aplicacoes/:id/gabaritos` | —                               | `GabaritoVersaoSnapshot[]`                   |
+| POST   | `/correcoes/lote`           | `{ itens: ItemFilaCorrecao[] }` | `{ resultados: ResultadoDaSincronizacao[] }` |
+
+- `para-corrigir` traz as aplicações geradas do professor com título da prova, turma e,
+  por versão, quantas provas foram atribuídas e quantas já têm correção. Prova sem
+  identificação não tem atribuição, então o total impresso dela é desconhecido.
+- `gabaritos` devolve o gabarito oficial de todas as versões, para o aplicativo corrigir
+  sem sinal. Segue a folha impressa (`layout` da versão) e a pontuação da questão na
+  prova; `capturedAt` é o momento da resposta. Se a prova perdeu uma questão impressa
+  depois da geração, responde `409`.
+- `lote` aceita de 1 a 200 itens e responde `200` com um resultado por item, na mesma
+  ordem: `syncStatus` `synced` (com `correctionId` e `totalScore`) ou `error` (com
+  `syncError`). Um item malformado vira erro só dele.
+- Reenviar um `clientCorrectionId` já registrado devolve o mesmo `correctionId`, sem
+  criar outro registro.
+- A nota é sempre calculada pelo `answerKeySnapshot` do item, nunca pelo gabarito atual.
+  Se o gabarito oficial mudou desde a correção, a correção entra com
+  `reviewReason: 'answer_key_changed'`.
+- Segunda correção para o mesmo estudante e versão volta como `error`; a primeira é
+  mantida e recebe `reviewReason: 'duplicate_submission'`.
+- Versão com identificação exige o `studentId` de quem recebeu aquela versão. Versão sem
+  identificação não aceita `studentId`: grava sem estudante, com nome e matrícula lidos
+  na folha, para o lançamento manual (RF09).
+
+### Lançamento manual de nota (RF09)
+
+| Método | Caminho                               | Corpo                   | Resposta     |
+| ------ | ------------------------------------- | ----------------------- | ------------ |
+| GET    | `/correcoes`                          | —                       | `Correcao[]` |
+| GET    | `/aplicacoes/:id/correcoes-pendentes` | —                       | `Correcao[]` |
+| POST   | `/correcoes/:id/atribuir`             | `{ studentId, notes? }` | `Correcao`   |
+| POST   | `/correcoes/:id/desfazer-atribuicao`  | —                       | `Correcao`   |
+
+- `GET /correcoes` traz todas as correções das aplicações do professor, atribuídas ou
+  não: é o que a tela `/correcoes` carrega. As pendentes de uma aplicação são as sem
+  `studentId`.
+- Atribuir preenche o estudante na correção existente, sem criar outra. Recusa com `409`
+  a correção já atribuída e o estudante que já tem correção na mesma versão; com `400`,
+  o estudante sem matrícula ativa na turma da aplicação. `notes` é uma observação
+  opcional do professor.
+- Desfazer devolve à fila uma atribuição manual. A correção atribuída pelo QR Code
+  (`isAutomaticallyAssigned`) responde `409`.
+
+### Entrada pelo código de convite (RF03)
+
+| Método | Caminho                       | Corpo                                                      | Resposta                                       |
+| ------ | ----------------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
+| GET    | `/convites/:codigo`           | —                                                          | `{ name, subject, term, teacherName, status }` |
+| POST   | `/convites/:codigo/matricula` | sem sessão: `{ fullName, email, registration?, password }` | `{ matricula, estudante?, sessao? }`           |
+
+- As duas rotas aceitam requisição sem sessão (`@AceitaSemLogin()`): a identificação
+  provisória não as atribui ao professor de demonstração.
+- O código é comparado sem diferenciar maiúsculas. Código inexistente ou regenerado
+  responde `404`; turma arquivada e matrícula removida pelo professor, `409`.
+- Com sessão de estudante, matricula quem está logado; usar o mesmo código de novo
+  devolve a matrícula existente, sem duplicar. Professor recebe `403`.
+- Sem sessão, o corpo é o cadastro: cria a conta (e-mail `@catolicasc.edu.br`) e a
+  matrícula na mesma transação e devolve o estudante com a sessão. E-mail ou matrícula
+  já cadastrados respondem `409`.
+- Enquanto o login (#81) não existe, o cadastro responde `501` antes de gravar qualquer
+  coisa: guardar a senha e abrir a sessão ficam em `src/convites/credenciais.ts`, ponto
+  único que a #81 implementa.
 
 ## Ainda não coberto
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em
   `src/professor-atual.ts`, ponto único a trocar.
-- Aplicações, correções e relatórios: as tabelas já existem e o seed as preenche, mas
-  não há endpoints. Exclusão de prova também não, porque a tela não oferece a ação.
-- Sincronização da fila do aplicativo (RF08).
+- Demais operações de relatórios e exclusão de prova (a tela não oferece a ação).
+- Autenticação, JWT e refresh token (RF01, issue #81): a identificação do professor é
+  provisória, ver [Isolamento por professor](#isolamento-por-professor-rnf04).

@@ -156,6 +156,10 @@ mesmos nomes dos tipos de `@sgp/shared-types`. Diferencas em relacao a este dici
   da prova e ainda nao salva no banco, por isso ela nao aparece em `questoes_da_prova`.
 - Layout da versao, resultados objetivos e notas discursivas ficam em colunas JSON:
   sao lidos e gravados inteiros, nunca consultados por partes.
+- `correcoes` guarda tambem o `answerKeySnapshot` (JSON) que o aplicativo usou e um
+  `reviewReason` opcional (`answer_key_changed` ou `duplicate_submission`), que sinaliza
+  ao professor o que a sincronizacao encontrou (RF08). Uma correcao por estudante e
+  versao (`examVersionId` + `studentId` unicos).
 
 ## Tipos que nao sao entidades
 

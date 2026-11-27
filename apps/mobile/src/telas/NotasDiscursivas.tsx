@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import type { NotaDiscursiva } from '@sgp/shared-types';
 import { cores, tipografia } from '@sgp/design-tokens';
@@ -34,6 +34,10 @@ export function NotasDiscursivas({ navigation, route }: PropsDaTela<'NotasDiscur
   const [matricula, setMatricula] = useState('');
   const [tentouConfirmar, setTentouConfirmar] = useState(false);
   const [erroAoSalvar, setErroAoSalvar] = useState<string>();
+  const [salvando, setSalvando] = useState(false);
+  // Impede o toque duplo e reaproveita o identificador ao repetir uma gravacao que falhou.
+  const confirmando = useRef(false);
+  const idDaCorrecao = useRef<string>();
 
   if (!prova) {
     return (
@@ -71,11 +75,16 @@ export function NotasDiscursivas({ navigation, route }: PropsDaTela<'NotasDiscur
   const notaTotal = calcularNotaTotal(notaObjetiva, notasValidas);
   const notaMaxima = prova.maximoObjetivo + prova.maximoDiscursivo;
 
-  function confirmar() {
+  async function confirmar() {
     setTentouConfirmar(true);
-    if (!prova || !todasValidas) return;
+    if (!prova || !todasValidas || confirmando.current) return;
 
-    const item = enfileirarCorrecao({
+    confirmando.current = true;
+    setSalvando(true);
+    setErroAoSalvar(undefined);
+
+    const resultado = await enfileirarCorrecao({
+      clientCorrectionId: idDaCorrecao.current,
       examVersionId,
       // Com identificacao, o aluno veio da selecao. Sem identificacao, fica sem dono.
       studentId: prova.comIdentificacao ? studentId : undefined,
@@ -87,8 +96,15 @@ export function NotasDiscursivas({ navigation, route }: PropsDaTela<'NotasDiscur
       discursiveScores: notasValidas,
     });
 
-    if (!item) {
-      setErroAoSalvar('Sem cópia local do gabarito: a correção não pode ser confirmada.');
+    if (!resultado.ok) {
+      confirmando.current = false;
+      setSalvando(false);
+      if (resultado.motivo === 'falha_ao_salvar') {
+        idDaCorrecao.current = resultado.clientCorrectionId;
+        setErroAoSalvar('Não foi possível salvar no aparelho. A correção não foi confirmada.');
+      } else {
+        setErroAoSalvar('Sem cópia local do gabarito: a correção não pode ser confirmada.');
+      }
       return;
     }
 
@@ -97,7 +113,7 @@ export function NotasDiscursivas({ navigation, route }: PropsDaTela<'NotasDiscur
       : `Prova sem identificação${nome.trim() ? ` (lido na folha: ${nome.trim()})` : ''}`;
     navigation.navigate('AplicacoesParaCorrigir', {
       correcaoSalva: {
-        id: item.clientCorrectionId,
+        id: resultado.item.clientCorrectionId,
         resumo: `${quem} — nota ${formatarNota(notaTotal)} de ${formatarNota(notaMaxima)}.`,
       },
     });
@@ -127,7 +143,12 @@ export function NotasDiscursivas({ navigation, route }: PropsDaTela<'NotasDiscur
               {erroAoSalvar}
             </Text>
           ) : null}
-          <Botao titulo="Confirmar correção" largura="total" onPress={confirmar} />
+          <Botao
+            titulo="Confirmar correção"
+            largura="total"
+            carregando={salvando}
+            onPress={() => void confirmar()}
+          />
         </>
       }
     >

@@ -4,6 +4,8 @@ import './styles/global.css';
 import App from './App.vue';
 import { router } from './router';
 import { apiLigada } from './lib/api';
+import { carregarAplicacoesDoServidor } from './lib/estado-de-aplicacoes';
+import { carregarCorrecoesDoServidor } from './lib/estado-de-correcoes';
 import { carregarProvasDoServidor } from './lib/estado-de-provas';
 import { carregarQuestoesDoServidor } from './lib/estado-de-questoes';
 import { carregarTurmasDoServidor } from './lib/estado-de-turmas';
@@ -20,6 +22,8 @@ async function carregarDoServidor(): Promise<void> {
       carregarTurmasDoServidor(),
       carregarQuestoesDoServidor(),
       carregarProvasDoServidor(),
+      carregarAplicacoesDoServidor(),
+      carregarCorrecoesDoServidor(),
     ]);
   } catch (erro) {
     console.error(erro);

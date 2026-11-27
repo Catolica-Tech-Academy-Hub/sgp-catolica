@@ -44,17 +44,26 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 
 ## Capturas atuais
 
-| Tela                                | Rota          | Print                                                    |
-| ----------------------------------- | ------------- | -------------------------------------------------------- |
-| Lista de aplicações                 | `/aplicacoes` | [aplicacoes.png](aplicacoes.png)                         |
-| Listagem de turmas                  | `/turmas`     | [turmas.png](turmas.png)                                 |
-| Detalhe da turma                    | `/turmas/:id` | [turmas-detalhe.png](turmas-detalhe.png)                 |
-| Fila de correções                   | `/correcoes`  | [correcoes.png](correcoes.png)                           |
-| Correções: atribuir nota            | `/correcoes`  | [correcoes-atribuir.png](correcoes-atribuir.png)         |
-| Relatório por aplicação             | `/relatorios` | [relatorios.png](relatorios.png)                         |
-| Relatório consolidado               | `/relatorios` | [relatorios-consolidado.png](relatorios-consolidado.png) |
-| Ajuda: perguntas frequentes         | `/suporte`    | [suporte.png](suporte.png)                               |
-| Ajuda: contato                      | `/suporte`    | [suporte-contato.png](suporte-contato.png)               |
-| Entrada, com escolha de papel       | `/login`      | [login.png](login.png)                                   |
-| Estudante: histórico de notas       | `/estudante`  | [estudante-historico.png](estudante-historico.png)       |
-| Estudante: detalhamento de uma nota | `/estudante`  | [estudante-nota.png](estudante-nota.png)                 |
+| Tela                                 | Rota                     | Print                                                          |
+| ------------------------------------ | ------------------------ | -------------------------------------------------------------- |
+| Lista de aplicações                  | `/aplicacoes`            | [aplicacoes.png](aplicacoes.png)                               |
+| Listagem de turmas                   | `/turmas`                | [turmas.png](turmas.png)                                       |
+| Detalhe da turma                     | `/turmas/:id`            | [turmas-detalhe.png](turmas-detalhe.png)                       |
+| Fila de correções                    | `/correcoes`             | [correcoes.png](correcoes.png)                                 |
+| Correções: atribuir nota             | `/correcoes`             | [correcoes-atribuir.png](correcoes-atribuir.png)               |
+| Relatório por aplicação              | `/relatorios`            | [relatorios.png](relatorios.png)                               |
+| Relatório consolidado                | `/relatorios`            | [relatorios-consolidado.png](relatorios-consolidado.png)       |
+| Ajuda: perguntas frequentes          | `/suporte`               | [suporte.png](suporte.png)                                     |
+| Ajuda: contato                       | `/suporte`               | [suporte-contato.png](suporte-contato.png)                     |
+| Entrada, com escolha de papel        | `/login`                 | [login.png](login.png)                                         |
+| Estudante: histórico de notas        | `/estudante`             | [estudante-historico.png](estudante-historico.png)             |
+| Estudante: detalhamento de uma nota  | `/estudante`             | [estudante-nota.png](estudante-nota.png)                       |
+| Mobile: aplicações para corrigir     | `AplicacoesParaCorrigir` | [mobile-lista-aplicacoes.png](mobile-lista-aplicacoes.png)     |
+| Turma: matricular por e-mail         | `/turmas/:id`            | [turmas-detalhe-matricular.png](turmas-detalhe-matricular.png) |
+| Estudante: entrada pelo convite      | `/entrar/:codigo`        | [estudante-entrar.png](estudante-entrar.png)                   |
+| Mobile: fila de correções            | Navegação                | [mobile-fila-correcoes.png](mobile-fila-correcoes.png)         |
+| Aplicações: opções de geração de PDF | `/aplicacoes`            | [aplicacoes-geracao.png](aplicacoes-geracao.png)               |
+
+O exemplo fictício do arquivo consolidado está em
+[aplicacoes-geracao.pdf](aplicacoes-geracao.pdf). O layout do cartão-resposta é provisório
+e ainda requer validação com folhas impressas e fotos reais.
