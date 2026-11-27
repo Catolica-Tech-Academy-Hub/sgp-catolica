@@ -19,9 +19,10 @@ Stack simples; o fluxo do professor é linear. Nomes das rotas conforme
 | Rota                     | Situação                    | Experiência atual                                                                                       |
 | ------------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `AplicacoesParaCorrigir` | Implementado na N1 (mínimo) | Rota inicial. Aplicações com prova gerada e pendências; aviso de correção salva na fila. Completa: #24. |
-| `SelecionarProva`        | Implementado na N1 (mínimo) | Escolha da prova na lista, no lugar da leitura do QR Code. Completa: #25.                               |
+| `SelecionarProva`        | Implementado na N1 (mínimo) | Leitura do QR Code ou escolha na lista como alternativa. Completa: #25.                                 |
+| `LeituraQrCode`          | Parcial (#97)               | Câmera e validação local do QR. Sem teste em aparelho físico; formato final depende da #91.             |
 | `ConferenciaObjetiva`    | Implementado na N1 (mínimo) | Toque na letra marcada; certo/errado contra o gabarito e nota objetiva. Completa: #26.                  |
-| `LeituraCartao`          | Parcial (#98)               | Leitura local com revisão manual. Sem câmera integrada, hoje termina em "Leitura bloqueada".            |
+| `LeituraCartao`          | Parcial (#98)               | Leitura local com revisão manual. Sem captura de foto, hoje termina em "Leitura bloqueada".             |
 | `NotasDiscursivas`       | Implementado na N1          | Notas discursivas, nota total, identificação auxiliar e "Confirmar correção" (#27).                     |
 | `Ambiente`               | Implementado na N1          | Valida a arquitetura. Continua registrada, mas deixou de ser a rota inicial.                            |
 
@@ -33,8 +34,11 @@ discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para complet
 1. **Aplicações para corrigir.** Lista de `listarAplicacoesGeradas()`. Prova sem
    identificação não tem total impresso conhecido, então mostra "Sem contagem de provas"
    em vez de um número inventado.
-2. **Selecionar prova.** Lista de `listarAtribuicoesDaAplicacao()`. Prova já corrigida
-   aparece, mas não reabre: RF08 nunca sobrescreve uma correção em silêncio.
+2. **Selecionar prova.** O botão "Ler QR Code" abre a leitura pela câmera, que pode levar
+   direto à conferência. A lista de `listarAtribuicoesDaAplicacao()` continua como
+   alternativa para QR danificado ou câmera sem permissão. Prova já corrigida aparece, mas
+   não reabre por nenhum dos dois caminhos: RF08 nunca sobrescreve uma correção em
+   silêncio.
 3. **Conferência objetiva.** Para cada questão objetiva, as letras na ordem impressa
    daquela versão (`printedOrder`). O professor toca na letra marcada a caneta; a tela
    mostra se acertou e a nota objetiva no rodapé. Só avança quando cada questão tem uma
@@ -53,6 +57,39 @@ discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para complet
 
 Sem cópia local do gabarito (hoje, versões 0 e 4 dos mocks), a conferência e a
 confirmação ficam desabilitadas e explicadas.
+
+### Leitura do QR Code (issue #97, em andamento)
+
+Fluxo: `SelecionarProva` → **Ler QR Code** → `LeituraQrCode` → validação local →
+`ConferenciaObjetiva`, com a mesma versão e o mesmo aluno da escolha na lista.
+
+- **A leitura identifica a prova e não confirma a correção.** A confirmação continua sendo
+  a da tela de notas.
+- **O conteúdo do QR é um valor opaco.** Ele é comparado por igualdade exata com os dados
+  locais, em `src/lib/leitura-do-qr.ts`, sem depender de um formato. Com identificação, vale
+  o QR da atribuição do aluno; sem identificação, o QR da versão.
+- **QR recusado não altera nenhuma correção.** Ilegível, desconhecido, de outra aplicação,
+  sem gabarito local ou de prova já corrigida mostra uma mensagem clara, com as opções de
+  ler novamente ou escolher na lista.
+- **Permissão.** A câmera pede permissão ao professor e, se negada, a tela explica e mantém
+  a escolha na lista. O aplicativo não solicita microfone.
+
+#### O que foi verificado
+
+- Regras de validação cobertas por testes automatizados, no total de testes do mobile.
+- Configuração nativa gerada pelo Expo, com câmera e sem microfone, e bundle iOS de
+  produção gerado sem erro.
+
+#### O que ainda não foi verificado ou definido
+
+- **A leitura pela câmera ainda não foi testada em aparelho físico.** Abertura da câmera,
+  resposta à permissão, foco, distância, iluminação e QR impresso continuam sem validação,
+  e nenhuma taxa de acerto da leitura foi medida.
+- **O formato final do QR depende da issue #91**, e a impressão no PDF depende da #92. Até
+  lá, os valores vêm de `packages/mocks`, e um QR de geração substituída aparece como não
+  reconhecido.
+- **Nos dados de demonstração, só `mock-qr-versao-3` abre a conferência.** As demais provas
+  identificadas já constam como corrigidas e são recusadas.
 
 ### Leitura do cartão-resposta (issue #98, em andamento)
 
@@ -92,20 +129,22 @@ bloqueada"**, em vez de simular um resultado.
 
 #### O que foi verificado
 
-- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 69
-  de 69 testes passaram, incluindo a segunda leitura, a saída com divergência, a decisão manual
-  em branco e a leitura com o núcleo real sobre uma imagem sintética.
+- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 89
+  de 89 testes passaram, incluindo a validação do QR Code, a segunda leitura, a saída com
+  divergência, a decisão manual em branco e a leitura com o núcleo real sobre uma imagem
+  sintética.
 
 #### O que ainda não foi verificado ou integrado
 
 - **Cartão impresso e fotos reais: teste não executado**, por falta de acesso a uma
   impressora. Os resultados acima vêm apenas de imagens sintéticas.
 - **A taxa de erro inferior a 1% exigida pelo RF08 ainda não pode ser afirmada.**
-- **A câmera real não está integrada**, e a leitura não foi executada em aparelho físico.
+- **A captura do cartão pela câmera não está integrada.** A câmera hoje só lê QR Code, e a
+  leitura do cartão não foi executada em aparelho físico.
 - **O layout definitivo do cartão depende da issue #92.** O layout atual é provisório e
   comporta até 20 questões de até 5 alternativas.
-- **A identificação da folha por QR Code depende da issue #97.** Até lá, o aplicativo não
-  sabe se o cartão pertence àquela prova, e o professor precisa conferir.
+- **A leitura do cartão não confere o QR Code da folha.** O QR identifica a prova antes da
+  conferência, mas o professor ainda precisa conferir se o cartão lido é o dessa prova.
 - **Sombra dura sobre a folha pode aumentar a revisão manual.** Esse limite foi aceito na
   viabilidade: nos testes sintéticos, a regra prefere mandar a questão para revisão a
   arriscar uma resposta automática.
@@ -128,6 +167,7 @@ feito pela web (issue #18); o aplicativo não cria esse vínculo.
 | Primitivos | `src/components/ui/`             | Botão, Cartão, Campo, Rótulo, Badge e Tela.         |
 | Estado     | `src/lib/estado-de-correcoes.ts` | Ponto único de integração quando a API existir.     |
 | Leitura    | `src/lib/leitura-do-cartao.ts`   | Sugestões, prioridade do professor e aceite.        |
+| QR Code    | `src/lib/leitura-do-qr.ts`       | Validação do QR como valor opaco.                   |
 
 ### Estado local
 
@@ -138,8 +178,8 @@ simples — trazer um gerenciador de estado para a fase que menos precisa dele s
 sem retorno.
 
 O módulo já expõe o que o fluxo de correção vai consumir: aplicações com prova gerada e a
-contagem de pendências, as atribuições de uma aplicação (o que o QR Code identificaria), a
-cópia local do gabarito e a fila local.
+contagem de pendências, as atribuições de uma aplicação, as provas que um QR Code pode
+identificar, a cópia local do gabarito e a fila local.
 
 ### Regras do RF08 respeitadas desde a arquitetura
 
@@ -155,10 +195,12 @@ cópia local do gabarito e a fila local.
 
 - **A fila não sobrevive ao fechamento do aplicativo.** RF08 exige isso, e depende de
   armazenamento do dispositivo — fase com backend. Hoje a fila vive na memória da sessão.
-- **Sem câmera integrada e sem QR Code.** O núcleo de leitura de imagem existe (#98), mas
-  o fluxo ainda não recebe fotos. A seleção da prova a corrigir é feita por escolha na
-  lista, que produz o mesmo efeito de uma leitura de QR Code: chegar a uma versão e,
-  quando há identificação, a um aluno.
+- **Leitura de QR Code sem validação em aparelho físico.** A câmera lê o QR (#97), mas esse
+  fluxo ainda não foi testado em um aparelho, e o formato final do QR depende da #91. A
+  escolha na lista continua como alternativa e produz o mesmo efeito: chegar a uma versão
+  e, quando há identificação, a um aluno.
+- **O cartão-resposta ainda não recebe fotos.** O núcleo de leitura de imagem existe (#98),
+  mas a captura pela câmera não está ligada a ele.
 - **Sem autenticação real.** Como na web, a entrada valida formato e abre o protótipo.
 - **A fonte Instrument Sans não é carregada.** O pacote da web distribui só `.woff2`, que
   o React Native não aceita; o aplicativo usa a fonte do sistema. Ver a limitação
@@ -177,4 +219,5 @@ npm run lint --workspace @sgp/mobile
 
 O aplicativo também sobe no navegador (`expo start --web`), com `react-dom` e
 `react-native-web` instalados. Isso não substitui o teste em dispositivo, mas permite ver
-as telas sem emulador. O fluxo normal não abre a câmera.
+as telas sem emulador. A leitura de QR Code pela câmera ainda precisa ser validada em
+aparelho físico.

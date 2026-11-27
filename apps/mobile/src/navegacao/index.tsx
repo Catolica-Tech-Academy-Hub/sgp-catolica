@@ -8,6 +8,7 @@ import { AplicacoesParaCorrigir } from '../telas/AplicacoesParaCorrigir';
 import { Ambiente } from '../telas/Ambiente';
 import { ConferenciaObjetiva } from '../telas/ConferenciaObjetiva';
 import { LeituraCartao } from '../telas/LeituraCartao';
+import { LeituraQrCode } from '../telas/LeituraQrCode';
 import { NotasDiscursivas } from '../telas/NotasDiscursivas';
 import { SelecionarProva } from '../telas/SelecionarProva';
 
@@ -33,6 +34,7 @@ export type RotasDoAplicativo = {
   /** `correcaoSalva` chega da confirmacao, para a lista avisar que foi para a fila. */
   AplicacoesParaCorrigir: { correcaoSalva?: { id: string; resumo: string } } | undefined;
   SelecionarProva: { applicationId: string; tituloDaProva: string };
+  LeituraQrCode: { applicationId: string; tituloDaProva: string };
   /** `aplicacaoDaLeitura` chega da leitura do cartao, somente com o aceite do professor. */
   ConferenciaObjetiva: ProvaEscolhida & {
     aplicacaoDaLeitura?: AplicacaoDaLeitura;
@@ -81,6 +83,11 @@ export function Navegacao() {
           name="SelecionarProva"
           component={SelecionarProva}
           options={{ title: 'Selecionar prova' }}
+        />
+        <Stack.Screen
+          name="LeituraQrCode"
+          component={LeituraQrCode}
+          options={{ title: 'Ler QR Code' }}
         />
         <Stack.Screen
           name="ConferenciaObjetiva"
