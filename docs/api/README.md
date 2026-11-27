@@ -262,24 +262,36 @@ mais de um problema.
 
 ### Provas (RF04)
 
-| Método | Caminho       | Corpo                                                 | Resposta              |
-| ------ | ------------- | ----------------------------------------------------- | --------------------- |
-| GET    | `/provas`     | —                                                     | `(Prova & blocos?)[]` |
-| PUT    | `/provas/:id` | `{ title, description?, status, questions, blocos? }` | `Prova & blocos?`     |
+| Método | Caminho                  | Corpo                                                 | Resposta              |
+| ------ | ------------------------ | ----------------------------------------------------- | --------------------- |
+| GET    | `/provas`                | —                                                     | `(Prova & blocos?)[]` |
+| PUT    | `/provas/:id`            | `{ title, description?, status, questions, blocos? }` | `Prova & blocos?`     |
+| POST   | `/provas/:id/aplicacoes` | `{ classId }`                                         | `Aplicacao`           |
+| POST   | `/provas/:id/encerrar`   | —                                                     | `Prova & blocos?`     |
 
 - `PUT` cria ou atualiza pelo id, que nasce no navegador para o editor abrir sem esperar.
   Valida: título até 200 caracteres, no máximo 20 questões, pontuação não negativa.
+  Provas novas sempre começam como `draft`; atualizações de conteúdo não alteram a
+  situação, que é controlada pelo servidor.
 - `questions` vira a tabela `questoes_da_prova`, mas só com questões que já existem no
   banco do professor (inclusive excluídas). A questão criada dentro da prova e ainda não
   salva no banco vive só em `blocos`; uma questão repetida conta uma vez.
 - `blocos` é o layout do editor (texto, imagem, espaço, questões rascunho), protótipo da
   issue #12 guardado como chega, em coluna JSON. Por causa das imagens, o corpo JSON
   aceita até 5 MB.
+- A primeira aplicação move `draft` para `ready` na mesma transação que a cria. Provas
+  `closed` recusam aplicações novas com `409`; `POST /provas/:id/encerrar` arquiva a
+  prova sem removê-la do acervo e pode ser repetido com segurança.
+- A criação da aplicação é o único endpoint de RF05 coberto aqui; listagem, edição,
+  geração de versões/PDF e demais operações continuam fora da API.
+
+Os testes de regras da API podem ser executados com `npm run test --workspace @sgp/api`.
 
 ## Ainda não coberto
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em
   `src/professor-atual.ts`, ponto único a trocar.
-- Aplicações, correções e relatórios: as tabelas já existem e o seed as preenche, mas
-  não há endpoints. Exclusão de prova também não, porque a tela não oferece a ação.
+- Listagem e demais operações de aplicações, correções e relatórios: as tabelas já
+  existem e o seed as preenche, mas ainda não há endpoints para esses fluxos. Exclusão
+  de prova também não, porque a tela não oferece a ação.
 - Sincronização da fila do aplicativo (RF08).

@@ -12,7 +12,7 @@
  * escondê-lo.
  */
 import { computed } from 'vue';
-import { ChevronRight, Eye, Files } from '@lucide/vue';
+import { Archive, ChevronRight, Eye, Files, FilePlus2 } from '@lucide/vue';
 import type { StatusProva } from '@sgp/shared-types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ defineEmits<{
   'update:titulo': [valor: string];
   visualizar: [];
   aplicar: [];
+  encerrar: [];
 }>();
 
 const noLimite = computed(() => props.totalDeQuestoes >= MAXIMO_DE_QUESTOES);
@@ -80,13 +81,38 @@ const noLimite = computed(() => props.totalDeQuestoes >= MAXIMO_DE_QUESTOES);
         </TooltipContent>
       </Tooltip>
 
-      <Button variant="outline" size="sm" @click="$emit('visualizar')">
+      <Button
+        variant="outline"
+        size="sm"
+        aria-label="Pré-visualizar prova"
+        @click="$emit('visualizar')"
+      >
         <Eye aria-hidden="true" />
         <span class="hidden sm:inline">Pré-visualizar</span>
         <span class="sr-only sm:hidden">Pré-visualizar prova</span>
       </Button>
 
-      <Button size="sm" @click="$emit('aplicar')">Aplicar a uma turma</Button>
+      <Button
+        v-if="status !== 'closed'"
+        variant="outline"
+        size="sm"
+        aria-label="Encerrar prova"
+        @click="$emit('encerrar')"
+      >
+        <Archive aria-hidden="true" />
+        <span class="hidden sm:inline">Encerrar prova</span>
+        <span class="sr-only sm:hidden">Encerrar prova</span>
+      </Button>
+      <Button
+        size="sm"
+        :disabled="status === 'closed'"
+        aria-label="Aplicar a uma turma"
+        @click="$emit('aplicar')"
+      >
+        <FilePlus2 aria-hidden="true" />
+        <span class="hidden sm:inline">Aplicar a uma turma</span>
+        <span class="sr-only sm:hidden">Aplicar a uma turma</span>
+      </Button>
     </div>
   </header>
 </template>

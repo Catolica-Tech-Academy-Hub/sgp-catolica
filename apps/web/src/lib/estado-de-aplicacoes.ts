@@ -5,6 +5,7 @@
 import { reactive, watch } from 'vue';
 import { aplicacoesMock } from '@sgp/mocks';
 import type { Aplicacao } from '@sgp/shared-types';
+import { apiLigada, requisitar } from './api';
 import { encontrarProva } from './estado-de-provas';
 
 const CHAVE = 'sgp:estado-de-aplicacoes:v1';
@@ -43,15 +44,23 @@ export function listarAplicacoesDaProva(examId: string): Aplicacao[] {
   return aplicacoesNoNavegador.filter((aplicacao) => aplicacao.examId === examId);
 }
 
-export function criarAplicacao(dados: { examId: string; classId: string }): Aplicacao {
-  const aplicacao: Aplicacao = {
-    id: `aplic-local-${Date.now()}`,
-    examId: dados.examId,
-    classId: dados.classId,
-    teacherId: encontrarProva(dados.examId)?.teacherId ?? 'prof-1',
-    status: 'draft',
-    createdAt: new Date().toISOString(),
-  };
+export async function criarAplicacao(dados: {
+  examId: string;
+  classId: string;
+}): Promise<Aplicacao> {
+  const aplicacao = apiLigada
+    ? await requisitar<Aplicacao>(`/provas/${dados.examId}/aplicacoes`, {
+        method: 'POST',
+        body: JSON.stringify({ classId: dados.classId }),
+      })
+    : {
+        id: `aplic-local-${Date.now()}`,
+        examId: dados.examId,
+        classId: dados.classId,
+        teacherId: encontrarProva(dados.examId)?.teacherId ?? 'prof-1',
+        status: 'draft' as const,
+        createdAt: new Date().toISOString(),
+      };
   aplicacoesNoNavegador.unshift(aplicacao);
   return aplicacao;
 }
