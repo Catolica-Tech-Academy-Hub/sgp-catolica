@@ -24,6 +24,9 @@ Este arquivo e o ponto de entrada da documentacao do projeto.
 | [API](api/README.md)                                               | Como rodar a API e o MySQL, e os endpoints disponiveis            |
 | [Revisao e backlog da N3](produto/n3/revisao-e-backlog-n3.json)    | Requisitos pendentes do MVP e tarefas da N3 (fonte da planilha)   |
 
+A captura da [lista mobile de aplicações para corrigir](telas/mobile-lista-aplicacoes.png)
+registra o início do fluxo de correção do professor.
+
 ## Por onde comecar
 
 - Para entender **o que o sistema faz**: visao do produto, depois requisitos funcionais.
