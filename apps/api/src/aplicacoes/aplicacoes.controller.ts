@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import type { Aplicacao, GabaritoVersaoSnapshot } from '@sgp/shared-types';
+import type { Aplicacao, Correcao, GabaritoVersaoSnapshot } from '@sgp/shared-types';
 import { ApenasProfessorGuard, ProfessorAtual } from '../autenticacao/professor';
+import { AtribuicaoService } from '../correcoes/atribuicao.service';
 import { CriarAplicacaoDto, GerarVersoesDto } from './aplicacoes.dto';
 import { type AplicacaoParaCorrigir, AplicacoesService } from './aplicacoes.service';
 
@@ -8,7 +9,10 @@ import { type AplicacaoParaCorrigir, AplicacoesService } from './aplicacoes.serv
 @Controller('aplicacoes')
 @UseGuards(ApenasProfessorGuard)
 export class AplicacoesController {
-  constructor(private readonly aplicacoes: AplicacoesService) {}
+  constructor(
+    private readonly aplicacoes: AplicacoesService,
+    private readonly atribuicao: AtribuicaoService,
+  ) {}
 
   /** RF08: so as geradas, com o que o aplicativo do professor precisa para corrigir. */
   @Get('para-corrigir')
@@ -27,6 +31,15 @@ export class AplicacoesController {
     @Param('id') id: string,
   ): Promise<GabaritoVersaoSnapshot[]> {
     return this.aplicacoes.gabaritos(professorId, id);
+  }
+
+  /** RF09: correcoes de prova sem identificacao que ainda esperam o estudante. */
+  @Get(':id/correcoes-pendentes')
+  correcoesPendentes(
+    @ProfessorAtual() professorId: string,
+    @Param('id') id: string,
+  ): Promise<Correcao[]> {
+    return this.atribuicao.listarPendentes(professorId, id);
   }
 
   @Get(':id')

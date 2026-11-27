@@ -2,16 +2,21 @@
  * Estado das correções, compartilhado pela fila de atribuição manual (RF09).
  *
  * Segue o mesmo formato de `estado-de-provas.ts` e `estado-de-turmas.ts`: um módulo
- * único e reativo, não um gerenciador de estado real. Quando o backend existir, este
- * arquivo é o ponto de integração a substituir por chamadas à API — nenhuma tela deve
- * importar `correcoesMock` diretamente para ler ou alterar uma correção.
+ * único e reativo, não um gerenciador de estado real. Nenhuma tela deve importar
+ * `correcoesMock` diretamente para ler ou alterar uma correção.
  *
- * Grava em `localStorage` para sobreviver ao F5 sem virar banco de dados. A chave é
- * versionada; mudar o formato de `Correcao` exige subir o `v`.
+ * Com a API ligada (`VITE_API_URL`, ver `api.ts`), as correções vêm do servidor por
+ * `carregarCorrecoesDoServidor`, chamada antes de montar a aplicação, e atribuir ou
+ * desfazer é gravado lá. A regra de duplicidade continua sendo conferida aqui antes, para
+ * a tela explicar o motivo na hora; o servidor confere de novo.
+ *
+ * Sem a API, grava em `localStorage` para sobreviver ao F5 sem virar banco de dados. A
+ * chave é versionada; mudar o formato de `Correcao` exige subir o `v`.
  */
 import { reactive, watch } from 'vue';
 import { correcoesMock } from '@sgp/mocks';
 import type { Correcao } from '@sgp/shared-types';
+import { apiLigada, enviarAoServidor, requisitar } from './api';
 
 const CHAVE = 'sgp:estado-de-correcoes:v1';
 
@@ -34,19 +39,42 @@ function ler(): Correcao[] {
   }
 }
 
-export const correcoesNoNavegador = reactive<Correcao[]>(ler());
+export const correcoesNoNavegador = reactive<Correcao[]>(apiLigada ? [] : ler());
 
-watch(
-  correcoesNoNavegador,
-  () => {
-    try {
-      window.localStorage.setItem(CHAVE, JSON.stringify(correcoesNoNavegador));
-    } catch {
-      // Cota estourada ou armazenamento bloqueado: não vale derrubar a tela por isso.
-    }
-  },
-  { deep: true },
-);
+if (!apiLigada) {
+  watch(
+    correcoesNoNavegador,
+    () => {
+      try {
+        window.localStorage.setItem(CHAVE, JSON.stringify(correcoesNoNavegador));
+      } catch {
+        // Cota estourada ou armazenamento bloqueado: não vale derrubar a tela por isso.
+      }
+    },
+    { deep: true },
+  );
+}
+
+/** Substitui as correções pelo que o servidor tem. Só faz sentido com a API ligada. */
+export async function carregarCorrecoesDoServidor(): Promise<void> {
+  const correcoes = await requisitar<Correcao[]>('/correcoes');
+  correcoesNoNavegador.splice(0, correcoesNoNavegador.length, ...correcoes);
+}
+
+/** Grava uma alteração já aplicada na memória e sincroniza a correção com a resposta. */
+function enviarCorrecao(caminho: string, opcoes: RequestInit): void {
+  if (!apiLigada) return;
+  enviarAoServidor(
+    () => requisitar<Correcao>(caminho, opcoes),
+    carregarCorrecoesDoServidor,
+    (resposta) => {
+      const indice = correcoesNoNavegador.findIndex((correcao) => correcao.id === resposta.id);
+      // Troca o objeto inteiro: um campo que o servidor não devolve (ex.: `studentId`
+      // depois de desfazer) não pode sobrar da versão anterior.
+      if (indice >= 0) correcoesNoNavegador.splice(indice, 1, resposta);
+    },
+  );
+}
 
 export function listarCorrecoes(): Correcao[] {
   return correcoesNoNavegador;
@@ -94,6 +122,10 @@ export function atribuirCorrecao(id: string, studentId: string): boolean {
   if (alunoJaTemCorrecaoNaVersao(correcao.examVersionId, studentId, id)) return false;
 
   correcao.studentId = studentId;
+  enviarCorrecao(`/correcoes/${id}/atribuir`, {
+    method: 'POST',
+    body: JSON.stringify({ studentId }),
+  });
   return true;
 }
 
@@ -105,10 +137,16 @@ export function atribuirCorrecao(id: string, studentId: string): boolean {
  */
 export function desfazerAtribuicao(id: string): void {
   const correcao = encontrarCorrecao(id);
-  if (correcao) delete correcao.studentId;
+  if (!correcao) return;
+  delete correcao.studentId;
+  enviarCorrecao(`/correcoes/${id}/desfazer-atribuicao`, { method: 'POST' });
 }
 
 /** Descarta o que o navegador guardou e volta ao acervo de demonstração. */
 export function reiniciarComOsMocks(): void {
+  if (apiLigada) {
+    void carregarCorrecoesDoServidor();
+    return;
+  }
   correcoesNoNavegador.splice(0, correcoesNoNavegador.length, ...apartirDosMocks());
 }

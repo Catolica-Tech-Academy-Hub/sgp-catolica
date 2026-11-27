@@ -374,6 +374,25 @@ Os testes de regras da API podem ser executados com `npm run test --workspace @s
   identificação não aceita `studentId`: grava sem estudante, com nome e matrícula lidos
   na folha, para o lançamento manual (RF09).
 
+### Lançamento manual de nota (RF09)
+
+| Método | Caminho                               | Corpo                   | Resposta     |
+| ------ | ------------------------------------- | ----------------------- | ------------ |
+| GET    | `/correcoes`                          | —                       | `Correcao[]` |
+| GET    | `/aplicacoes/:id/correcoes-pendentes` | —                       | `Correcao[]` |
+| POST   | `/correcoes/:id/atribuir`             | `{ studentId, notes? }` | `Correcao`   |
+| POST   | `/correcoes/:id/desfazer-atribuicao`  | —                       | `Correcao`   |
+
+- `GET /correcoes` traz todas as correções das aplicações do professor, atribuídas ou
+  não: é o que a tela `/correcoes` carrega. As pendentes de uma aplicação são as sem
+  `studentId`.
+- Atribuir preenche o estudante na correção existente, sem criar outra. Recusa com `409`
+  a correção já atribuída e o estudante que já tem correção na mesma versão; com `400`,
+  o estudante sem matrícula ativa na turma da aplicação. `notes` é uma observação
+  opcional do professor.
+- Desfazer devolve à fila uma atribuição manual. A correção atribuída pelo QR Code
+  (`isAutomaticallyAssigned`) responde `409`.
+
 ## Ainda não coberto
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em
@@ -383,6 +402,6 @@ Os testes de regras da API podem ser executados com `npm run test --workspace @s
   Exclusão de prova também não, porque a tela não oferece a ação.
 - Autenticação, JWT e refresh token (RF01, issue #81): a identificação do professor é
   provisória, ver [Isolamento por professor](#isolamento-por-professor-rnf04).
-- Criação e geração de aplicações (#90, #91), lançamento manual de nota (#100) e
-  relatórios: as tabelas já existem e o seed as preenche, mas não há endpoints. Exclusão
-  de prova também não, porque a tela não oferece a ação.
+- Criação e geração de aplicações (#90, #91) e relatórios: as tabelas já existem e o
+  seed as preenche, mas não há endpoints. Exclusão de prova também não, porque a tela
+  não oferece a ação.
