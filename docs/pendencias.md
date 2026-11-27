@@ -33,6 +33,11 @@ correspondente, e sai desta lista.
 | 16  | Relacao entre a pontuacao da questao e a da prova   | RF02 da a questao discursiva uma pontuacao maxima propria; RF04 da a prova uma pontuacao individual por questao e diz que a soma nao e validada pelo sistema. Nenhuma fonte diz se o valor atribuido na prova pode divergir do valor da questao, nem qual dos dois prevalece. Nos tipos isso corresponde a `Questao.maxScore` e `QuestaoDaProva.score`.                                                            |
 | 17  | Ordem das alternativas quando nao ha embaralhamento | RF06 exige que a ordem embaralhada seja materializada e persistida na geracao, sem o que o aplicativo nao consegue interpretar a marcacao. Nenhuma fonte diz se essa ordem deve ser gravada tambem quando o embaralhamento de alternativas esta desligado, ou se nesse caso vale a ordem de cadastro da questao. Nos tipos isso corresponde a `LayoutVersao.alternativeOrder` e `VersaoProva.shuffleAlternatives`. |
 
+> Na implementacao da T12 ([issue #91](https://github.com/Catolica-Tech-Academy-Hub/sgp-catolica/issues/91)),
+> o layout materializa tambem a ordem original quando o embaralhamento esta desligado.
+> Isso registra o comportamento desta entrega, sem declarar uma decisao geral aprovada
+> pela equipe; a pendencia permanece aberta ate essa aprovacao.
+
 > Os itens 16 e 17 nasceram da auditoria de coerencia dos dados de exemplo
 > (`npm run audit:mocks`), que precisou de uma leitura provisoria para conseguir
 > validar os mocks: hoje ela aceita que o valor da questao na prova seja

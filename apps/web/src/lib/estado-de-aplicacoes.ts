@@ -1,6 +1,6 @@
 /**
- * Estado local das aplicações, semeado pelos dados demonstrativos da N1.
- * Quando RF05/RF06 tiverem backend, este módulo será o ponto de integração das telas.
+ * Estado de aplicações, carregado da API quando ela está ligada e dos mocks/localStorage
+ * no modo de demonstração.
  */
 import { reactive, watch } from 'vue';
 import { aplicacoesMock } from '@sgp/mocks';
@@ -22,19 +22,38 @@ function ler(): Aplicacao[] {
   }
 }
 
-export const aplicacoesNoNavegador = reactive<Aplicacao[]>(ler());
+export const aplicacoesNoNavegador = reactive<Aplicacao[]>(apiLigada ? [] : ler());
 
-watch(
-  aplicacoesNoNavegador,
-  () => {
-    try {
-      window.localStorage.setItem(CHAVE, JSON.stringify(aplicacoesNoNavegador));
-    } catch {
-      // O estado continua disponível enquanto a sessão estiver aberta.
-    }
-  },
-  { deep: true },
-);
+if (!apiLigada) {
+  watch(
+    aplicacoesNoNavegador,
+    () => {
+      try {
+        window.localStorage.setItem(CHAVE, JSON.stringify(aplicacoesNoNavegador));
+      } catch {
+        // O estado continua disponível enquanto a sessão estiver aberta.
+      }
+    },
+    { deep: true },
+  );
+}
+
+export async function carregarAplicacoesDoServidor(): Promise<void> {
+  const aplicacoes = await requisitar<Aplicacao[]>('/aplicacoes');
+  aplicacoesNoNavegador.splice(0, aplicacoesNoNavegador.length, ...aplicacoes);
+}
+
+export async function obterAplicacao(id: string): Promise<Aplicacao> {
+  const aplicacao = apiLigada
+    ? await requisitar<Aplicacao>(`/aplicacoes/${id}`)
+    : aplicacoesNoNavegador.find((item) => item.id === id);
+  if (!aplicacao) throw new Error('Aplicacao nao encontrada.');
+
+  const indice = aplicacoesNoNavegador.findIndex((item) => item.id === id);
+  if (indice >= 0) aplicacoesNoNavegador[indice] = aplicacao;
+  else aplicacoesNoNavegador.unshift(aplicacao);
+  return aplicacao;
+}
 
 export function listarAplicacoes(): Aplicacao[] {
   return aplicacoesNoNavegador;
@@ -49,9 +68,9 @@ export async function criarAplicacao(dados: {
   classId: string;
 }): Promise<Aplicacao> {
   const aplicacao = apiLigada
-    ? await requisitar<Aplicacao>(`/provas/${dados.examId}/aplicacoes`, {
+    ? await requisitar<Aplicacao>('/aplicacoes', {
         method: 'POST',
-        body: JSON.stringify({ classId: dados.classId }),
+        body: JSON.stringify(dados),
       })
     : {
         id: `aplic-local-${Date.now()}`,

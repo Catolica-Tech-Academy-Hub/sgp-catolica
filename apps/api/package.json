@@ -10,7 +10,7 @@
     "start": "node dist/apps/api/src/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "tsx --test src/provas/provas.service.spec.ts",
+    "test": "tsx --test src/provas/provas.service.spec.ts src/aplicacoes/aplicacoes.service.spec.ts src/aplicacoes/geracao.service.spec.ts",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",

@@ -262,12 +262,11 @@ mais de um problema.
 
 ### Provas (RF04)
 
-| Método | Caminho                  | Corpo                                                 | Resposta              |
-| ------ | ------------------------ | ----------------------------------------------------- | --------------------- |
-| GET    | `/provas`                | —                                                     | `(Prova & blocos?)[]` |
-| PUT    | `/provas/:id`            | `{ title, description?, status, questions, blocos? }` | `Prova & blocos?`     |
-| POST   | `/provas/:id/aplicacoes` | `{ classId }`                                         | `Aplicacao`           |
-| POST   | `/provas/:id/encerrar`   | —                                                     | `Prova & blocos?`     |
+| Método | Caminho                | Corpo                                                 | Resposta              |
+| ------ | ---------------------- | ----------------------------------------------------- | --------------------- |
+| GET    | `/provas`              | —                                                     | `(Prova & blocos?)[]` |
+| PUT    | `/provas/:id`          | `{ title, description?, status, questions, blocos? }` | `Prova & blocos?`     |
+| POST   | `/provas/:id/encerrar` | —                                                     | `Prova & blocos?`     |
 
 - `PUT` cria ou atualiza pelo id, que nasce no navegador para o editor abrir sem esperar.
   Valida: título até 200 caracteres, no máximo 20 questões, pontuação não negativa.
@@ -282,8 +281,44 @@ mais de um problema.
 - A primeira aplicação move `draft` para `ready` na mesma transação que a cria. Provas
   `closed` recusam aplicações novas com `409`; `POST /provas/:id/encerrar` arquiva a
   prova sem removê-la do acervo e pode ser repetido com segurança.
-- A criação da aplicação é o único endpoint de RF05 coberto aqui; listagem, edição,
-  geração de versões/PDF e demais operações continuam fora da API.
+
+### Aplicações (RF05)
+
+| Método | Caminho           | Corpo                 | Resposta      |
+| ------ | ----------------- | --------------------- | ------------- |
+| GET    | `/aplicacoes`     | —                     | `Aplicacao[]` |
+| GET    | `/aplicacoes/:id` | —                     | `Aplicacao`   |
+| POST   | `/aplicacoes`     | `{ examId, classId }` | `Aplicacao`   |
+
+- Os três endpoints atuam apenas sobre aplicações do professor atual. Aplicação ou
+  referência a prova/turma de outro professor responde `404`.
+- `POST` aceita reaplicações da mesma prova à mesma turma; cada chamada cria uma
+  aplicação independente em `draft`. A criação e a transição da prova para `ready`
+  acontecem na mesma transação.
+- Provas `closed` recusam a criação com `409`. A geração de versões/PDF não faz parte
+  destes endpoints (RF06).
+
+### Geração de versões (RF06)
+
+| Método | Caminho                 | Corpo                                                                            | Resposta                                                       |
+| ------ | ----------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| POST   | `/aplicacoes/:id/gerar` | `{ quantity, shuffleQuestions, shuffleAlternatives, withStudentIdentification }` | `{ versions: VersaoProva[], assignments: AtribuicaoVersao[] }` |
+
+- `quantity` aceita de 1 a 20 versões. Cada versão embaralha questões e alternativas
+  independentemente quando a respectiva opção está ativa.
+- O layout sempre materializa a ordem impressa das questões e das alternativas. Quando
+  uma opção de embaralhamento está desativada, grava a ordem original da prova/questão.
+- Com identificação, cada estudante com matrícula ativa recebe uma atribuição para uma
+  versão; os estudantes são distribuídos aleatória e balanceadamente entre as versões.
+  Sem identificação, não são criadas atribuições.
+- Payloads de QR seguem `sgp:v1:version:<versionId>` para uma versão anônima ou
+  `sgp:v1:version:<versionId>:student:<studentId>` para uma atribuição identificada.
+  São distintos de `publicCode`; a API persiste o conteúdo, mas não gera a imagem do QR.
+- Regenerar substitui versões e atribuições anteriores. Se já houver correção confirmada,
+  responde `409`; se substituir uma geração anterior sem correções, volta a aplicação para
+  `draft` e limpa o PDF anterior para não disponibilizar um arquivo com QR invalido.
+- A aplicação só passa a `generated` quando o PDF for gerado (T13/RF06); este endpoint
+  apenas prepara e persiste as versões e atribuições.
 
 Os testes de regras da API podem ser executados com `npm run test --workspace @sgp/api`.
 
@@ -291,7 +326,7 @@ Os testes de regras da API podem ser executados com `npm run test --workspace @s
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em
   `src/professor-atual.ts`, ponto único a trocar.
-- Listagem e demais operações de aplicações, correções e relatórios: as tabelas já
-  existem e o seed as preenche, mas ainda não há endpoints para esses fluxos. Exclusão
-  de prova também não, porque a tela não oferece a ação.
+- Geração de PDF e demais operações de aplicações, correções e relatórios: as tabelas já
+  existem e o seed as preenche, mas esses fluxos ainda não estão cobertos por endpoints.
+  Exclusão de prova também não, porque a tela não oferece a ação.
 - Sincronização da fila do aplicativo (RF08).
