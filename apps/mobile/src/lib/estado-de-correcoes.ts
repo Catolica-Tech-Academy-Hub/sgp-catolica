@@ -11,6 +11,12 @@ import {
   versoesMock,
 } from '@sgp/mocks';
 import type { ItemFilaCorrecao, NotaDiscursiva, StatusSincronizacao } from '@sgp/shared-types';
+import {
+  criarFilaPersistente,
+  mesclarComMocks,
+  type ArmazenamentoDaFila,
+  type FilaPersistente,
+} from './fila-persistente';
 import type { EntradaDoQr } from './leitura-do-qr';
 
 /**
@@ -20,10 +26,8 @@ import type { EntradaDoQr } from './leitura-do-qr';
  * pelos mocks, que e o ponto de integracao a substituir quando a API existir. Nenhuma
  * tela deve importar `@sgp/mocks` para **alterar** algo — ler dado derivado por aqui.
  *
- * Diferente da web, nao ha `localStorage`: a persistencia real da fila (RF08 exige que
- * ela sobreviva ao fechamento do aplicativo) depende de armazenamento do dispositivo,
- * que e trabalho de uma fase com backend. Aqui a fila vive na memoria da sessao, e a
- * tela de fila diz isso com todas as letras em vez de simular sincronizacao.
+ * As correcoes confirmadas ficam salvas no aparelho (`fila-persistente.ts`) e voltam para
+ * a memoria ao abrir o aplicativo. A sincronizacao com o servidor ainda nao existe (#94).
  */
 
 /** Assinantes das mudancas. Um `useState` por tela, sem biblioteca de estado. */
@@ -379,8 +383,29 @@ function somar(valores: number[]): number {
 
 // --- Fila local ---------------------------------------------------------------------
 
-/** A fila comeca com os itens de demonstracao e recebe o que for corrigido na sessao. */
+/** A fila comeca com os itens de demonstracao e recebe os salvos no aparelho. */
 const fila: ItemFilaCorrecao[] = filaCorrecoesMock.map((item) => ({ ...item }));
+let filaPersistente: FilaPersistente | undefined;
+let totalDeCorrecoesIlegiveis = 0;
+
+/**
+ * Carrega a fila salva no aparelho. Precisa terminar antes de o professor corrigir, senao
+ * uma prova ja corrigida pareceria pendente. Rejeita quando o armazenamento falha.
+ */
+export async function iniciarFilaPersistente(armazenamento: ArmazenamentoDaFila): Promise<void> {
+  const persistente = criarFilaPersistente(armazenamento);
+  const { itens, chavesIlegiveis } = await persistente.carregar();
+
+  filaPersistente = persistente;
+  totalDeCorrecoesIlegiveis = chavesIlegiveis.length;
+  fila.splice(0, fila.length, ...mesclarComMocks(filaCorrecoesMock, itens));
+  notificar();
+}
+
+/** Correcoes gravadas que nao puderam ser lidas: a tela avisa em vez de escondê-las. */
+export function contarCorrecoesIlegiveis(): number {
+  return totalDeCorrecoesIlegiveis;
+}
 
 export function listarFila(): ItemFilaCorrecao[] {
   return [...fila].sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
@@ -394,7 +419,7 @@ export function totalPorStatus(): Record<StatusSincronizacao, number> {
   };
 }
 
-/** Correcoes que contam como "ja corrigida": as dos mocks e as confirmadas na sessao. */
+/** Correcoes que contam como "ja corrigida": as dos mocks e as salvas no aparelho. */
 function correcoesConfirmadas(): { examVersionId: string; studentId?: string }[] {
   return [
     ...correcoesMock.map((item) => ({
@@ -416,24 +441,38 @@ export interface CorrecaoParaConfirmar {
   reportedStudentRegistration?: string;
   objectiveAnswers: { questionId: string; selectedAlternativeId: string }[];
   discursiveScores: NotaDiscursiva[];
+  /** Mantido ao repetir uma confirmacao que falhou, para nao gerar uma segunda correcao. */
+  clientCorrectionId?: string;
 }
 
+export type ResultadoDaConfirmacao =
+  | { ok: true; item: ItemFilaCorrecao }
+  | { ok: false; motivo: 'sem_gabarito' }
+  | { ok: false; motivo: 'falha_ao_salvar'; clientCorrectionId: string };
+
 /**
- * Coloca a correcao na fila local.
+ * Salva a correcao no aparelho e so entao a coloca na fila.
  *
  * RF08 manda salvar **primeiro** no dispositivo, com ou sem internet, e deduplicar por
  * um identificador gerado no proprio aparelho. O `clientCorrectionId` cumpre esse papel;
- * reenviar o mesmo item nao cria um segundo registro.
+ * repetir o mesmo identificador nao cria um segundo registro.
  *
- * Devolve `undefined` quando nao ha copia local do gabarito — a situacao em que RF08
- * proibe confirmar.
+ * Sem copia local do gabarito, RF08 proibe confirmar. Se a gravacao falhar, a correcao nao
+ * conta como confirmada e nada entra na fila.
  */
-export function enfileirarCorrecao(dados: CorrecaoParaConfirmar): ItemFilaCorrecao | undefined {
+export async function enfileirarCorrecao(
+  dados: CorrecaoParaConfirmar,
+): Promise<ResultadoDaConfirmacao> {
   const answerKeySnapshot = obterGabaritoDaVersao(dados.examVersionId);
-  if (!answerKeySnapshot) return undefined;
+  if (!answerKeySnapshot) return { ok: false, motivo: 'sem_gabarito' };
+
+  const clientCorrectionId = dados.clientCorrectionId ?? gerarIdentificadorLocal();
+  const existente = fila.find((item) => item.clientCorrectionId === clientCorrectionId);
+  if (existente) return { ok: true, item: existente };
+  if (!filaPersistente) return { ok: false, motivo: 'falha_ao_salvar', clientCorrectionId };
 
   const item: ItemFilaCorrecao = {
-    clientCorrectionId: gerarIdentificadorLocal(),
+    clientCorrectionId,
     examVersionId: dados.examVersionId,
     studentId: dados.studentId,
     reportedStudentName: dados.reportedStudentName,
@@ -446,9 +485,15 @@ export function enfileirarCorrecao(dados: CorrecaoParaConfirmar): ItemFilaCorrec
     syncStatus: 'pending',
   };
 
+  try {
+    await filaPersistente.salvar(item);
+  } catch {
+    return { ok: false, motivo: 'falha_ao_salvar', clientCorrectionId };
+  }
+
   fila.unshift(item);
   notificar();
-  return item;
+  return { ok: true, item };
 }
 
 /**
@@ -462,7 +507,7 @@ function gerarIdentificadorLocal(): string {
   return `local-${Date.now().toString(36)}-${aleatorio}`;
 }
 
-/** Descarta o que foi corrigido na sessao e volta a fila de demonstracao. */
+/** Volta a memoria para a fila de demonstracao. Nao apaga o que esta salvo no aparelho. */
 export function reiniciarComOsMocks(): void {
   fila.splice(0, fila.length, ...filaCorrecoesMock.map((item) => ({ ...item })));
   notificar();

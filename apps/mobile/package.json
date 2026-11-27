@@ -10,10 +10,11 @@
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --import tsx --test src/lib/leitura-do-cartao.test.mjs src/lib/leitura-do-qr.test.mjs"
+    "test": "node --import tsx --test src/lib/leitura-do-cartao.test.mjs src/lib/leitura-do-qr.test.mjs src/lib/fila-persistente.test.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
     "@sgp/design-tokens": "*",

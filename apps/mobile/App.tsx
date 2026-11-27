@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Navegacao } from './src/navegacao';
+import { CargaDaFila } from './src/telas/CargaDaFila';
 
 /**
  * Raiz do aplicativo do professor.
@@ -14,7 +15,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      <Navegacao />
+      <CargaDaFila>
+        <Navegacao />
+      </CargaDaFila>
     </SafeAreaProvider>
   );
 }

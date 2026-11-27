@@ -49,19 +49,20 @@ Leia antes de escrever código de tela:
 
 ## Regras do RF08 que a arquitetura já cobra
 
-- **Sem cópia local do gabarito, não se confirma correção.** `enfileirarCorrecao` devolve
-  vazio nesse caso; não contorne isso numa tela.
+- **Sem cópia local do gabarito, não se confirma correção.** `enfileirarCorrecao` recusa
+  a confirmação nesse caso; não contorne isso numa tela.
 - **Todo item da fila nasce com identificador gerado no dispositivo** e com status
   `pending`. Não marque nada como `synced` — nada é enviado nesta fase.
-- **A fila não persiste** entre execuções, e a tela precisa dizer isso. Não apresente
-  persistência local como sincronização.
+- **A fila persiste no aparelho** (`src/lib/fila-persistente.ts`), e a correção só é
+  confirmada depois da gravação local. Não apresente persistência local como sincronização.
 
 ## Câmera, QR Code e escopo
 
 Câmera, leitura de QR Code e processamento de imagem só entram quando houver issue
 específica. A leitura de QR Code é tratada na #97 e a do cartão-resposta na #98.
 
-Sincronização real e autenticação real continuam fora de escopo até terem issue própria.
+Sincronização real continua fora de escopo até existir a implementação correspondente
+(#94, #95 e #99), e autenticação real até a implementação da sua issue.
 Quando uma tela precisar de algo sem issue, represente o estado com dado estático e deixe
 o ponto de integração explícito no código — ver `.claude/rules/00-escopo-n1.md`.
 
