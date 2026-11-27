@@ -17,6 +17,13 @@ const rotas: RouteRecordRaw[] = [
     meta: { titulo: 'Entrar', telaCheia: true },
   },
   {
+    // RF01: cadastro de professor e estudante. Fora da casca, como o login.
+    path: '/cadastro',
+    name: 'cadastro',
+    component: () => import('@/telas/Cadastro.vue'),
+    meta: { titulo: 'Criar conta', telaCheia: true },
+  },
+  {
     // RF03: link compartilhado pelo professor. Fora da casca, como o login.
     path: '/entrar/:codigo',
     name: 'entrar-por-convite',

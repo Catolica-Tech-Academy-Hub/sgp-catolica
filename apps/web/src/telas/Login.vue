@@ -8,7 +8,7 @@
  * backend, é só a porta de entrada da demonstração, e a própria tela diz isso.
  */
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Globe2, GraduationCap } from '@lucide/vue';
 import type { PapelUsuario } from '@sgp/shared-types';
 import ilustracaoDeProvaOnline from '@/assets/illustrations/online-test.svg';
@@ -18,7 +18,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const roteador = useRouter();
-const papel = ref<PapelUsuario>('professor');
+// Quem volta do cadastro chega com o papel que escolheu lá.
+const papel = ref<PapelUsuario>(useRoute().query.papel === 'estudante' ? 'estudante' : 'professor');
 const email = ref('');
 const senha = ref('');
 const erro = ref('');
@@ -158,6 +159,16 @@ async function entrar(): Promise<void> {
 
             <Button type="submit" size="lg" class="w-full">Entrar</Button>
           </div>
+
+          <p class="mt-6 text-center text-sm text-muted-foreground">
+            Ainda não tem conta?
+            <RouterLink
+              :to="{ path: '/cadastro', query: { papel } }"
+              class="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Criar conta
+            </RouterLink>
+          </p>
 
           <p class="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
             Nesta fase, o acesso apenas valida os campos e abre o protótipo navegável. O papel
