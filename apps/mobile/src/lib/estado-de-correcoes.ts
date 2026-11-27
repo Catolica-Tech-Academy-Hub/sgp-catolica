@@ -24,6 +24,7 @@ import {
 } from './fila-persistente';
 import { criarGabaritosLocais, gabaritoCompativelComLayout } from './gabaritos-locais';
 import type { EntradaDoQr } from './leitura-do-qr';
+import { enviarLote, type RespostaDaSincronizacao } from './sincronizacao';
 
 /**
  * Estado do fluxo de correcao do aplicativo do professor (RF08).
@@ -477,6 +478,45 @@ export function tentarNovamente(clientCorrectionId: string): boolean {
   item.syncError = undefined;
   notificar();
   return true;
+}
+
+export type ResumoDaSincronizacao =
+  | { ok: true; enviadas: number; sincronizadas: number; erros: number }
+  | Extract<RespostaDaSincronizacao, { ok: false }>;
+
+/**
+ * Envia para a API as correcoes feitas neste aparelho que ainda nao foram sincronizadas
+ * (`POST /correcoes/lote`). Os itens de demonstracao ficam de fora: o servidor ja tem as
+ * correcoes de exemplo, e reenviar duplicaria. Reenviar um item e seguro, pois o servidor
+ * identifica a correcao pelo `clientCorrectionId` gerado no aparelho.
+ */
+export async function sincronizarFila(): Promise<ResumoDaSincronizacao> {
+  const doAparelho = fila.filter(
+    (item) =>
+      item.syncStatus !== 'synced' &&
+      !filaCorrecoesMock.some((mock) => mock.clientCorrectionId === item.clientCorrectionId),
+  );
+  if (doAparelho.length === 0) return { ok: true, enviadas: 0, sincronizadas: 0, erros: 0 };
+
+  const resposta = await enviarLote(doAparelho);
+  if (!resposta.ok) return resposta;
+
+  let sincronizadas = 0;
+  let erros = 0;
+  for (const resultado of resposta.resultados) {
+    const item = doAparelho.find(
+      (registro) => registro.clientCorrectionId === resultado.clientCorrectionId,
+    );
+    if (!item) continue;
+    item.syncStatus = resultado.syncStatus;
+    item.syncError = resultado.syncStatus === 'error' ? resultado.syncError : undefined;
+    if (resultado.syncStatus === 'synced') sincronizadas += 1;
+    else erros += 1;
+    // O status novo tem de sobreviver ao fechamento do aplicativo.
+    await filaPersistente?.salvar(item).catch(() => undefined);
+  }
+  notificar();
+  return { ok: true, enviadas: doAparelho.length, sincronizadas, erros };
 }
 
 /** Correcoes que contam como "ja corrigida": as dos mocks e as salvas no aparelho. */
