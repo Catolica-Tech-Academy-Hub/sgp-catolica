@@ -3,9 +3,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { cores, tipografia } from '@sgp/design-tokens';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RespostasObjetivas } from '../lib/estado-de-correcoes';
+import type { AplicacaoDaLeitura, DivergenciasDaLeitura } from '../lib/leitura-do-cartao';
 import { AplicacoesParaCorrigir } from '../telas/AplicacoesParaCorrigir';
 import { Ambiente } from '../telas/Ambiente';
 import { ConferenciaObjetiva } from '../telas/ConferenciaObjetiva';
+import { LeituraCartao } from '../telas/LeituraCartao';
 import { NotasDiscursivas } from '../telas/NotasDiscursivas';
 import { SelecionarProva } from '../telas/SelecionarProva';
 
@@ -31,7 +33,18 @@ export type RotasDoAplicativo = {
   /** `correcaoSalva` chega da confirmacao, para a lista avisar que foi para a fila. */
   AplicacoesParaCorrigir: { correcaoSalva?: { id: string; resumo: string } } | undefined;
   SelecionarProva: { applicationId: string; tituloDaProva: string };
-  ConferenciaObjetiva: ProvaEscolhida;
+  /** `aplicacaoDaLeitura` chega da leitura do cartao, somente com o aceite do professor. */
+  ConferenciaObjetiva: ProvaEscolhida & {
+    aplicacaoDaLeitura?: AplicacaoDaLeitura;
+    /** Registrada quando a leitura termina, para valer em qualquer forma de sair dela. */
+    divergenciasDaLeitura?: DivergenciasDaLeitura;
+  };
+  LeituraCartao: ProvaEscolhida & {
+    marcadasAtuais: Record<string, string>;
+    emBrancoAtuais: string[];
+    sugeridasAtuais: string[];
+    divergentesAtuais: Record<string, string | null>;
+  };
   NotasDiscursivas: ProvaEscolhida & { respostas: RespostasObjetivas };
   Ambiente: undefined;
 };
@@ -73,6 +86,11 @@ export function Navegacao() {
           name="ConferenciaObjetiva"
           component={ConferenciaObjetiva}
           options={{ title: 'Conferência objetiva' }}
+        />
+        <Stack.Screen
+          name="LeituraCartao"
+          component={LeituraCartao}
+          options={{ title: 'Leitura do cartão' }}
         />
         <Stack.Screen
           name="NotasDiscursivas"
