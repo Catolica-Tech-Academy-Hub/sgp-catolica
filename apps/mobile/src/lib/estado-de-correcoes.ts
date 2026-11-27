@@ -10,13 +10,19 @@ import {
   turmasMock,
   versoesMock,
 } from '@sgp/mocks';
-import type { ItemFilaCorrecao, NotaDiscursiva, StatusSincronizacao } from '@sgp/shared-types';
+import type {
+  GabaritoVersaoSnapshot,
+  ItemFilaCorrecao,
+  NotaDiscursiva,
+  StatusSincronizacao,
+} from '@sgp/shared-types';
 import {
   criarFilaPersistente,
   mesclarComMocks,
   type ArmazenamentoDaFila,
   type FilaPersistente,
 } from './fila-persistente';
+import { criarGabaritosLocais, gabaritoCompativelComLayout } from './gabaritos-locais';
 import type { EntradaDoQr } from './leitura-do-qr';
 
 /**
@@ -217,15 +223,21 @@ export function listarEntradasDoQr(): EntradaDoQr[] {
 
 // --- Gabarito local -----------------------------------------------------------------
 
+/** Gabaritos salvos no aparelho, trazidos para a memoria ao abrir o aplicativo. */
+const gabaritosPersistidos = new Map<string, GabaritoVersaoSnapshot>();
+
 /**
- * Copia local do gabarito daquela versao.
+ * Copia local do gabarito daquela versao: primeiro a salva no aparelho e, sem ela, a dos
+ * mocks. A dos mocks nunca e gravada no aparelho.
  *
  * RF08 e categorico: **sem copia local do gabarito, o aplicativo nao permite confirmar a
- * correcao**. Na N1 a copia vem dos mocks, mas a regra e respeitada de verdade — quem
- * nao encontrar gabarito aqui nao consegue avancar na tela de conferencia.
+ * correcao**. Quem nao encontrar gabarito aqui nao consegue avancar na tela de conferencia.
  */
 export function obterGabaritoDaVersao(examVersionId: string) {
-  return filaCorrecoesMock.find((item) => item.examVersionId === examVersionId)?.answerKeySnapshot;
+  return (
+    gabaritosPersistidos.get(examVersionId) ??
+    filaCorrecoesMock.find((item) => item.examVersionId === examVersionId)?.answerKeySnapshot
+  );
 }
 
 // --- Prova a corrigir (conferencia objetiva e notas discursivas) --------------------
@@ -389,16 +401,28 @@ let filaPersistente: FilaPersistente | undefined;
 let totalDeCorrecoesIlegiveis = 0;
 
 /**
- * Carrega a fila salva no aparelho. Precisa terminar antes de o professor corrigir, senao
- * uma prova ja corrigida pareceria pendente. Rejeita quando o armazenamento falha.
+ * Carrega a fila e os gabaritos salvos no aparelho. Precisa terminar antes de o professor
+ * corrigir, senao uma prova ja corrigida pareceria pendente e um gabarito antigo poderia
+ * ser usado. Rejeita quando o armazenamento falha, sem aplicar uma carga parcial.
  */
 export async function iniciarFilaPersistente(armazenamento: ArmazenamentoDaFila): Promise<void> {
   const persistente = criarFilaPersistente(armazenamento);
-  const { itens, chavesIlegiveis } = await persistente.carregar();
+  const [{ itens, chavesIlegiveis }, { gabaritos }] = await Promise.all([
+    persistente.carregar(),
+    criarGabaritosLocais(armazenamento).listar(),
+  ]);
 
   filaPersistente = persistente;
   totalDeCorrecoesIlegiveis = chavesIlegiveis.length;
   fila.splice(0, fila.length, ...mesclarComMocks(filaCorrecoesMock, itens));
+  gabaritosPersistidos.clear();
+  for (const gabarito of gabaritos) {
+    // Gabarito que nao bate com a folha impressa nao e usado: a nota sairia errada.
+    const versao = versoesMock.find((item) => item.id === gabarito.examVersionId);
+    if (versao && gabaritoCompativelComLayout(gabarito, versao.layout)) {
+      gabaritosPersistidos.set(gabarito.examVersionId, gabarito);
+    }
+  }
   notificar();
 }
 

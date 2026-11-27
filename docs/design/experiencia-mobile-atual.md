@@ -56,8 +56,8 @@ discursiva com dados reais; as issues #24, #25 e #26 seguem abertas para complet
    `pending`, e o professor volta à lista com o aviso de que ela está salva no aparelho,
    sem ter sido enviada. A tela da fila é a issue #28.
 
-Sem cópia local do gabarito (hoje, versões 0 e 4 dos mocks), a conferência e a
-confirmação ficam desabilitadas e explicadas.
+Sem cópia local do gabarito, salva no aparelho ou nos mocks (hoje, versões 0 e 4), a
+conferência e a confirmação ficam desabilitadas e explicadas.
 
 ### Leitura do QR Code (issue #97, em andamento)
 
@@ -130,10 +130,10 @@ bloqueada"**, em vez de simular um resultado.
 
 #### O que foi verificado
 
-- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 115
-  de 115 testes passaram, incluindo a fila persistente, a validação do QR Code, a segunda
-  leitura, a saída com divergência, a decisão manual em branco e a leitura com o núcleo
-  real sobre uma imagem sintética.
+- Testes automatizados do mobile (`npm run test --workspace @sgp/mobile`) no Node 20: 184
+  de 184 testes passaram, incluindo os gabaritos locais, a fila persistente, a validação do
+  QR Code, a segunda leitura, a saída com divergência, a decisão manual em branco e a
+  leitura com o núcleo real sobre uma imagem sintética.
 
 #### O que ainda não foi verificado ou integrado
 
@@ -179,6 +179,45 @@ As correções confirmadas ficam salvas no aparelho com AsyncStorage, pela camad
 - **O envio para `POST /correcoes/lote` ainda não está implementado.** Nenhum item é enviado,
   e novas correções continuam como `pending`.
 
+### Gabaritos locais (issue #96, em andamento)
+
+A camada `src/lib/gabaritos-locais.ts` guarda no AsyncStorage uma cópia do gabarito de cada
+versão, para a correção funcionar sem sinal. **Hoje nada grava nesse cache no aplicativo**,
+porque o download depende da API. Na prática, o fluxo continua usando os gabaritos dos
+mocks até essa etapa existir.
+
+- **Cada versão tem uma chave própria**, separada das chaves da fila, com um
+  `GabaritoVersaoSnapshot` e a data da última atualização em `capturedAt`.
+- **Só uma cópia mais recente substitui a atual.** Cópia igual ou mais antiga é ignorada.
+- **Dado inválido não é aceito.** Um item corrompido é mantido no aparelho, sem impedir a
+  leitura das outras versões.
+- **A ordem de consulta é cache e depois mocks.** `obterGabaritoDaVersao()` usa primeiro a
+  cópia salva. Os mocks são a reserva e nunca são gravados no cache.
+- **O gabarito salvo precisa bater com a folha impressa.** Se as questões ou a ordem das
+  alternativas diferirem do layout da versão, a cópia é ignorada e não é apagada.
+- **O cache é carregado antes da navegação**, junto da fila, em `CargaDaFila`. Uma falha de
+  leitura impede a abertura e oferece nova tentativa.
+- **O cache é diferente do `answerKeySnapshot` da fila.** O cache guarda a cópia mais recente
+  da versão; o snapshot registra o gabarito usado em uma correção e não muda depois.
+
+#### O que foi verificado
+
+- Testes automatizados cobrem gravação, substituição, dados inválidos, prioridade sobre os
+  mocks, fallback e compatibilidade com o layout, usando um armazenamento em memória no
+  lugar do AsyncStorage.
+
+#### O que ainda não foi verificado ou implementado
+
+- **O teste em aparelho físico com o AsyncStorage real ainda não foi executado.**
+- **A lista de aplicações e o download dos gabaritos pela API dependem das issues #94 e
+  #95.** O aplicativo não faz chamadas de rede.
+- **Ainda não existem** os estados de carregando, sem conexão e sem gabarito local na lista
+  de aplicações, nem a exibição da data da última atualização.
+- **Um gabarito salvo durante a sessão só passa a valer na próxima abertura.** Antes de
+  atualizar a memória, a correção em andamento precisa fixar o gabarito que está usando.
+- **Isolamento e limpeza do cache por professor dependem do login (#95).** O gabarito fica
+  sem criptografia no AsyncStorage.
+
 ### Prova sem identificação e o limite do RF09
 
 Quando `withStudentIdentification` é `false`, a tela de notas mostra campos de nome e
@@ -199,6 +238,7 @@ feito pela web (issue #18); o aplicativo não cria esse vínculo.
 | Leitura    | `src/lib/leitura-do-cartao.ts`   | Sugestões, prioridade do professor e aceite.        |
 | QR Code    | `src/lib/leitura-do-qr.ts`       | Validação do QR como valor opaco.                   |
 | Fila local | `src/lib/fila-persistente.ts`    | Gravação e leitura da fila no aparelho.             |
+| Gabaritos  | `src/lib/gabaritos-locais.ts`    | Cópia local dos gabaritos por versão.               |
 
 ### Estado local
 
@@ -226,6 +266,8 @@ identificar, a cópia local do gabarito e a fila local.
 
 - **A fila persiste no aparelho, mas não sincroniza.** O envio para `POST /correcoes/lote`
   depende das issues #94 e #95, e a persistência ainda não foi testada em aparelho físico.
+- **O cache de gabaritos existe, mas ainda não recebe dados.** O download depende das
+  issues #94 e #95, e o fluxo continua usando os gabaritos dos mocks.
 - **Leitura de QR Code sem validação em aparelho físico.** A câmera lê o QR (#97), mas esse
   fluxo ainda não foi testado em um aparelho, e o formato final do QR depende da #91. A
   escolha na lista continua como alternativa e produz o mesmo efeito: chegar a uma versão
