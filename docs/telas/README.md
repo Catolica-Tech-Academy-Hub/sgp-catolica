@@ -56,6 +56,7 @@ conclusão, o print correspondente aqui (novo ou atualizado) — ver
 | Ajuda: perguntas frequentes          | `/suporte`               | [suporte.png](suporte.png)                                     |
 | Ajuda: contato                       | `/suporte`               | [suporte-contato.png](suporte-contato.png)                     |
 | Entrada, com escolha de papel        | `/login`                 | [login.png](login.png)                                         |
+| Cadastro de professor e estudante    | `/cadastro`              | [cadastro.png](cadastro.png)                                   |
 | Estudante: histórico de notas        | `/estudante`             | [estudante-historico.png](estudante-historico.png)             |
 | Estudante: detalhamento de uma nota  | `/estudante`             | [estudante-nota.png](estudante-nota.png)                       |
 | Mobile: aplicações para corrigir     | `AplicacoesParaCorrigir` | [mobile-lista-aplicacoes.png](mobile-lista-aplicacoes.png)     |
