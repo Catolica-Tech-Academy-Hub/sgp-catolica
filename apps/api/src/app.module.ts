@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AplicacoesModule } from './aplicacoes/aplicacoes.module';
 import { IdentificacaoProvisoriaGuard } from './autenticacao/identificacao-provisoria';
 import { CorrecoesModule } from './correcoes/correcoes.module';
+import { ConvitesModule } from './convites/convites.module';
 import { EstudantesModule } from './estudantes/estudantes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProvasModule } from './provas/provas.module';
@@ -19,6 +20,7 @@ import { TurmasModule } from './turmas/turmas.module';
     ProvasModule,
     AplicacoesModule,
     CorrecoesModule,
+    ConvitesModule,
   ],
   controllers: [SaudeController],
   providers: [{ provide: APP_GUARD, useClass: IdentificacaoProvisoriaGuard }],

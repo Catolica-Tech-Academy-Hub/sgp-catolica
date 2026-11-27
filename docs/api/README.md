@@ -393,6 +393,26 @@ Os testes de regras da API podem ser executados com `npm run test --workspace @s
 - Desfazer devolve à fila uma atribuição manual. A correção atribuída pelo QR Code
   (`isAutomaticallyAssigned`) responde `409`.
 
+### Entrada pelo código de convite (RF03)
+
+| Método | Caminho                       | Corpo                                                      | Resposta                                       |
+| ------ | ----------------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
+| GET    | `/convites/:codigo`           | —                                                          | `{ name, subject, term, teacherName, status }` |
+| POST   | `/convites/:codigo/matricula` | sem sessão: `{ fullName, email, registration?, password }` | `{ matricula, estudante?, sessao? }`           |
+
+- As duas rotas aceitam requisição sem sessão (`@AceitaSemLogin()`): a identificação
+  provisória não as atribui ao professor de demonstração.
+- O código é comparado sem diferenciar maiúsculas. Código inexistente ou regenerado
+  responde `404`; turma arquivada e matrícula removida pelo professor, `409`.
+- Com sessão de estudante, matricula quem está logado; usar o mesmo código de novo
+  devolve a matrícula existente, sem duplicar. Professor recebe `403`.
+- Sem sessão, o corpo é o cadastro: cria a conta (e-mail `@catolicasc.edu.br`) e a
+  matrícula na mesma transação e devolve o estudante com a sessão. E-mail ou matrícula
+  já cadastrados respondem `409`.
+- Enquanto o login (#81) não existe, o cadastro responde `501` antes de gravar qualquer
+  coisa: guardar a senha e abrir a sessão ficam em `src/convites/credenciais.ts`, ponto
+  único que a #81 implementa.
+
 ## Ainda não coberto
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em

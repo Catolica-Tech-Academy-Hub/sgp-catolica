@@ -50,8 +50,8 @@ reutilizável exige atualizar `docs/design/design-system-web.md` na mesma entreg
   utilidades à direita) + moldura arredondada `bg-field` com abas horizontais de 48 px
   dentro dela. **Não existe sidebar global**; navegação de seção vive nas abas, nunca
   atrás de ícone sem rótulo. Seções comuns não usam breadcrumb — aba ativa e título já
-  dão contexto. Login e editor saem da casca via `meta.telaCheia` e compõem a própria
-  tela inteira.
+  dão contexto. Login, entrada pelo convite (`/entrar/:codigo`) e editor saem da casca via
+  `meta.telaCheia` e compõem a própria tela inteira.
 - **Tema**: claro é canônico na N1. Tokens escuros são preservados no CSS, mas **não há
   alternância exposta** — não adicionar toggle de tema.
 - **Paleta**: só tokens semânticos — `background` (margem externa), `field` (campo de
