@@ -30,6 +30,7 @@ Classificação usada:
 | `/suporte`           | Implementado na N1     | Perguntas frequentes com busca e contato; envio depende de backend.                 |
 | `/estudante`         | Implementado na N1     | Histórico de notas com filtros, evolução e detalhamento por questão (RF11).         |
 | `/entrar/:codigo`    | Implementado na N1     | Entrada do estudante na turma pelo link de convite (RF03), em tela cheia.           |
+| `/cadastro`          | Implementado           | Cadastro de professor e estudante (RF01), gravado na API, em tela cheia.            |
 | Rota desconhecida    | Implementado           | Redireciona para `/provas`.                                                         |
 
 As seções de domínio aparecem nas abas para tornar a arquitetura do produto visível sem
@@ -60,6 +61,28 @@ aparece no cabeçalho do formulário.
 
 Não há sessão, JWT, consulta à API, recuperação de senha ou validação real de credenciais.
 O próprio formulário informa esse limite.
+
+Abaixo do formulário, **Criar conta** leva a `/cadastro` com o papel escolhido. Quem volta
+do cadastro chega com o mesmo papel já selecionado (`?papel=estudante`).
+
+## Cadastro (`/cadastro`)
+
+Cria conta de professor ou de estudante (RF01, issues #80 e #84). Fica fora da casca
+(`meta.telaCheia`), no layout enxuto da entrada pelo convite: marca no topo e formulário
+centralizado de no máximo 448 px.
+
+- o tipo é escolhido em `Tabs` (Sou professor / Sou estudante), como no login, e define o
+  domínio exigido, mostrado como dica sob o e-mail;
+- campos: nome completo, e-mail, matrícula (só estudante, opcional), senha e
+  confirmação;
+- a validação acontece antes do envio, com a mensagem junto de cada campo,
+  `aria-invalid` e foco no primeiro campo com problema; a recusa do servidor (e-mail
+  já usado) aparece com `role="alert"` acima do botão;
+- sucesso confirma por toast e volta ao login com o papel escolhido. A conta fica gravada
+  na API, mas a entrada com e-mail e senha continua demonstrativa até o login real (#81,
+  #84);
+- sem `VITE_API_URL`, um `Alert` explica que o cadastro precisa do servidor e o formulário
+  fica desabilitado, em vez de fingir que gravou.
 
 ## Casca autenticada
 

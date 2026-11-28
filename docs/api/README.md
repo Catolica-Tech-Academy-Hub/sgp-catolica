@@ -429,6 +429,19 @@ Os testes de regras da API podem ser executados com `npm run test --workspace @s
   coisa: guardar a senha e abrir a sessão ficam em `src/convites/credenciais.ts`, ponto
   único que a #81 implementa.
 
+### Cadastro de professor e estudante (RF01)
+
+| Método | Caminho          | Corpo                                                | Resposta                   |
+| ------ | ---------------- | ---------------------------------------------------- | -------------------------- |
+| POST   | `/auth/cadastro` | `{ role, fullName, email, password, registration? }` | `Professor` ou `Estudante` |
+
+- Aceita requisição sem sessão (`@AceitaSemLogin()`): quem se cadastra ainda não tem conta (issue #80).
+- `role` é `professor` ou `estudante`, e o e-mail precisa do domínio do tipo: `@catolicasc.org.br` para professor e `@catolicasc.edu.br` para estudante. Fora do domínio responde `400`.
+- O e-mail é gravado sem espaços nas pontas e em minúsculas. E-mail ou matrícula já cadastrados respondem `409`.
+- Senha de 8 a 72 caracteres, gravada só como hash bcrypt (custo 12) em `usuarios.passwordHash`, nunca em texto; a resposta nunca traz o hash. `src/usuarios/senha.ts` também tem `conferirSenha`, pronta para o login (#81).
+- `registration` (matrícula acadêmica) só é gravada para estudante. Campos fora do DTO, como `id` ou `passwordHash`, são descartados.
+- Não abre sessão: login e tokens são da #81. A regra de domínio fica em `src/usuarios/regras.ts` e é a mesma da entrada pelo convite.
+
 ## Ainda não coberto
 
 - Autenticação, JWT e refresh token (RNF04): o professor é fixo em

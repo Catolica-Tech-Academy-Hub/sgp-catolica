@@ -10,6 +10,7 @@ import { ProvasModule } from './provas/provas.module';
 import { QuestoesModule } from './questoes/questoes.module';
 import { SaudeController } from './saude.controller';
 import { TurmasModule } from './turmas/turmas.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TurmasModule } from './turmas/turmas.module';
     AplicacoesModule,
     CorrecoesModule,
     ConvitesModule,
+    UsuariosModule,
   ],
   controllers: [SaudeController],
   providers: [{ provide: APP_GUARD, useClass: IdentificacaoProvisoriaGuard }],

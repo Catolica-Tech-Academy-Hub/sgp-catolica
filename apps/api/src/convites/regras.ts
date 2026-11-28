@@ -1,4 +1,5 @@
 import type { StatusMatricula, StatusTurma } from '@sgp/shared-types';
+import { DOMINIO_POR_PAPEL, emailDoPapel, normalizarEmail } from '../usuarios/regras';
 
 /**
  * O que fazer quando o estudante entra numa turma pelo codigo de convite (RF03).
@@ -42,16 +43,10 @@ export function normalizarCodigo(codigo: string): string {
 }
 
 /** RF01: conta de estudante so com o dominio institucional de estudante. */
-export const DOMINIO_DE_ESTUDANTE = '@catolicasc.edu.br';
+export const DOMINIO_DE_ESTUDANTE = DOMINIO_POR_PAPEL.estudante;
 
-/** E-mail como e comparado: sem espacos nas pontas e em minusculas. */
-export function normalizarEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
+export { normalizarEmail };
 
 export function emailDeEstudante(email: string): boolean {
-  const normalizado = normalizarEmail(email);
-  return (
-    normalizado.endsWith(DOMINIO_DE_ESTUDANTE) && normalizado.length > DOMINIO_DE_ESTUDANTE.length
-  );
+  return emailDoPapel(email, 'estudante');
 }
